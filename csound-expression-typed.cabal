@@ -1,0 +1,43 @@
+Name:          csound-expression-typed
+Version:       0.0.0
+Cabal-Version: >= 1.6
+License:       BSD3
+License-file:  LICENSE
+Author:	       Anton Kholomiov
+Synopsis:      library to make electronic music
+Stability:     Experimental
+Tested-With:   GHC==7.6
+Build-Type:    Simple
+Category:      Music, Sound
+Maintainer:    <anton.kholomiov@gmail.com>
+
+Description:   
+
+Homepage:        https://github.com/anton-k/csound-expression-typed
+Bug-Reports:     https://github.com/anton-k/csound-expression-typed/issues
+
+Source-repository head
+    Type: git
+    Location: https://github.com/anton-k/csound-expression-typed
+
+
+Library
+  Ghc-Options:    -Wall
+  Build-Depends:
+        base >= 4, base < 5, containers, transformers, Boolean >= 0.1.0, data-default,
+        csound-expression-dynamic, csound-expression-control
+  Hs-Source-Dirs:      src/
+  Exposed-Modules:
+    Csound.Typed.Types
+    Csound.Typed.Tuple
+    Csound.Typed.Arg
+    Csound.Typed.Render
+    Csound.Typed.Evt
+    Csound.Typed.Mix
+    Csound.Typed.Midi
+    Csound.Typed.Tab
+
+  Other-Modules:
+    Csound.Typed.Control
+    Csound.Typed.TupleHelpers
+
