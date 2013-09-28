@@ -215,6 +215,7 @@ onInstrIO :: StateT Instrs IO a -> GE a
 onInstrIO st = GE $ ReaderT $ \_ -> StateT $ \history -> do
     (res, instrs1) <- runStateT st (instrs history)
     return $ (res, history { instrs = instrs1 })
+   
 
 type UpdField a b = State a b -> GE b
 
@@ -229,6 +230,9 @@ onTotalDur = onHistory totalDur (\a h -> h { totalDur = a })
 
 onGlobals :: UpdField Globals a
 onGlobals = onHistory globals (\a h -> h { globals = a })
+
+onLocals :: UpdField Locals a
+onLocals = onHistory locals (\a h -> h { locals = a })
 
 onMasterInstrId :: UpdField InstrId a
 onMasterInstrId = onHistory masterInstrId (\a h -> h { masterInstrId = a })

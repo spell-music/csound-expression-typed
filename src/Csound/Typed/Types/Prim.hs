@@ -6,7 +6,7 @@ module Csound.Typed.Types.Prim(
     PreTab(..), preTab, TabSize(..), TabArgs(..), updateTabSize,
 
     -- * constructors
-    double, int, str,
+    double, int, str, idur,
 
     -- * converters
     ar, kr, ir, sig,
@@ -16,8 +16,10 @@ module Csound.Typed.Types.Prim(
 
     -- * numeric funs
     ceilSig, floorSig, roundSig, intSig, fracSig,
-    ceilD, floorD, roundD, intD, fracD        
-    
+    ceilD, floorD, roundD, intD, fracD,        
+   
+    -- * logic funs
+    when, boolSig
 ) where
 
 import Control.Applicative hiding ((<*))
@@ -27,8 +29,8 @@ import qualified Data.IntMap as IM
 import Data.Default
 import Data.Boolean
 
-import Csound.Dynamic hiding (double, int, str)
-import qualified Csound.Dynamic as D(double, int, str)
+import Csound.Dynamic hiding (double, int, str, when)
+import qualified Csound.Dynamic as D(double, int, str, when)
 import Csound.Typed.Types.GlobalState
 
 -- | Signals
@@ -171,6 +173,9 @@ int = fromE . D.int
 
 str :: String -> Str
 str = fromE . D.str
+
+idur :: D 
+idur = fromE $ pn 3
 
 -------------------------------------------------------------------------------
 -- converters
@@ -324,4 +329,14 @@ instance EqB D    where { (==*) = on2 (==*);    (/=*) = on2 (/=*) }
 
 instance OrdB Sig where { (<*)  = on2 (<*) ;    (>*)  = on2 (>*);     (<=*) = on2 (<=*);    (>=*) = on2 (>=*) }
 instance OrdB D   where { (<*)  = on2 (<*) ;    (>*)  = on2 (>*);     (<=*) = on2 (<=*);    (>=*) = on2 (>=*) }
+
+when :: BoolSig -> SE () -> SE ()
+when p body = do
+    bodyDep <- fmap return body
+    fromDep_ $ do
+        pDep <- toGE p
+        return $ D.when pDep bodyDep 
+
+boolSig :: BoolD -> BoolSig
+boolSig = fromGE . toGE
 
