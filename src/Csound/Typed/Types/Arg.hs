@@ -1,5 +1,5 @@
 module Csound.Typed.Types.Arg(
-    Arg(..), makeArgMethods, arg, toNote, arity, toArg
+    Arg(..), makeArgMethods, arg, toNote, argArity, toArg
 ) where
 
 import Control.Applicative 
@@ -37,18 +37,18 @@ class Arg a where
 
 -- | The abstract type of methods for the class 'Arg'.
 data ArgMethods a = ArgMethods 
-    { arg_    :: Int -> a
-    , toNote_ :: a -> GE [Prim]
-    , arity_  :: a -> Int }
+    { arg_      :: Int -> a
+    , toNote_   :: a -> GE [E]
+    , argArity_ :: a -> Int }
 
 arg :: Arg a => Int -> a
 arg = arg_ argMethods
 
-toNote :: Arg a => a -> GE [Prim]
+toNote :: Arg a => a -> GE [E]
 toNote = toNote_ argMethods
 
-arity :: Arg a => a -> Int
-arity = arity_ argMethods
+argArity :: Arg a => a -> Int
+argArity = argArity_ argMethods
 
 toArg :: Arg a => a
 toArg = arg 4
@@ -58,7 +58,7 @@ makeArgMethods :: (Arg a) => (a -> b) -> (b -> a) -> ArgMethods b
 makeArgMethods to from = ArgMethods {
     arg_ = to . arg,
     toNote_ = toNote . from,
-    arity_ = const $ arity $ proxy to }
+    argArity_ = const $ argArity $ proxy to }
     where proxy :: (a -> b) -> a
           proxy = const $ error "i'm a stupid proxy, fix me"
 
@@ -66,19 +66,19 @@ instance Arg () where
     argMethods = ArgMethods 
         { arg_ = const ()
         , toNote_ = pure . const []
-        , arity_ = const 0 }
+        , argArity_ = const 0 }
 
 instance Arg InstrId where
     argMethods = ArgMethods 
         { arg_ = error "method arg is undefined for InstrId"
-        , toNote_ = pure . pure . PrimInstrId
-        , arity_ = const 0 }
+        , toNote_ = pure . pure . prim . PrimInstrId
+        , argArity_ = const 0 }
 
 primArgMethods :: Val a => ArgMethods a
 primArgMethods = ArgMethods {
         arg_ = fromE . pn,
-        toNote_ = fmap (pure . getPrimUnsafe) . toGE ,
-        arity_ = const 1 }
+        toNote_ = fmap pure . toGE ,
+        argArity_ = const 1 }
 
 instance Arg D      where argMethods = primArgMethods
 instance Arg Tab    where argMethods = primArgMethods
@@ -86,8 +86,8 @@ instance Arg Tab    where argMethods = primArgMethods
 instance Arg Str    where 
     argMethods = ArgMethods
         { arg_ = fromE . pn
-        , toNote_ = \x -> fmap pure . saveStr . getStringUnsafe =<< toGE x
-        , arity_ = const 1 }
+        , toNote_ = \x -> fmap pure $ saveStr . getStringUnsafe =<< toGE x
+        , argArity_ = const 1 }
         where 
             getStringUnsafe x = case getPrimUnsafe x of
                 PrimString a    -> a
@@ -97,9 +97,9 @@ instance (Arg a, Arg b) => Arg (a, b) where
     argMethods = ArgMethods arg' toNote' arity' 
         where arg' n = (a, b)
                   where a = arg n
-                        b = arg (n + arity a)
+                        b = arg (n + argArity a)
               toNote' (a, b) = liftA2 (++) (toNote a) (toNote b)
-              arity' x = let (a, b) = proxy x in arity a + arity b    
+              arity' x = let (a, b) = proxy x in argArity a + argArity b    
                   where proxy :: (a, b) -> (a, b)
                         proxy = const (undefined, undefined)
 

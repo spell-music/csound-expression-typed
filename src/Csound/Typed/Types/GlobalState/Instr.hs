@@ -41,7 +41,7 @@ saveEffectInstr eff = do
         getIns  = fmap (fromOut . return . map fromE) $ C.readChn $ C.chnRefFromParg 4 arityIns
 
 insArity :: (Arg a, Out b) => (a -> b) -> (Int, Int)
-insArity instr = (arity a, outArity b)
+insArity instr = (argArity a, outArity b)
     where (a, b) = funProxy instr
 
 effArity :: (Out a, Out b) => (a -> b) -> (Int, Int)

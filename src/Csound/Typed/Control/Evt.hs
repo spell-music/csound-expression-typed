@@ -159,7 +159,7 @@ saveEvtInstr arityOuts instrId evts = do
         go mchnId es = 
             runEvt es $ \(start, dur, args) -> fromDep_ $ do
                 chnId <- mchnId
-                e <- C.Event instrId <$> toGE start <*> toGE dur <*> (fmap ((++ [C.chnRefId chnId]) . fmap C.prim) $ toNote args) 
+                e <- C.Event instrId <$> toGE start <*> toGE dur <*> (fmap (++ [C.chnRefId chnId]) $ toNote args) 
                 return $ C.event e 
 
 

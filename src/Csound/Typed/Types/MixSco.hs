@@ -8,7 +8,7 @@ import Csound.Dynamic
 import Csound.Dynamic.Control
 
 data M 
-    = Snd InstrId (CsdEventList Note)
+    = Snd InstrId (CsdEventList [E])
     | Eff InstrId (CsdEventList M) Int   
 
 rescaleCsdEventListM :: CsdEventList M -> CsdEventList M
@@ -39,7 +39,7 @@ renderMixSco arity evts = do
             Eff instrId es arityIn  -> onEff instrId start dur outId es arityIn
 
         onSnd instrId outId es = forM_ (csdEventListNotes es) $ \(start, dur, args) ->
-            event_i $ Event instrId (double start) (double dur) (fmap prim args ++ [chnRefId outId])
+            event_i $ Event instrId (double start) (double dur) (args ++ [chnRefId outId])
 
         onEff instrId start dur outId es arityIn = do
             inId <- chnRefAlloc arityIn

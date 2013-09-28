@@ -144,8 +144,8 @@ getTotalDur opt = toDouble . maybe InfiniteDur id
 unsafePerformGE :: GE a -> a
 unsafePerformGE = undefined
 
-saveStr :: String -> GE Prim
-saveStr = onStringMap . newString
+saveStr :: String -> GE E
+saveStr = fmap prim . onStringMap . newString
     where onStringMap = onHistory stringMap (\val h -> h{ stringMap = val })
 
 saveGen :: Gen -> GE E
