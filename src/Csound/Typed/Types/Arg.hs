@@ -1,4 +1,4 @@
-module Csound.Typed.Arg(
+module Csound.Typed.Types.Arg(
     Arg(..), makeArgMethods, arg, toNote, arity, toArg
 ) where
 
@@ -6,9 +6,9 @@ import Control.Applicative
 
 import Csound.Dynamic
 
-import Csound.Typed.Control
-import Csound.Typed.Types
-import Csound.Typed.TupleHelpers
+import Csound.Typed.Types.GlobalState
+import Csound.Typed.Types.Prim
+import Csound.Typed.Types.TupleHelpers
 
 -- | Describes all Csound values that can be used in the score section. 
 -- Instruments are triggered with the values from this type class.
@@ -81,8 +81,17 @@ primArgMethods = ArgMethods {
         arity_ = const 1 }
 
 instance Arg D      where argMethods = primArgMethods
-instance Arg Str    where argMethods = primArgMethods
 instance Arg Tab    where argMethods = primArgMethods
+
+instance Arg Str    where 
+    argMethods = ArgMethods
+        { arg_ = fromE . pn
+        , toNote_ = \x -> fmap pure . saveStr . getStringUnsafe =<< toGE x
+        , arity_ = const 1 }
+        where 
+            getStringUnsafe x = case getPrimUnsafe x of
+                PrimString a    -> a
+                _               -> error "Arg(Str):getStringUnsafe value is not a string"
 
 instance (Arg a, Arg b) => Arg (a, b) where
     argMethods = ArgMethods arg' toNote' arity' 

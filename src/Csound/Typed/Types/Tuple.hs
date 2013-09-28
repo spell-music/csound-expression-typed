@@ -1,15 +1,16 @@
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 {-# Language 
         TypeFamilies,
-        FlexibleContexts #-}
-module Csound.Typed.Tuple(
+        FlexibleContexts,
+        UndecidableInstances #-}
+module Csound.Typed.Types.Tuple(
     -- * Tuple
     Tuple(..), TupleMethods, makeTupleMethods, 
     fromTuple, toTuple, arityTuple, ratesTuple, defTuple,
 
     -- * Outs
     Out(..), OutMethods, makeOutMethods, outArity,
-    toOut, fromOut, mapOut, pureOut, bindOut, accumOut, traverseOut,
+    outGE, outFromE, outFromGE, toOut, fromOut, mapOut, pureOut, bindOut, accumOut, traverseOut,
     
     -- * Multiple outs
     multiOuts,
@@ -22,9 +23,9 @@ import Data.Monoid
 import Data.Default
 
 import Csound.Dynamic
-import Csound.Typed.Types
-import Csound.Typed.Control
-import Csound.Typed.TupleHelpers
+import Csound.Typed.Types.Prim
+import Csound.Typed.Types.GlobalState
+import Csound.Typed.Types.TupleHelpers
 
 class Tuple a where
     tupleMethods :: TupleMethods a
@@ -69,16 +70,25 @@ class (Monoid (NoSE a), Tuple (NoSE a)) => Out a where
    
 data OutMethods a = OutMethods 
     { toOut_    :: a -> SE [Sig]
-    , fromOut_  :: [Sig] -> a
+    , fromOut_  :: GE [Sig] -> a
     , mapOut_   :: (Sig -> Sig) -> (a -> a)
     , pureOut_  :: Sig -> a
     , bindOut_  :: a -> (Sig -> SE Sig) -> SE a
     , accumOut_ :: ([Sig] -> Sig) -> [a] -> a }
 
+outGE :: Out a => a -> SE (GE [E])
+outGE = fmap (mapM toGE) . toOut
+
+outFromE :: Out a => [E] -> a
+outFromE = fromOut . return . fmap fromE
+
+outFromGE :: Out a => GE [E] -> a
+outFromGE = fromOut . fmap (fmap fromE)
+
 toOut :: Out a => a -> SE [Sig]
 toOut = toOut_ outMethods
 
-fromOut :: Out a => [Sig] -> a
+fromOut :: Out a => GE [Sig] -> a
 fromOut = fromOut_ outMethods
 
 mapOut  :: Out a => (Sig -> Sig) -> (a -> a)
@@ -191,14 +201,14 @@ instance Out Sig where
     outMethods = OutMethods toOut' fromOut' mapOut' pureOut' bindOut' accumOut'
         where
             toOut' = return . return
-            fromOut' = head 
+            fromOut' = \x -> fromGE $ toGE =<< fmap head x
             mapOut' = ($)
             pureOut' = id
             bindOut' = flip ($)
             accumOut' = id
 
-instance (Monoid a, Out a, Tuple a) => Out (SE a) where
-    type NoSE (SE a) = a
+instance (Monoid (NoSE a), Out a, Tuple (NoSE a)) => Out (SE a) where
+    type NoSE (SE a) = NoSE a
     outMethods = OutMethods toOut' fromOut' mapOut' pureOut' bindOut' accumOut'
         where
             toOut' = join . fmap toOut
@@ -213,7 +223,7 @@ instance (Tuple a, Tuple b, Out a, Out b) => Out (a, b) where
     outMethods = OutMethods toOut' fromOut' mapOut' pureOut' bindOut' accumOut'
         where
             toOut' (a, b) = liftA2 (++) (toOut a) (toOut b)
-            fromOut' = toTuple . mapM toGE
+            fromOut' = \x -> toTuple $ mapM toGE =<< x
             mapOut' f (a, b) = (mapOut f a, mapOut f b)
             pureOut' a = (pureOut a, pureOut a)
             bindOut' (a, b) f =  (,) <$> bindOut a f <*> bindOut b f

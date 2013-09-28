@@ -1,4 +1,4 @@
-module Csound.Typed.TupleHelpers where
+module Csound.Typed.Types.TupleHelpers where
 
 cons3 :: (a, (b, c)) -> (a, b, c)
 cons4 :: (a, (b, c, d)) -> (a, b, c, d)
