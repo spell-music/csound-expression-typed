@@ -1,4 +1,20 @@
-module Csound.Typed.Types.GlobalState.GE where
+module Csound.Typed.Types.GlobalState.GE(
+    GE, History(..), withOptions, execGE,
+    -- * Globals
+    onGlobals, 
+    -- * Locals
+    onLocals, 
+    -- * Midi
+    MidiAssign(..), Channel, MidiType(..), Msg(..), renderMidiAssign, saveMidi,  
+    -- * Instruments
+    setMasterInstrId, onInstr, saveUserInstr0, getSysExpr,
+    -- * Total duration
+    TotalDur(..), getTotalDur, setDuration, setDurationToInfinite,
+    -- * GEN routines
+    saveGen,
+    -- * Strings
+    saveStr
+) where
 
 import Control.Applicative
 import Control.Monad
@@ -82,16 +98,22 @@ saveGen = onGenMap . newGen
     where onGenMap = onHistory genMap (\val h -> h{ genMap = val })
 
 setDurationToInfinite :: GE ()
-setDurationToInfinite = onTotalDur $ modify (max $ Just InfiniteDur)
+setDurationToInfinite = setTotalDur InfiniteDur
 
 setDuration :: Double -> GE ()
-setDuration = onTotalDur . modify . max . Just . NumDur
+setDuration = setTotalDur . NumDur
+
+setTotalDur :: TotalDur -> GE ()
+setTotalDur = onTotalDur . modify . max . Just
+    where onTotalDur = onHistory totalDur (\a h -> h { totalDur = a })
 
 saveMidi :: MidiAssign -> GE ()
-saveMidi a = onMidis $ modify (a: )
+saveMidi ma = onMidis $ modify (ma: )
+    where onMidis = onHistory midis (\a h -> h { midis = a })
 
 saveUserInstr0 :: InstrBody -> GE ()
 saveUserInstr0 expr = onUserInstr0 $ modify ( >> expr)
+    where onUserInstr0 = onHistory userInstr0 (\a h -> h { userInstr0 = a })
 
 getSysExpr :: GE (Dep ())
 getSysExpr = fmap sequence_ $ sequence [ onGlobals $ clearGlobals ]    
@@ -100,17 +122,14 @@ getSysExpr = fmap sequence_ $ sequence [ onGlobals $ clearGlobals ]
         clearGlobals = gets $ mapM_ (flip writeVar 0) . globalsClearable 
 
 setMasterInstrId :: InstrId -> GE ()
-setMasterInstrId a = onMasterInstrId $ put a
-
+setMasterInstrId masterId = onMasterInstrId $ put masterId
+    where onMasterInstrId = onHistory masterInstrId (\a h -> h { masterInstrId = a })
 
 ----------------------------------------------------------------------
 -- state modifiers
 
 withOptions :: (Options -> a) -> GE a
 withOptions f = GE $ asks f
-
-modifyHistory :: (History -> History) -> GE ()
-modifyHistory f = GE $ ReaderT $ \_ -> modify f
 
 -- update fields
 
@@ -121,14 +140,8 @@ onHistory getter setter st = GE $ ReaderT $ \_ -> StateT $ \history ->
 
 type UpdField a b = State a b -> GE b
 
-onUserInstr0 :: UpdField InstrBody a
-onUserInstr0 = onHistory userInstr0 (\a h -> h { userInstr0 = a })
-
 onInstr :: UpdField Instrs a
 onInstr = onHistory instrs (\a h -> h { instrs = a })
-
-onTotalDur :: UpdField (Maybe TotalDur) a
-onTotalDur = onHistory totalDur (\a h -> h { totalDur = a })
 
 onGlobals :: UpdField Globals a
 onGlobals = onHistory globals (\a h -> h { globals = a })
@@ -136,8 +149,3 @@ onGlobals = onHistory globals (\a h -> h { globals = a })
 onLocals :: UpdField Locals a
 onLocals = onHistory locals (\a h -> h { locals = a })
 
-onMidis :: UpdField [MidiAssign] a
-onMidis = onHistory midis (\a h -> h { midis = a })
-
-onMasterInstrId :: UpdField InstrId a
-onMasterInstrId = onHistory masterInstrId (\a h -> h { masterInstrId = a })
