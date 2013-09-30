@@ -33,13 +33,13 @@ Library
     Csound.Typed.Types
     Csound.Typed.Control
     Csound.Typed.Render
-    Csound.Typed.Tab
 
   Other-Modules:
     Csound.Typed.Types.GlobalState
     Csound.Typed.Types.GlobalState.Instr
 
     Csound.Typed.Types.Prim
+    Csound.Typed.Types.Evt
     Csound.Typed.Types.Tuple
     Csound.Typed.Types.Arg
     Csound.Typed.Types.TupleHelpers
