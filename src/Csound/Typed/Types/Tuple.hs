@@ -6,7 +6,7 @@
 module Csound.Typed.Types.Tuple(
     -- ** Tuple
     Tuple(..), TupleMethods, makeTupleMethods, 
-    fromTuple, toTuple, tupleArity, ratesTuple, defTuple,
+    fromTuple, toTuple, tupleArity, tupleRates, defTuple,
 
     -- ** Outs
     Out(..), OutMethods, makeOutMethods, outArity,
@@ -37,7 +37,7 @@ data TupleMethods a = TupleMethods
     { fromTuple_  :: a -> GE [E]
     , toTuple_    :: GE [E] -> a
     , tupleArity_ :: a -> Int
-    , ratesTuple_ :: a -> [Rate]
+    , tupleRates_ :: a -> [Rate]
     , defTuple_   :: a }
 
 fromTuple :: Tuple a => a -> GE [E] 
@@ -49,8 +49,8 @@ toTuple = toTuple_ tupleMethods
 tupleArity :: Tuple a => a -> Int
 tupleArity = tupleArity_ tupleMethods
 
-ratesTuple :: Tuple a => a -> [Rate]
-ratesTuple = ratesTuple_ tupleMethods
+tupleRates :: Tuple a => a -> [Rate]
+tupleRates = tupleRates_ tupleMethods
 
 defTuple :: Tuple a => a
 defTuple = defTuple_ tupleMethods
@@ -61,7 +61,7 @@ makeTupleMethods to from = TupleMethods
     { fromTuple_  = fromTuple . from
     , toTuple_    = to . toTuple 
     , tupleArity_ = const $ tupleArity $ proxy to
-    , ratesTuple_ = ratesTuple . from
+    , tupleRates_ = tupleRates . from
     , defTuple_   = to defTuple }
     where proxy :: (a -> b) -> a
           proxy = undefined
@@ -122,7 +122,7 @@ primTupleMethods rate = TupleMethods
         { fromTuple_ = fmap return . toGE
         , toTuple_ = fromGE . fmap head
         , tupleArity_ = const 1
-        , ratesTuple_ = const [rate]
+        , tupleRates_ = const [rate]
         , defTuple_   = def }
 
 instance Tuple () where
@@ -130,7 +130,7 @@ instance Tuple () where
         { fromTuple_  = return $ return []
         , toTuple_    = const ()
         , tupleArity_ = const 0
-        , ratesTuple_ = const []
+        , tupleRates_ = const []
         , defTuple_   = () }
 
 instance Tuple Sig   where tupleMethods = primTupleMethods Ar        
@@ -140,7 +140,7 @@ instance Tuple Str   where tupleMethods = primTupleMethods Sr
 instance Tuple Spec  where tupleMethods = primTupleMethods Fr
 
 instance (Tuple a, Tuple b) => Tuple (a, b) where    
-    tupleMethods = TupleMethods fromTuple' toTuple' tupleArity' ratesTuple' defTuple'
+    tupleMethods = TupleMethods fromTuple' toTuple' tupleArity' tupleRates' defTuple'
         where 
             fromTuple' (a, b) = liftA2 (++) (fromTuple a) (fromTuple b)
             tupleArity' x = let (a, b) = proxy x in tupleArity a + tupleArity b
@@ -151,7 +151,7 @@ instance (Tuple a, Tuple b) => Tuple (a, b) where
                       xsb = fmap (drop (tupleArity a)) xs  
                       b = toTuple $ fmap (take (tupleArity b)) xsb
 
-            ratesTuple' (a, b) = ratesTuple a ++ ratesTuple b
+            tupleRates' (a, b) = tupleRates a ++ tupleRates b
             defTuple' = (defTuple, defTuple)
 
 instance (Tuple a, Tuple b, Tuple c) => Tuple (a, b, c) where tupleMethods = makeTupleMethods cons3 split3

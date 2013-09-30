@@ -42,13 +42,26 @@ data History = History
     , globals       :: Globals
     , locals        :: Locals
     , instrs        :: Instrs
+    , midis         :: [MidiAssign]
     , totalDur      :: Maybe TotalDur
     , masterInstrId :: InstrId
-    , sysInstr0     :: InstrBody 
     , userInstr0    :: InstrBody }
- 
+
+type Channel = Int
+data MidiType = Massign | Pgmassign (Maybe Int)
+data Msg = Msg
+data MidiAssign = MidiAssign MidiType Channel InstrId
+            
+renderMidiAssign :: MidiAssign -> Dep ()
+renderMidiAssign (MidiAssign ty chn instrId) = case ty of
+    Massign         -> massign chn instrId
+    Pgmassign mn    -> pgmassign chn instrId mn
+    where
+        massign n instr = dep_ $ opcs "massign" [(Xr, [Ir,Ir])] [int n, prim $ PrimInstrId instr]
+        pgmassign pgm instr mchn = dep_ $ opcs "pgmassign" [(Xr, [Ir,Ir,Ir])] ([int pgm, prim $ PrimInstrId instr] ++ maybe [] (return . int) mchn)
+
 instance Default History where
-    def = History def def def def def def (intInstrId 0) (return ()) (return ())
+    def = History def def def def def def def (intInstrId 0) (return ())
 
 data TotalDur = NumDur Double | InfiniteDur
     deriving (Eq, Ord)
@@ -74,30 +87,11 @@ setDurationToInfinite = onTotalDur $ modify (max $ Just InfiniteDur)
 setDuration :: Double -> GE ()
 setDuration = onTotalDur . modify . max . Just . NumDur
 
-type Channel = Int
-data MidiType = Massign | Pgmassign (Maybe Int)
-data Msg = Msg
-data MidiAssign = MidiAssign MidiType Channel InstrId
-
 saveMidi :: MidiAssign -> GE ()
-saveMidi = undefined
+saveMidi a = onMidis $ modify (a: )
 
-setInstr0 :: Int -> GE ()
-setInstr0 arity = (onSysInstr0 . put =<< ) $ fmap sequence_ $ sequence 
-    [ withOptions setGlobalParams
-    , onGlobals $ gets initGlobals 
-    , return chnUpdateUdo ]
-    where
-        setGlobalParams opt = do
-            setSr       $ setSampleRate opt
-            setKsmps    $ setBlockSize opt
-            setNchnls   arity
-            setZeroDbfs 1
-            maybe (return ()) (seed . double) $ setSeed opt
-
-        seed = dep_ . opcs "seed" [(Xr, [Ir])] . return
-
-        initGlobals = varsInits . globalsVars
+saveUserInstr0 :: InstrBody -> GE ()
+saveUserInstr0 expr = onUserInstr0 $ modify ( >> expr)
 
 getSysExpr :: GE (Dep ())
 getSysExpr = fmap sequence_ $ sequence [ onGlobals $ clearGlobals ]    
@@ -108,10 +102,24 @@ getSysExpr = fmap sequence_ $ sequence [ onGlobals $ clearGlobals ]
 setMasterInstrId :: InstrId -> GE ()
 setMasterInstrId a = onMasterInstrId $ put a
 
-type UpdField a b = State a b -> GE b
 
-onSysInstr0 :: UpdField InstrBody a
-onSysInstr0 = onHistory sysInstr0 (\a h -> h { sysInstr0 = a })
+----------------------------------------------------------------------
+-- state modifiers
+
+withOptions :: (Options -> a) -> GE a
+withOptions f = GE $ asks f
+
+modifyHistory :: (History -> History) -> GE ()
+modifyHistory f = GE $ ReaderT $ \_ -> modify f
+
+-- update fields
+
+onHistory :: (History -> a) -> (a -> History -> History) -> State a b -> GE b
+onHistory getter setter st = GE $ ReaderT $ \_ -> StateT $ \history -> 
+    let (res, s1) = runState st (getter history)
+    in  return (res, setter s1 history) 
+
+type UpdField a b = State a b -> GE b
 
 onUserInstr0 :: UpdField InstrBody a
 onUserInstr0 = onHistory userInstr0 (\a h -> h { userInstr0 = a })
@@ -128,17 +136,8 @@ onGlobals = onHistory globals (\a h -> h { globals = a })
 onLocals :: UpdField Locals a
 onLocals = onHistory locals (\a h -> h { locals = a })
 
+onMidis :: UpdField [MidiAssign] a
+onMidis = onHistory midis (\a h -> h { midis = a })
+
 onMasterInstrId :: UpdField InstrId a
 onMasterInstrId = onHistory masterInstrId (\a h -> h { masterInstrId = a })
-
-onHistory :: (History -> a) -> (a -> History -> History) -> State a b -> GE b
-onHistory getter setter st = GE $ ReaderT $ \_ -> StateT $ \history -> 
-    let (res, s1) = runState st (getter history)
-    in  return (res, setter s1 history) 
-
-withOptions :: (Options -> a) -> GE a
-withOptions f = GE $ asks f
-
-modifyHistory :: (History -> History) -> GE ()
-modifyHistory f = GE $ ReaderT $ \_ -> modify f
-

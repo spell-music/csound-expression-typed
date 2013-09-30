@@ -42,7 +42,6 @@ saveMasterInstr arity sigs = do
     expr2 <- getSysExpr 
     instrId <- onInstr $ C.saveInstr (expr1 >> expr2)
     setMasterInstrId instrId
-    setInstr0 (arityOuts arity)
 
 saveMidiInstr :: MidiType -> Channel -> Arity -> InsExp -> GE [E]
 saveMidiInstr midiType channel arity instr = do
@@ -51,4 +50,10 @@ saveMidiInstr midiType channel arity instr = do
     instrId <- onInstr $ C.saveInstr expr
     saveMidi $ MidiAssign midiType channel instrId
     return $ fmap readOnlyVar vars 
+
+saveIns0 :: Int -> [Rate] -> SE (GE [E]) -> GE [E]
+saveIns0 arity rates as = do
+    vars <- onGlobals $ zipWithM C.newGlobalVar rates (replicate arity 0)
+    saveUserInstr0 =<< writeOut (zipWithM_ writeVar vars) as 
+    return $ fmap readOnlyVar vars
 

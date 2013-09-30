@@ -21,7 +21,7 @@ newSERef a = return $ SERef writeRef readRef
 
         vars = do
             initVals <- fromTuple a
-            onLocals $ zipWithM newLocalVar (ratesTuple a) initVals
+            onLocals $ zipWithM newLocalVar (tupleRates a) initVals
 
 sensorsSE :: Tuple a => a -> SE (SE a, a -> SE ())
 sensorsSE a = do

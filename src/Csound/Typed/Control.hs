@@ -21,20 +21,16 @@ import Csound.Typed.Control.Evt
 import Csound.Typed.Control.Mix
 import Csound.Typed.Control.Midi
 
-import Csound.Dynamic
 import Csound.Typed.Types
 import Csound.Typed.Types.GlobalState
 
 instr0 :: Tuple a => SE a -> SE a
-instr0 a = return $ toTuple $ saveIns0 (ins0Arity a) (ins0Exp a)
+instr0 a = return $ toTuple $ saveIns0 ins0Arity (tupleRates $ proxy a) ins0Exp
     where
-        ins0Exp = fmap fromTuple
+        ins0Exp = fmap fromTuple a
 
-        ins0Arity = tupleArity . proxy
+        ins0Arity = tupleArity $ proxy a
 
         proxy :: Tuple a => SE a -> a
-        proxy = undefined
-
-saveIns0 :: Int -> SE (GE [E]) -> GE [E]
-saveIns0 = undefined
+        proxy = const (toTuple $ return $ repeat undefined)
 
