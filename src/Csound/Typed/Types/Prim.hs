@@ -3,7 +3,7 @@ module Csound.Typed.Types.Prim(
     Sig, D, Tab, Str, Spec, BoolSig, BoolD, Val(..),
 
     -- ** Tables
-    PreTab(..), preTab, TabSize(..), TabArgs(..), updateTabSize,
+    tab, TabSize(..), TabArgs(..), updateTabSize,
 
     -- ** constructors
     double, int, str, idur,
@@ -64,8 +64,8 @@ data Tab
     = TabExp (GE E)
     | TabPre PreTab
 
-preTab :: TabSize -> Int -> TabArgs -> Tab
-preTab size gen args = TabPre $ PreTab size gen args
+tab :: TabSize -> Int -> TabArgs -> Tab
+tab size gen args = TabPre $ PreTab size gen args
 
 data PreTab = PreTab
     { preTabSize    :: TabSize
@@ -98,15 +98,15 @@ data TabArgs
     | FileAccess String [Double]
 
 renderTab :: PreTab -> GE E
-renderTab tab = saveGen =<< (withOptions $ \opt -> fromPreTab (setTabFi opt) tab)
+renderTab a = saveGen =<< (withOptions $ \opt -> fromPreTab (setTabFi opt) a)
 
 fromPreTab :: TabFi -> PreTab -> Gen
-fromPreTab tabFi tab = Gen size (preTabGen tab) args file
-    where size = defineTabSize (getTabSizeBase tabFi tab) (preTabSize tab)
-          (args, file) = defineTabArgs size (preTabArgs tab)
+fromPreTab tabFi preTab = Gen size (preTabGen preTab) args file
+    where size = defineTabSize (getTabSizeBase tabFi preTab) (preTabSize preTab)
+          (args, file) = defineTabArgs size (preTabArgs preTab)
 
 getTabSizeBase :: TabFi -> PreTab -> Int
-getTabSizeBase tf tab = IM.findWithDefault (tabFiBase tf) (preTabGen tab) (tabFiGens tf)
+getTabSizeBase tf preTab = IM.findWithDefault (tabFiBase tf) (preTabGen preTab) (tabFiGens tf)
 
 defineTabSize :: Int -> TabSize -> Int
 defineTabSize base x = case x of
