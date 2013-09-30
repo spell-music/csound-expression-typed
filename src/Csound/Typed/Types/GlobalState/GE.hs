@@ -50,6 +50,7 @@ instance Default History where
     def = History def def def def def def (intInstrId 0) (return ())
 
 data TotalDur = NumDur Double | InfiniteDur
+    deriving (Eq, Ord)
 
 getTotalDur :: Options -> (Maybe TotalDur) -> Double
 getTotalDur opt = toDouble . maybe InfiniteDur id  
@@ -70,10 +71,10 @@ saveGen = onGenMap . newGen
     where onGenMap = onHistory genMap (\val h -> h{ genMap = val })
 
 setDurationToInfinite :: GE ()
-setDurationToInfinite = onTotalDur $ put (Just InfiniteDur)
+setDurationToInfinite = onTotalDur $ modify (max $ Just InfiniteDur)
 
 setDuration :: Double -> GE ()
-setDuration = onTotalDur . put . Just . NumDur
+setDuration = onTotalDur . modify . max . Just . NumDur
 
 type Channel = Int
 data MidiType = Massign | Pgmassign (Maybe Int)
@@ -99,7 +100,6 @@ setInstr0 arity = (onInstr0 . put =<< ) $ fmap sequence_ $ sequence
         seed = dep_ . opcs "seed" [(Xr, [Ir])] . return
 
         initGlobals = varsInits . globalsVars
-            
 
 getSysExpr :: GE (Dep ())
 getSysExpr = fmap sequence_ $ sequence [ onGlobals $ clearGlobals ]    
@@ -109,12 +109,6 @@ getSysExpr = fmap sequence_ $ sequence [ onGlobals $ clearGlobals ]
 
 setMasterInstrId :: InstrId -> GE ()
 setMasterInstrId a = onMasterInstrId $ put a
-
-onInstrIO :: StateT Instrs IO a -> GE a
-onInstrIO st = GE $ ReaderT $ \_ -> StateT $ \history -> do
-    (res, instrs1) <- runStateT st (instrs history)
-    return $ (res, history { instrs = instrs1 })
-   
 
 type UpdField a b = State a b -> GE b
 
