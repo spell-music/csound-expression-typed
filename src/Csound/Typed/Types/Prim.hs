@@ -5,20 +5,20 @@ module Csound.Typed.Types.Prim(
     -- ** Tables
     PreTab(..), preTab, TabSize(..), TabArgs(..), updateTabSize,
 
-    -- * constructors
+    -- ** constructors
     double, int, str, idur,
 
-    -- * converters
+    -- ** converters
     ar, kr, ir, sig,
 
-    -- * lifters
+    -- ** lifters
     on0, on1, on2, on3,
 
-    -- * numeric funs
+    -- ** numeric funs
     ceilSig, floorSig, roundSig, intSig, fracSig,
     ceilD, floorD, roundD, intD, fracD,        
    
-    -- * logic funs
+    -- ** logic funs
     when, boolSig
 ) where
 

@@ -1,4 +1,4 @@
-module Csound.Typed.Types.SERef where
+module Csound.Typed.Control.SERef where
 
 import Control.Applicative
 import Control.Monad

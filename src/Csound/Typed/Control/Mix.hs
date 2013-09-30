@@ -1,13 +1,18 @@
 {-# Language FlexibleContexts #-}
-module Csound.Typed.Control.Mix where
+module Csound.Typed.Control.Mix(
+    Mix, sco, eff, mix
+) where
 
+import Control.Monad.IO.Class
 import Data.Traversable
 
 import Csound.Dynamic
+import qualified Csound.Dynamic.Control as C
+
 import Csound.Typed.Types
 import Csound.Typed.Types.MixSco
 import Csound.Typed.Types.GlobalState
-import Csound.Typed.Types.GlobalState.Instr
+import Csound.Typed.Control.Instr
 
 -- | Special type that represents a scores of sound signals.
 -- If an instrument is triggered with the scores the result is wrapped
@@ -47,32 +52,41 @@ wrapSco notes getContent = singleCsdEvent (0, csdEventListDur evts, Mix $ getCon
 sco :: (CsdSco f, Arg a, Out b) => (a -> b) -> f a -> f (Mix (NoSE b))
 sco instr notes = wrapSco notes $ \events -> do
     events' <- traverse toNote events
-    instrId <- saveSourceInstrCached instr
+    cacheName <- liftIO $ C.makeCacheName instr
+    instrId <- saveSourceInstrCached cacheName (insArity instr) (insExp instr)
     return $ Snd instrId events'
 
 -- | Applies an effect to the sound. Effect is applied to the sound on the give track. 
 --
--- > res = mix effect sco rriedSingleC
+-- > res = eff effect sco 
 --
 -- * @effect@ - a function that takes a tuple of signals and produces 
 --   a tuple of signals.
 --
 -- * @sco@ - something that is constructed with 'Csound.Base.sco' or 
---   'Csound.Base.mix'. 
+--   'Csound.Base.eff'. 
 --
--- With the function 'Csound.Base.mix' you can apply a reverb or adjust the 
+-- With the function 'Csound.Base.eff' you can apply a reverb or adjust the 
 -- level of the signal. It functions like a mixing board but unlike mixing 
 -- board it produces the value that you can arrange with functions from your
 -- favorite Score-generation library. You can delay it or mix with some other track and 
 -- apply some another effect on top of it!
-mix :: (CsdSco f, Out a, Out b) => (a -> b) -> f (Mix a) -> f (Mix b)
-mix eff sigs = wrapSco sigs $ \events -> do
+eff :: (CsdSco f, Out a, Out b) => (a -> b) -> f (Mix a) -> f (Mix b)
+eff ef sigs = wrapSco sigs $ \events -> do
     notes <- traverse unMix events
-    instrId <- saveEffectInstr eff
-    return $ Eff instrId notes (fst $ effArity eff)
+    instrId <- saveEffectInstr (effArity ef) (effExp ef)
+    return $ Eff instrId notes (arityIns $ effArity ef)
 
 -- | Renders a scores to global variable that contains a resulting sound signals.
-runMix :: (Out (NoSE a), Out a, CsdSco f) => f (Mix a) -> NoSE a
-runMix sigs = res
-    where res = fromOut $ saveMixInstr (outArity res) =<< (fmap rescaleCsdEventListM $ traverse unMix $ toCsdEventList sigs)
+mix :: (Out (NoSE a), Out a, CsdSco f) => f (Mix a) -> NoSE a
+mix a = fromOut $ do
+    events  <- fmap rescaleCsdEventListM $ traverse unMix $ toCsdEventList a
+    sigs    <- saveMixInstr (mixArity a) events
+    return $ fmap fromE sigs
+    where 
+        mixArity :: Out a => f (Mix a) -> Int
+        mixArity = outArity . proxy
+            where
+                proxy :: f (Mix a) -> a
+                proxy = undefined
 

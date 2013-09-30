@@ -1,14 +1,13 @@
 module Csound.Typed.Types(
+    -- * Primitives
     module Csound.Typed.Types.Prim,
-    module Csound.Typed.Types.Arg,
+    -- * Tuples
     module Csound.Typed.Types.Tuple,        
-    module Csound.Typed.Types.SERef,
+    -- * Events
     module Csound.Typed.Types.Evt
 ) where
 
 import Csound.Typed.Types.Prim
-import Csound.Typed.Types.Arg
 import Csound.Typed.Types.Tuple
-import Csound.Typed.Types.SERef
 import Csound.Typed.Types.Evt
 

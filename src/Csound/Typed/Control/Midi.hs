@@ -1,10 +1,11 @@
 {-# Language FlexibleContexts #-}
-module Csound.Typed.Control.Midi(midiE, midi, pgmidi) where
+module Csound.Typed.Control.Midi(
+    midiE, midi, pgmidi, Msg, Channel
+) where
 
 import Csound.Typed.Types
 import Csound.Typed.Types.GlobalState
-import Csound.Typed.Types.GlobalState.Instr
-import Csound.Typed.Control.Evt
+import Csound.Typed.Control.Instr
 
 midiE :: Channel -> Evt Msg
 midiE = undefined
@@ -20,5 +21,6 @@ pgmidi mchn = genMidi (Pgmassign mchn)
 genMidi :: (Out a, Out (NoSE a)) => MidiType -> Channel -> (Msg -> a) -> NoSE a
 genMidi midiType chn instr = fromOut $ do
     setDurationToInfinite
-    saveMidiInstr midiType chn instr
+    sigs <- saveMidiInstr midiType chn (midiArity instr) (midiExp instr)
+    return $ fmap fromE sigs
 

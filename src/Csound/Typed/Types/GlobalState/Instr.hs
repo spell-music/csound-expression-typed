@@ -2,75 +2,53 @@ module Csound.Typed.Types.GlobalState.Instr where
 
 import Control.Monad
 
-import Control.Monad.IO.Class
-import Control.Monad.Trans.State.Strict
-
-import qualified System.Mem.StableName.Dynamic as DM
-
 import Csound.Dynamic
 import qualified Csound.Dynamic.Control as C
 
-import Csound.Typed.Types
 import Csound.Typed.Types.MixSco
-import Csound.Typed.Types.GlobalState
+import Csound.Typed.Types.GlobalState.GE
+import Csound.Typed.Types.GlobalState.SE
+import Csound.Typed.Types.GlobalState.Converters
 
-funProxy :: (a -> b) -> (a, b)
-funProxy = const (msg, msg)
-    where msg = error "I'm a Csound.Typed.Types.GlobalState.Instr.funProxy"
+data Arity = Arity
+    { arityIns      :: Int
+    , arityOuts     :: Int }
 
-saveSourceInstrCached :: (Arg a, Out b) => (a -> b) -> GE InstrId
-saveSourceInstrCached instr = do
-    expr <- writeOut toExpr $ instr toArg
-    onInstrIO $ do
-        cacheName <- liftIO $ DM.makeDynamicStableName instr
-        st <- get
-        let (instrId, st1) = runState (C.saveCachedInstr cacheName expr) st
-        put st1
-        return instrId
-    where toExpr = uncurry C.sendChn (insArity instr)
+type InsExp = SE (GE [E])
+type EffExp = [E] -> SE (GE [E])
 
-saveEffectInstr :: (Out a, Out b) => (a -> b) -> GE InstrId
-saveEffectInstr eff = do
-    expr <- execSG2 $ fmap (fmap (fmap setOuts) . outGE . (eff $ )) getIns
-    onInstr $ C.saveInstr expr
+writeOut :: ([E] -> Dep ()) -> InsExp -> GE C.InstrBody
+writeOut f expr = execSG $ fmap (fmap f) expr
+
+saveSourceInstrCached :: C.CacheName -> Arity -> InsExp -> GE InstrId
+saveSourceInstrCached cacheName arity instr = onInstr . C.saveCachedInstr cacheName =<< writeOut toOut instr
+    where toOut = C.sendChn (arityIns arity) (arityOuts arity)
+
+saveEffectInstr :: Arity -> EffExp -> GE InstrId
+saveEffectInstr arity eff = onInstr . C.saveInstr =<< (execSG2 $ fmap (fmap (fmap setOuts) . eff) getIns)
     where 
-        (arityIns, arityOuts) = effArity eff
-        setOuts = C.writeChn $ C.chnRefFromParg 5 arityOuts
+        setOuts = C.writeChn $ C.chnRefFromParg 5 (arityOuts arity)
+        getIns  = C.readChn  $ C.chnRefFromParg 4 (arityIns  arity)
 
-        getIns :: Out a => Dep a
-        getIns  = fmap (fromOut . return . map fromE) $ C.readChn $ C.chnRefFromParg 4 arityIns
-
-insArity :: (Arg a, Out b) => (a -> b) -> (Int, Int)
-insArity instr = (argArity a, outArity b)
-    where (a, b) = funProxy instr
-
-effArity :: (Out a, Out b) => (a -> b) -> (Int, Int)
-effArity instr = (outArity a, outArity b)
-    where (a, b) = funProxy instr
-
-saveMixInstr :: Int -> CsdEventList M -> GE [Sig]
+saveMixInstr :: Int -> CsdEventList M -> GE [E]
 saveMixInstr arity a = do
     setDuration $ csdEventListDur a
     instrId <- onInstr $ C.saveInstr $ C.sendOut arity =<< renderMixSco arity a
-    return $ map fromE $ C.subinstr arity instrId []
+    return $ C.subinstr arity instrId []
 
-saveMasterInstr :: Out a => a -> GE ()
-saveMasterInstr sigs = do
-    expr1 <- writeOut (C.sendOut (outArity sigs) . C.safeOut) sigs
+saveMasterInstr :: Arity -> InsExp -> GE ()
+saveMasterInstr arity sigs = do
+    expr1 <- writeOut (C.sendOut (arityOuts arity) . C.safeOut) sigs
     expr2 <- getSysExpr 
     instrId <- onInstr $ C.saveInstr (expr1 >> expr2)
     setMasterInstrId instrId
-    setInstr0 (outArity sigs)
+    setInstr0 (arityOuts arity)
 
-saveMidiInstr :: Out a => MidiType -> Channel -> (Msg -> a) -> GE [Sig]
-saveMidiInstr midiType channel instr = do
-    let sigs = instr Msg
-    vars <- onGlobals $ sequence $ replicate (outArity sigs) (C.newClearableGlobalVar Ar 0)
-    expr <- writeOut (zipWithM_ (appendVarBy (+)) vars) sigs
+saveMidiInstr :: MidiType -> Channel -> Arity -> InsExp -> GE [E]
+saveMidiInstr midiType channel arity instr = do
+    vars <- onGlobals $ sequence $ replicate (arityOuts arity) (C.newClearableGlobalVar Ar 0)
+    expr <- writeOut (zipWithM_ (appendVarBy (+)) vars) instr
     instrId <- onInstr $ C.saveInstr expr
     saveMidi $ MidiAssign midiType channel instrId
-    return $ fmap (fromE . readOnlyVar) vars 
-
-writeOut :: Out a => ([E] -> Dep ()) -> a -> GE C.InstrBody
-writeOut f sigs = execSG $ fmap (fmap f . mapM toGE) $ toOut sigs
+    return $ fmap readOnlyVar vars 
 

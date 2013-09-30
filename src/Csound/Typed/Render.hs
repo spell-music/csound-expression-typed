@@ -1,5 +1,7 @@
 module Csound.Typed.Render(
-    renderOut, renderOutBy
+    renderOut, renderOutBy,
+    -- * Options
+    module Csound.Typed.Types.GlobalState.Options
 ) where
 
 import qualified Data.Map as M
@@ -10,10 +12,11 @@ import Csound.Dynamic
 import Csound.Dynamic.Control
 import Csound.Typed.Types(Out)
 import Csound.Typed.Types.GlobalState
-import Csound.Typed.Types.GlobalState.Instr
+import Csound.Typed.Types.GlobalState.Options
+import Csound.Typed.Control.Instr
 
 toCsd :: Out a => Options -> a -> IO Csd
-toCsd options sigs = fmap (renderHistory options) $ execGE options (saveMasterInstr sigs)
+toCsd options sigs = fmap (renderHistory options) $ execGE options (saveMasterInstr (masterArity sigs) (masterExp sigs))
 
 renderOut :: Out a => a -> IO String
 renderOut = renderOutBy def
@@ -29,3 +32,4 @@ renderHistory opt hist = Csd flags orc sco
         sco     = Sco (Just $ getTotalDur opt $ totalDur hist) (renderGens $ genMap hist) [alwaysOn $ masterInstrId hist]
 
         renderGens = fmap swap . M.toList . idMapContent        
+

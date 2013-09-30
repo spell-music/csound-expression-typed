@@ -1,5 +1,10 @@
 {-# Language TypeFamilies, FlexibleContexts #-}
-module Csound.Typed.Types.Evt where
+module Csound.Typed.Types.Evt(
+    Evt(..), Bam, 
+    boolToEvt, evtToBool, sigToEvt, stepper,
+    filterE, accumSE, accumE, filterAccumE, filterAccumSE,
+    Snap, snapshot, snaps
+) where
 
 import Data.Monoid
 
@@ -9,8 +14,8 @@ import qualified Csound.Dynamic as C
 
 import Csound.Typed.Types.Prim
 import Csound.Typed.Types.Tuple
-import Csound.Typed.Types.SERef
 import Csound.Typed.Types.GlobalState
+import Csound.Typed.Control.SERef
 
 data Evt a = Evt { runEvt :: Bam a -> SE () }
 
