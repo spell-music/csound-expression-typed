@@ -59,9 +59,6 @@ getTotalDur opt = toDouble . maybe InfiniteDur id
             NumDur d    -> d
             InfiniteDur -> setInfiniteDur opt
 
-unsafePerformGE :: GE a -> a
-unsafePerformGE = undefined
-
 saveStr :: String -> GE E
 saveStr = fmap prim . onStringMap . newString
     where onStringMap = onHistory stringMap (\val h -> h{ stringMap = val })
@@ -137,5 +134,4 @@ onHistory getter setter st = GE $ ReaderT $ \_ -> StateT $ \history ->
 
 withOptions :: (Options -> a) -> GE a
 withOptions f = GE $ asks f
-
 

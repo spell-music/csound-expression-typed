@@ -15,8 +15,8 @@ module Csound.Typed.Types.Prim(
     on0, on1, on2, on3,
 
     -- ** numeric funs
-    ceilSig, floorSig, roundSig, intSig, fracSig,
-    ceilD, floorD, roundD, intD, fracD,        
+    quotSig, remSig, divSig, modSig, ceilSig, floorSig, roundSig, intSig, fracSig,
+    quotD, remD, divD, modD, ceilD, floorD, roundD, intD, fracD,        
    
     -- ** logic funs
     when, boolSig
@@ -268,49 +268,16 @@ instance Floating D where
     ; asin = on1 asin; atan = on1 atan;  acos = on1 acos ; asinh = on1 asinh; acosh = on1 acosh; atanh = on1 atanh }
 
 ceilSig, floorSig, fracSig, intSig, roundSig :: Sig -> Sig
+quotSig, remSig, divSig, modSig :: Sig -> Sig -> Sig
 
 ceilSig = on1 ceilE;    floorSig = on1 floorE;  fracSig = on1 fracE;  intSig = on1 intE;    roundSig = on1 roundE
+quotSig = on2 quot; remSig = on2 rem;   divSig = on2 div;   modSig = on2 mod
 
 ceilD, floorD, fracD, intD, roundD :: D -> D
+quotD, remD, divD, modD :: Sig -> Sig -> Sig
 
 ceilD = on1 ceilE;    floorD = on1 floorE;  fracD = on1 fracE;  intD = on1 intE;    roundD = on1 roundE
-
-errorMsg :: String -> a
-errorMsg name = error $ name ++ " is not defined for Csound values"
-
-enum1 :: Val a => (E -> [E]) -> a -> [a]
-enum1 f a = fmap fromE $ f $ unsafePerformGE $ toGE a
-
-enum2 :: Val a => (E -> E -> [E]) -> a -> a -> [a]
-enum2 f a b = fmap fromE $ f (unsafePerformGE $ toGE a) (unsafePerformGE $ toGE b)
-
-enum3 :: Val a => (E -> E -> E -> [E]) -> a -> a -> a -> [a]
-enum3 f a b c = fmap fromE $ f (unsafePerformGE $ toGE a) (unsafePerformGE $ toGE b) (unsafePerformGE $ toGE c)
-
-instance Enum Sig where
-    { succ = on1 succ;  pred = on1 pred; toEnum = on0 . toEnum ; fromEnum = errorMsg "fromEnum" 
-    ; enumFrom = enum1 enumFrom; enumFromThen = enum2 enumFromThen; enumFromTo = enum2 enumFromTo; enumFromThenTo = enum3 enumFromThenTo }
-
-instance Enum D where
-    { succ = on1 succ;  pred = on1 pred; toEnum = on0 . toEnum ; fromEnum = errorMsg "fromEnum"    
-    ; enumFrom = enum1 enumFrom; enumFromThen = enum2 enumFromThen; enumFromTo = enum2 enumFromTo; enumFromThenTo = enum3 enumFromThenTo }
-
-instance Real Sig where toRational = errorMsg "toRational" 
-instance Real D   where toRational = errorMsg "toRational" 
-
-instance Integral Sig where 
-    { quot = on2 quot;  rem = on2 rem;  div = on2 div;  mod = on2 mod; toInteger = errorMsg "toInteger"
-    ; quotRem a b = (quot a b, rem a b) }
-
-instance Integral D   where 
-    { quot = on2 quot;  rem = on2 rem;  div = on2 div;  mod = on2 mod; toInteger = errorMsg "toInteger" 
-    ; quotRem a b = (quot a b, rem a b) }
-  
-instance Ord Sig where { compare = errorMsg "compare" }
-instance Ord D   where { compare = errorMsg "compare" }
-  
-instance Eq Sig where { (==) = errorMsg "(==)" }
-instance Eq D   where { (==) = errorMsg "(==)" }
+quotD = on2 quot;   remD = on2 rem; divD = on2 div; modD = on2 mod
 
 -------------------------------------------------------------------------------
 -- logic
