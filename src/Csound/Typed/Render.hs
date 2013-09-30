@@ -28,7 +28,7 @@ renderHistory :: Options -> History -> Csd
 renderHistory opt hist = Csd flags orc sco
     where
         flags   = setFlags opt
-        orc     = Orc (instr0 hist) (fmap (uncurry Instr) $ instrsContent $ instrs hist)
+        orc     = Orc (sysInstr0 hist >> userInstr0 hist) (fmap (uncurry Instr) $ instrsContent $ instrs hist)
         sco     = Sco (Just $ getTotalDur opt $ totalDur hist) (renderGens $ genMap hist) [alwaysOn $ masterInstrId hist]
 
         renderGens = fmap swap . M.toList . idMapContent        

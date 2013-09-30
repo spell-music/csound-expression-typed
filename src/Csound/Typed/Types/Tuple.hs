@@ -6,7 +6,7 @@
 module Csound.Typed.Types.Tuple(
     -- ** Tuple
     Tuple(..), TupleMethods, makeTupleMethods, 
-    fromTuple, toTuple, arityTuple, ratesTuple, defTuple,
+    fromTuple, toTuple, tupleArity, ratesTuple, defTuple,
 
     -- ** Outs
     Out(..), OutMethods, makeOutMethods, outArity,
@@ -36,7 +36,7 @@ class Tuple a where
 data TupleMethods a = TupleMethods
     { fromTuple_  :: a -> GE [E]
     , toTuple_    :: GE [E] -> a
-    , arityTuple_ :: a -> Int
+    , tupleArity_ :: a -> Int
     , ratesTuple_ :: a -> [Rate]
     , defTuple_   :: a }
 
@@ -46,8 +46,8 @@ fromTuple = fromTuple_ tupleMethods
 toTuple :: Tuple a => GE [E] -> a
 toTuple = toTuple_ tupleMethods
 
-arityTuple :: Tuple a => a -> Int
-arityTuple = arityTuple_ tupleMethods
+tupleArity :: Tuple a => a -> Int
+tupleArity = tupleArity_ tupleMethods
 
 ratesTuple :: Tuple a => a -> [Rate]
 ratesTuple = ratesTuple_ tupleMethods
@@ -60,7 +60,7 @@ makeTupleMethods :: (Tuple a) => (a -> b) -> (b -> a) -> TupleMethods b
 makeTupleMethods to from = TupleMethods 
     { fromTuple_  = fromTuple . from
     , toTuple_    = to . toTuple 
-    , arityTuple_ = const $ arityTuple $ proxy to
+    , tupleArity_ = const $ tupleArity $ proxy to
     , ratesTuple_ = ratesTuple . from
     , defTuple_   = to defTuple }
     where proxy :: (a -> b) -> a
@@ -111,7 +111,7 @@ traverseOut :: Out a => (Sig -> SE Sig) -> [a] -> SE [a]
 traverseOut f = mapM (flip bindOut f)
 
 outArity :: Out a => a -> Int
-outArity a = arityTuple (proxy a)
+outArity a = tupleArity (proxy a)
     where proxy :: Out a => a -> NoSE a
           proxy = undefined  
 
@@ -121,7 +121,7 @@ primTupleMethods :: (Val a, Default a) => Rate -> TupleMethods a
 primTupleMethods rate = TupleMethods 
         { fromTuple_ = fmap return . toGE
         , toTuple_ = fromGE . fmap head
-        , arityTuple_ = const 1
+        , tupleArity_ = const 1
         , ratesTuple_ = const [rate]
         , defTuple_   = def }
 
@@ -129,7 +129,7 @@ instance Tuple () where
     tupleMethods = TupleMethods 
         { fromTuple_  = return $ return []
         , toTuple_    = const ()
-        , arityTuple_ = const 0
+        , tupleArity_ = const 0
         , ratesTuple_ = const []
         , defTuple_   = () }
 
@@ -140,16 +140,16 @@ instance Tuple Str   where tupleMethods = primTupleMethods Sr
 instance Tuple Spec  where tupleMethods = primTupleMethods Fr
 
 instance (Tuple a, Tuple b) => Tuple (a, b) where    
-    tupleMethods = TupleMethods fromTuple' toTuple' arityTuple' ratesTuple' defTuple'
+    tupleMethods = TupleMethods fromTuple' toTuple' tupleArity' ratesTuple' defTuple'
         where 
             fromTuple' (a, b) = liftA2 (++) (fromTuple a) (fromTuple b)
-            arityTuple' x = let (a, b) = proxy x in arityTuple a + arityTuple b
+            tupleArity' x = let (a, b) = proxy x in tupleArity a + tupleArity b
                 where proxy :: (a, b) -> (a, b)
                       proxy = const (undefined, undefined)  
             toTuple' xs = (a, b)
-                where a = toTuple $ fmap (take (arityTuple a)) xs
-                      xsb = fmap (drop (arityTuple a)) xs  
-                      b = toTuple $ fmap (take (arityTuple b)) xsb
+                where a = toTuple $ fmap (take (tupleArity a)) xs
+                      xsb = fmap (drop (tupleArity a)) xs  
+                      b = toTuple $ fmap (take (tupleArity b)) xsb
 
             ratesTuple' (a, b) = ratesTuple a ++ ratesTuple b
             defTuple' = (defTuple, defTuple)
@@ -166,7 +166,7 @@ instance (Tuple a, Tuple b, Tuple c, Tuple d, Tuple e, Tuple f, Tuple g, Tuple h
 
 multiOuts :: Tuple a => E -> a
 multiOuts expr = res
-    where res = toTuple $ return $ mo (arityTuple res) expr
+    where res = toTuple $ return $ mo (tupleArity res) expr
 
 ar1 :: Sig -> Sig
 ar2 :: (Sig, Sig) -> (Sig, Sig)

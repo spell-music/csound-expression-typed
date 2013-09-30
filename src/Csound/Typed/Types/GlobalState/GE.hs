@@ -44,10 +44,11 @@ data History = History
     , instrs        :: Instrs
     , totalDur      :: Maybe TotalDur
     , masterInstrId :: InstrId
-    , instr0        :: InstrBody }
+    , sysInstr0     :: InstrBody 
+    , userInstr0    :: InstrBody }
  
 instance Default History where
-    def = History def def def def def def (intInstrId 0) (return ())
+    def = History def def def def def def (intInstrId 0) (return ()) (return ())
 
 data TotalDur = NumDur Double | InfiniteDur
     deriving (Eq, Ord)
@@ -82,7 +83,7 @@ saveMidi :: MidiAssign -> GE ()
 saveMidi = undefined
 
 setInstr0 :: Int -> GE ()
-setInstr0 arity = (onInstr0 . put =<< ) $ fmap sequence_ $ sequence 
+setInstr0 arity = (onSysInstr0 . put =<< ) $ fmap sequence_ $ sequence 
     [ withOptions setGlobalParams
     , onGlobals $ gets initGlobals 
     , return chnUpdateUdo ]
@@ -109,8 +110,11 @@ setMasterInstrId a = onMasterInstrId $ put a
 
 type UpdField a b = State a b -> GE b
 
-onInstr0 :: UpdField InstrBody a
-onInstr0 = onHistory instr0 (\a h -> h { instr0 = a })
+onSysInstr0 :: UpdField InstrBody a
+onSysInstr0 = onHistory sysInstr0 (\a h -> h { sysInstr0 = a })
+
+onUserInstr0 :: UpdField InstrBody a
+onUserInstr0 = onHistory userInstr0 (\a h -> h { userInstr0 = a })
 
 onInstr :: UpdField Instrs a
 onInstr = onHistory instrs (\a h -> h { instrs = a })
@@ -134,4 +138,7 @@ onHistory getter setter st = GE $ ReaderT $ \_ -> StateT $ \history ->
 
 withOptions :: (Options -> a) -> GE a
 withOptions f = GE $ asks f
+
+modifyHistory :: (History -> History) -> GE ()
+modifyHistory f = GE $ ReaderT $ \_ -> modify f
 
