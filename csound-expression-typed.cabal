@@ -47,6 +47,7 @@ Library
     Csound.Typed.Types.Tuple
     Csound.Typed.Types.TupleHelpers
     Csound.Typed.Types.MixSco
+    Csound.Typed.Types.Lift
 
     Csound.Typed.Control.Evt
     Csound.Typed.Control.Mix
