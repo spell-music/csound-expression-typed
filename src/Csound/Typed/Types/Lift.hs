@@ -1,18 +1,19 @@
 {-# Language FlexibleInstances #-}
 module Csound.Typed.Types.Lift(
-    -- * Pure single
+    -- * Lifters
+    -- ** Pure single
     PureSingle, pureSingle,
 
-    -- * Dirty single
+    -- ** Dirty single
     DirtySingle, dirtySingle,
 
-    -- * Procedure
+    -- ** Procedure
     Procedure, procedure,
 
-    -- * Pure multi 
+    -- ** Pure multi 
     PureMulti, Pm, fromPm, fromPmOut, pureMulti,
 
-    -- * Dirty multi
+    -- ** Dirty multi
     DirtyMulti, Dm, fromDm, fromDmOut, dirtyMulti
         
 ) where

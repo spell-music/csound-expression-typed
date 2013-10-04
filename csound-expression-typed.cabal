@@ -34,6 +34,12 @@ Library
     Csound.Typed.Control
     Csound.Typed.Render
 
+
+    Csound.Typed.Types.Prim
+    Csound.Typed.Types.Evt
+    Csound.Typed.Types.Tuple
+    Csound.Typed.Types.Lift
+
   Other-Modules:
     Csound.Typed.Types.GlobalState
     Csound.Typed.Types.GlobalState.Options
@@ -42,12 +48,8 @@ Library
     Csound.Typed.Types.GlobalState.Converters
     Csound.Typed.Types.GlobalState.Instr
 
-    Csound.Typed.Types.Prim
-    Csound.Typed.Types.Evt
-    Csound.Typed.Types.Tuple
     Csound.Typed.Types.TupleHelpers
     Csound.Typed.Types.MixSco
-    Csound.Typed.Types.Lift
 
     Csound.Typed.Control.Evt
     Csound.Typed.Control.Mix
