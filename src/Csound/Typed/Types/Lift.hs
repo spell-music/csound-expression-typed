@@ -1,5 +1,21 @@
-{-# Language FlexibleInstances, UndecidableInstances #-}
-module Csound.Typed.Types.Lift where
+{-# Language FlexibleInstances #-}
+module Csound.Typed.Types.Lift(
+    -- * Pure single
+    PureSingle, pureSingle,
+
+    -- * Dirty single
+    DirtySingle, dirtySingle,
+
+    -- * Procedure
+    Procedure, procedure,
+
+    -- * Pure multi 
+    PureMulti, Pm, fromPm, fromPmOut, pureMulti,
+
+    -- * Dirty multi
+    DirtyMulti, Dm, fromDm, fromDmOut, dirtyMulti
+        
+) where
 
 import Control.Applicative
 
@@ -7,86 +23,172 @@ import Csound.Dynamic
 import Csound.Typed.Types.Prim
 import Csound.Typed.Types.Tuple
 import Csound.Typed.Types.GlobalState
+    
+pureSingle :: PureSingle a => ([E] -> E) -> a
+pureSingle = pureSingleGE . return
+    
+dirtySingle :: DirtySingle a => ([E] -> Dep E) -> a
+dirtySingle = dirtySingleGE . return
+    
+procedure :: Procedure a => ([E] -> Dep ()) -> a
+procedure = procedureGE . return
+
+newtype Pm = Pm (GE (MultiOut [E]))
+
+pureMulti :: PureMulti a => ([E] -> MultiOut [E]) -> a
+pureMulti = pureMultiGE . return
+
+newtype Dm = Dm (GE (MultiOut (Dep [E])))
+
+dirtyMulti :: DirtyMulti a => ([E] -> MultiOut (Dep [E])) -> a
+dirtyMulti = dirtyMultiGE . return
 
 class PureSingle a where
-    pureSingle :: ([E] -> E) -> a
+    pureSingleGE :: GE ([E] -> E) -> a
 
 class DirtySingle a where
-    dirtySingle :: ([E] -> Dep E) -> a
+    dirtySingleGE :: GE ([E] -> Dep E) -> a
 
 class Procedure a where
-    procedure :: ([E] -> Dep ()) -> a
+    procedureGE :: GE ([E] -> Dep ()) -> a
     
 class PureMulti a where
-    pureMulti :: ([E] -> MultiOut [E]) -> a
+    pureMultiGE :: GE ([E] -> MultiOut [E]) -> a
     
 class DirtyMulti a where
-    dirtyMulti :: ([E] -> MultiOut (Dep [E])) -> a
+    dirtyMultiGE :: GE ([E] -> MultiOut (Dep [E])) -> a
 
--- pure single
+-- multi out helpers
 
-instance Val a => PureSingle a where
-    pureSingle = fromE . ($ []) 
-
-instance (Val a, Val b) => PureSingle (a -> b) where
-    pureSingle f = \a -> fromGE $ fmap (f . return) $ toGE a 
-
-instance (Val a1, Val a2, Val b) => PureSingle (a1 -> a2 -> b) where
-    pureSingle f = \ma1 ma2 -> fromGE $ (\a1 a2 -> f [a1, a2]) <$> toGE ma1 <*> toGE ma2
-
--- dirty single
-
-instance Val a => DirtySingle (SE a) where
-    dirtySingle = fmap fromGE . fromDep . return . ($ [])    
-
-instance (Val a1, Val a2) => DirtySingle (a1 -> SE a2) where
-    dirtySingle f = \ma1 -> fmap fromGE $ fromDep $ (\a1 -> f [a1]) <$> toGE ma1
-
-instance (Val a1, Val a2, Val a3) => DirtySingle (a1 -> a2 -> SE a3) where
-    dirtySingle f = \ma1 ma2 -> fmap fromGE $ fromDep $ (\a1 a2 -> f [a1, a2]) <$> toGE ma1 <*> toGE ma2
-
--- procedure
-
-instance Procedure (SE ()) where
-    procedure = fromDep_ . return . ($ [])
-
-instance Val a1 => Procedure (a1 -> SE ()) where
-    procedure f = \ma1 -> fromDep_ $ (\a1 -> f [a1]) <$> toGE ma1 
-
-instance (Val a1, Val a2) => Procedure (a1 -> a2 -> SE ()) where
-    procedure f = \ma1 ma2 -> fromDep_ $ (\a1 a2 -> f [a1, a2]) <$> toGE ma1 <*> toGE ma2
-
--- pure multi
-
-moTuple :: Tuple a => GE (MultiOut [E]) -> a
-moTuple a = res
+fromPm :: Tuple a => Pm -> a
+fromPm (Pm a) = res
     where res = toTuple $ fmap ( $ tupleArity res) a
 
-depMoTuple :: Tuple a => GE (MultiOut (Dep [E])) -> SE a
-depMoTuple a = res
+fromPmOut :: (Out a) => Pm -> a
+fromPmOut = tupleToOut . fromPm
+
+fromDm :: Tuple a => Dm -> SE a
+fromDm (Dm a) = res
     where 
         res = fmap toTuple $ fromDep $ fmap ( $ (tupleArity $ proxy res)) a
 
         proxy :: SE a -> a
         proxy = const undefined
 
-instance Tuple a => PureMulti a where
-    pureMulti = moTuple . return . ($ [])
+fromDmOut :: (Out a) => Dm -> SE a
+fromDmOut = fmap tupleToOut . fromDm
 
-instance (Val a1, Tuple b) => PureMulti (a1 -> b) where
-    pureMulti f = \ma1 -> moTuple $ (\a1 -> f [a1]) <$> toGE ma1
-   
-instance (Val a1, Val a2, Tuple b) => PureMulti (a1 -> a2 -> b) where
-    pureMulti f = \ma1 ma2 -> moTuple $ (\a1 a2 -> f [a1, a2]) <$> toGE ma1 <*> toGE ma2
-    
+--fromDmOut :: (Tuple a, Out a) => 
+
+-- pure single
+
+ps0 :: (Val a) => GE ([E] -> E) -> a
+ps0 = fromGE . fmap ($ [])
+
+ps1 :: (Val a, PureSingle b) => GE ([E] -> E) -> (a -> b)
+ps1 mf = \ma -> pureSingleGE $ (\f a as -> f (a:as)) <$> mf <*> toGE ma
+
+pss :: (Val a, PureSingle b) => GE ([E] -> E) -> ([a] -> b)
+pss mf = \mas -> pureSingleGE $ (\f as bs -> f (as ++ bs)) <$> mf <*> mapM toGE mas
+
+instance PureSingle Sig  where   pureSingleGE = ps0
+instance PureSingle D    where   pureSingleGE = ps0
+instance PureSingle Str  where   pureSingleGE = ps0
+instance PureSingle Tab  where   pureSingleGE = ps0
+instance PureSingle Spec where   pureSingleGE = ps0
+
+instance (PureSingle b) => PureSingle (Sig -> b)    where   pureSingleGE = ps1
+instance (PureSingle b) => PureSingle (D -> b)      where   pureSingleGE = ps1
+instance (PureSingle b) => PureSingle (Str -> b)    where   pureSingleGE = ps1
+instance (PureSingle b) => PureSingle (Tab -> b)    where   pureSingleGE = ps1
+instance (PureSingle b) => PureSingle (Spec -> b)   where   pureSingleGE = ps1
+
+instance (PureSingle b) => PureSingle ([Sig] -> b)  where   pureSingleGE = pss
+instance (PureSingle b) => PureSingle ([D] -> b)    where   pureSingleGE = pss
+
+-- dirty single
+
+ds0 :: (Val a) => GE ([E] -> Dep E) -> SE a
+ds0 = fmap fromGE . fromDep . fmap ($ [])
+
+ds1 :: (Val a, DirtySingle b) => GE ([E] -> Dep E) -> (a -> b)
+ds1 mf = \ma -> dirtySingleGE $ (\f a as -> f (a:as)) <$> mf <*> toGE ma
+
+dss :: (Val a, DirtySingle b) => GE ([E] -> Dep E) -> ([a] -> b)
+dss mf = \mas -> dirtySingleGE $ (\f as bs -> f (as ++ bs)) <$> mf <*> mapM toGE mas
+
+instance DirtySingle (SE Sig)  where   dirtySingleGE = ds0
+instance DirtySingle (SE D)    where   dirtySingleGE = ds0
+instance DirtySingle (SE Str)  where   dirtySingleGE = ds0
+instance DirtySingle (SE Tab)  where   dirtySingleGE = ds0
+instance DirtySingle (SE Spec) where   dirtySingleGE = ds0
+
+instance (DirtySingle b) => DirtySingle (Sig -> b)    where   dirtySingleGE = ds1
+instance (DirtySingle b) => DirtySingle (D -> b)      where   dirtySingleGE = ds1
+instance (DirtySingle b) => DirtySingle (Str -> b)    where   dirtySingleGE = ds1
+instance (DirtySingle b) => DirtySingle (Tab -> b)    where   dirtySingleGE = ds1
+instance (DirtySingle b) => DirtySingle (Spec -> b)   where   dirtySingleGE = ds1
+
+instance (DirtySingle b) => DirtySingle ([Sig] -> b)  where   dirtySingleGE = dss
+instance (DirtySingle b) => DirtySingle ([D] -> b)    where   dirtySingleGE = dss
+
+-- procedure
+
+instance Procedure (SE ()) where
+    procedureGE = fromDep_ . fmap ($ [])
+
+pr1 :: (Val a, Procedure b) => GE ([E] -> Dep ()) -> a -> b
+pr1 mf = \ma -> procedureGE $ (\f a as -> f (a:as)) <$> mf <*> toGE ma
+
+prs :: (Val a, Procedure b) => GE ([E] -> Dep ()) -> ([a] -> b)
+prs mf = \mas -> procedureGE $ (\f as bs -> f (as ++ bs)) <$> mf <*> mapM toGE mas
+
+instance (Procedure b) => Procedure (Sig -> b)    where   procedureGE = pr1
+instance (Procedure b) => Procedure (D -> b)      where   procedureGE = pr1
+instance (Procedure b) => Procedure (Str -> b)    where   procedureGE = pr1
+instance (Procedure b) => Procedure (Tab -> b)    where   procedureGE = pr1
+instance (Procedure b) => Procedure (Spec -> b)   where   procedureGE = pr1
+
+instance (Procedure b) => Procedure ([Sig] -> b)  where   procedureGE = prs
+instance (Procedure b) => Procedure ([D] -> b)    where   procedureGE = prs
+
+-- pure multi
+
+instance PureMulti Pm where
+    pureMultiGE = Pm . fmap ($ [])
+
+pm1 :: (Val a, PureMulti b) => GE ([E] -> MultiOut [E]) -> (a -> b)
+pm1 mf = \ma -> pureMultiGE $ (\f a as -> f (a:as)) <$> mf <*> toGE ma
+
+pms :: (Val a, PureMulti b) => GE ([E] -> MultiOut [E]) -> ([a] -> b)
+pms mf = \mas -> pureMultiGE $ (\f as bs -> f (as ++ bs)) <$> mf <*> mapM toGE mas
+
+instance (PureMulti b) => PureMulti (Sig -> b)    where   pureMultiGE = pm1
+instance (PureMulti b) => PureMulti (D -> b)      where   pureMultiGE = pm1
+instance (PureMulti b) => PureMulti (Str -> b)    where   pureMultiGE = pm1
+instance (PureMulti b) => PureMulti (Tab -> b)    where   pureMultiGE = pm1
+instance (PureMulti b) => PureMulti (Spec -> b)   where   pureMultiGE = pm1
+
+instance (PureMulti b) => PureMulti ([Sig] -> b)  where   pureMultiGE = pms
+instance (PureMulti b) => PureMulti ([D] -> b)    where   pureMultiGE = pms
+
 -- dirty multi
 
-instance Tuple a => DirtyMulti (SE a) where
-    dirtyMulti = depMoTuple . return . ($ [])
+instance DirtyMulti Dm where
+    dirtyMultiGE = Dm . fmap ($ [])
 
-instance (Val a1, Tuple b) => DirtyMulti (a1 -> SE b) where
-    dirtyMulti f = \ma1 -> depMoTuple $ (\a1 -> f [a1]) <$> toGE ma1
+dm1 :: (Val a, DirtyMulti b) => GE ([E] -> MultiOut (Dep [E])) -> (a -> b)
+dm1 mf = \ma -> dirtyMultiGE $ (\f a as -> f (a:as)) <$> mf <*> toGE ma
 
-instance (Val a1, Val a2, Tuple b) => DirtyMulti (a1 -> a2 -> SE b) where
-    dirtyMulti f = \ma1 ma2 -> depMoTuple $ (\a1 a2 -> f [a1, a2]) <$> toGE ma1 <*> toGE ma2
+dms :: (Val a, DirtyMulti b) => GE ([E] -> MultiOut (Dep [E])) -> ([a] -> b)
+dms mf = \mas -> dirtyMultiGE $ (\f as bs -> f (as ++ bs)) <$> mf <*> mapM toGE mas
+
+instance (DirtyMulti b) => DirtyMulti (Sig -> b)    where   dirtyMultiGE = dm1
+instance (DirtyMulti b) => DirtyMulti (D -> b)      where   dirtyMultiGE = dm1
+instance (DirtyMulti b) => DirtyMulti (Str -> b)    where   dirtyMultiGE = dm1
+instance (DirtyMulti b) => DirtyMulti (Tab -> b)    where   dirtyMultiGE = dm1
+instance (DirtyMulti b) => DirtyMulti (Spec -> b)   where   dirtyMultiGE = dm1
+
+instance (DirtyMulti b) => DirtyMulti ([Sig] -> b)  where   dirtyMultiGE = dms
+instance (DirtyMulti b) => DirtyMulti ([D] -> b)    where   dirtyMultiGE = dms
 

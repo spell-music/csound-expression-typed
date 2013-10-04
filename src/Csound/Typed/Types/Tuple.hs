@@ -9,7 +9,7 @@ module Csound.Typed.Types.Tuple(
     fromTuple, toTuple, tupleArity, tupleRates, defTuple,
 
     -- ** Outs
-    Out(..), OutMethods, makeOutMethods, outArity,
+    Out(..), OutMethods, makeOutMethods, outArity, tupleToOut,
     toOut, fromOut, mapOut, pureOut, bindOut, accumOut, traverseOut,
     
     -- *** Multiple outs
@@ -114,6 +114,9 @@ outArity :: Out a => a -> Int
 outArity a = tupleArity (proxy a)
     where proxy :: Out a => a -> NoSE a
           proxy = undefined  
+
+tupleToOut :: Out a => NoSE a -> a
+tupleToOut = fromOut . fmap (fmap fromE) . fromTuple
 
 -- Tuple instances
 
