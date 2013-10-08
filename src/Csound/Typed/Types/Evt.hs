@@ -14,7 +14,7 @@ import qualified Csound.Dynamic as C
 
 import Csound.Typed.Types.Prim
 import Csound.Typed.Types.Tuple
-import Csound.Typed.Types.GlobalState
+import Csound.Typed.GlobalState
 import Csound.Typed.Control.SERef
 
 data Evt a = Evt { runEvt :: Bam a -> SE () }

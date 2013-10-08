@@ -10,7 +10,7 @@ module Csound.Typed.Control.Instr(
 import Csound.Dynamic
 
 import Csound.Typed.Types
-import Csound.Typed.Types.GlobalState
+import Csound.Typed.GlobalState
 
 funProxy :: (a -> b) -> (a, b)
 funProxy = const (msg, msg)

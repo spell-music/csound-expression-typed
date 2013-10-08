@@ -1,4 +1,4 @@
-module Csound.Typed.Types.GlobalState.Options (
+module Csound.Typed.GlobalState.Options (
     Options(..), 
     -- ** Table fidelity
     TabFi(..), fineFi, coarseFi,

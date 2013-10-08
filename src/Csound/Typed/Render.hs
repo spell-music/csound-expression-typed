@@ -1,7 +1,7 @@
 module Csound.Typed.Render(
     renderOut, renderOutBy,
     -- * Options
-    module Csound.Typed.Types.GlobalState.Options
+    module Csound.Typed.GlobalState.Options
 ) where
 
 import qualified Data.Map as M
@@ -11,8 +11,8 @@ import Data.Tuple
 import Csound.Dynamic
 import Csound.Dynamic.Control
 import Csound.Typed.Types(Out, outArity)
-import Csound.Typed.Types.GlobalState
-import Csound.Typed.Types.GlobalState.Options
+import Csound.Typed.GlobalState
+import Csound.Typed.GlobalState.Options
 import Csound.Typed.Control.Instr
 
 toCsd :: Out a => Options -> a -> IO Csd

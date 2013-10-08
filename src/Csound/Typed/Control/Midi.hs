@@ -4,7 +4,7 @@ module Csound.Typed.Control.Midi(
 ) where
 
 import Csound.Typed.Types
-import Csound.Typed.Types.GlobalState
+import Csound.Typed.GlobalState
 import Csound.Typed.Control.Instr
 
 midiE :: Channel -> Evt Msg

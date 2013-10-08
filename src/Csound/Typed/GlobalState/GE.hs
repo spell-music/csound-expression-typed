@@ -1,4 +1,4 @@
-module Csound.Typed.Types.GlobalState.GE(
+module Csound.Typed.GlobalState.GE(
     GE, History(..), withOptions, execGE,
     -- * Globals
     onGlobals, 
@@ -27,7 +27,7 @@ import Control.Monad.Trans.Reader
 import Csound.Dynamic 
 import Csound.Dynamic.Control
 
-import Csound.Typed.Types.GlobalState.Options
+import Csound.Typed.GlobalState.Options
 
 -- global side effects
 newtype GE a = GE { unGE :: ReaderT Options (StateT History IO) a }

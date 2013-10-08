@@ -1,4 +1,4 @@
-module Csound.Typed.Types.GlobalState.Instr where
+module Csound.Typed.GlobalState.Instr where
 
 import Control.Monad
 
@@ -6,9 +6,9 @@ import Csound.Dynamic
 import qualified Csound.Dynamic.Control as C
 
 import Csound.Typed.Types.MixSco
-import Csound.Typed.Types.GlobalState.GE
-import Csound.Typed.Types.GlobalState.SE
-import Csound.Typed.Types.GlobalState.Converters
+import Csound.Typed.GlobalState.GE
+import Csound.Typed.GlobalState.SE
+import Csound.Typed.GlobalState.Converters
 
 data Arity = Arity
     { arityIns      :: Int

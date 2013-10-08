@@ -7,7 +7,7 @@ import Csound.Dynamic
 import Csound.Dynamic.Control
 
 import Csound.Typed.Types.Tuple
-import Csound.Typed.Types.GlobalState
+import Csound.Typed.GlobalState
 
 data SERef a = SERef 
     { writeSERef :: a -> SE ()

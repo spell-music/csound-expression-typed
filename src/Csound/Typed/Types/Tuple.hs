@@ -27,7 +27,7 @@ import Data.Default
 
 import Csound.Dynamic
 import Csound.Typed.Types.Prim
-import Csound.Typed.Types.GlobalState
+import Csound.Typed.GlobalState
 import Csound.Typed.Types.TupleHelpers
 
 class Tuple a where

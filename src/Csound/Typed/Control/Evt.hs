@@ -11,7 +11,7 @@ import qualified Csound.Dynamic as C
 import qualified Csound.Dynamic.Control as C
 
 import Csound.Typed.Types
-import Csound.Typed.Types.GlobalState
+import Csound.Typed.GlobalState
 import Csound.Typed.Control.Instr
 
 -------------------------------------------------

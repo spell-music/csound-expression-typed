@@ -1,4 +1,4 @@
-module Csound.Typed.Types.GlobalState.SE(
+module Csound.Typed.GlobalState.SE(
     SE(..), runSE, evalSE, fromDep, fromDep_        
 ) where
 
@@ -7,7 +7,7 @@ import Control.Monad
 import Control.Monad.Trans.State.Strict
 
 import Csound.Dynamic
-import Csound.Typed.Types.GlobalState.GE
+import Csound.Typed.GlobalState.GE
 
 newtype SE a = SE { unSE :: State (Maybe (GE E)) a }
 

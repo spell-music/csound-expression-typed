@@ -1,6 +1,6 @@
 module Csound.Typed.Control (
     -- * SE
-    module Csound.Typed.Types.GlobalState.SE,
+    module Csound.Typed.GlobalState.SE,
     -- ** SE reference
     module Csound.Typed.Control.SERef,
     -- * Global settings
@@ -13,7 +13,7 @@ module Csound.Typed.Control (
     module Csound.Typed.Control.Evt
 ) where
     
-import Csound.Typed.Types.GlobalState.SE
+import Csound.Typed.GlobalState.SE
 
 import Csound.Typed.Control.SERef
 
@@ -22,7 +22,7 @@ import Csound.Typed.Control.Mix
 import Csound.Typed.Control.Midi
 
 import Csound.Typed.Types
-import Csound.Typed.Types.GlobalState
+import Csound.Typed.GlobalState
 
 instr0 :: Tuple a => SE a -> SE a
 instr0 a = return $ toTuple $ saveIns0 ins0Arity (tupleRates $ proxy a) ins0Exp

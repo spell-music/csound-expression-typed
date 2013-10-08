@@ -31,7 +31,7 @@ import Data.Boolean
 
 import Csound.Dynamic hiding (double, int, str, when)
 import qualified Csound.Dynamic as D(double, int, str, when)
-import Csound.Typed.Types.GlobalState
+import Csound.Typed.GlobalState
 
 -- | Signals
 newtype Sig  = Sig  { unSig :: GE E }

@@ -1,12 +1,12 @@
-module Csound.Typed.Types.GlobalState.Converters(
+module Csound.Typed.GlobalState.Converters(
     execSG, execSG2        
 ) where
 
 import Control.Monad.Trans.State.Strict
 
 import Csound.Dynamic
-import Csound.Typed.Types.GlobalState.GE
-import Csound.Typed.Types.GlobalState.SE
+import Csound.Typed.GlobalState.GE
+import Csound.Typed.GlobalState.SE
 
 ---------------------------------------------------------------
 -- magic

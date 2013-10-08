@@ -23,7 +23,7 @@ import Control.Applicative
 import Csound.Dynamic
 import Csound.Typed.Types.Prim
 import Csound.Typed.Types.Tuple
-import Csound.Typed.Types.GlobalState
+import Csound.Typed.GlobalState
     
 pureSingle :: PureSingle a => ([E] -> E) -> a
 pureSingle = pureSingleGE . return
