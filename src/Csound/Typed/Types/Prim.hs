@@ -4,7 +4,7 @@ module Csound.Typed.Types.Prim(
 
     -- ** Tables
     preTab, TabSize(..), TabArgs(..), updateTabSize,
-    fromPreTab, getPreTabUnsafe,
+    fromPreTab, getPreTabUnsafe, skipNorm, forceNorm,
 
     -- ** constructors
     double, int, str, idur,
@@ -163,6 +163,19 @@ defineTabArgs size args = case args of
             (_, [])  -> []
             (d:ds, valN:_:typeN:rest)   -> valN : d : (typeN * d) : substGen16 ds rest
             (_, _)   -> xs
+
+-- | Skips normalization (sets table size to negative value)
+skipNorm :: Tab -> Tab
+skipNorm x = case x of
+    TabExp _ -> error "you can skip normalization only for primitive tables (made with gen-routines)"
+    TabPre a -> TabPre $ a{ preTabGen = negate $ abs $ preTabGen a }
+
+-- | Force normalization (sets table size to positive value).
+-- Might be useful to restore normalization for table 'Csound.Tab.doubles'.
+forceNorm :: Tab -> Tab
+forceNorm x = case x of
+    TabExp _ -> error "you can force normalization only for primitive tables (made with gen-routines)"
+    TabPre a -> TabPre $ a{ preTabGen = abs $ preTabGen a }
 
 ----------------------------------------------------------------------------
 -- change table size

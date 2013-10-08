@@ -17,13 +17,19 @@ module Csound.Typed.Types.Tuple(
     ar1, ar2, ar4, ar6, ar8,
 
     -- ** Arguments
-    Arg(..), makeArgMethods, arg, toNote, argArity, toArg
+    Arg(..), makeArgMethods, arg, toNote, argArity, toArg,
+
+    -- ** Logic functions
+    ifTuple, guardedTuple, caseTuple,
+    ifArg, guardedArg, caseArg
 ) where
 
+import Control.Arrow
 import Control.Applicative
 import Control.Monad
 import Data.Monoid
 import Data.Default
+import Data.Boolean
 
 import Csound.Dynamic
 import Csound.Typed.Types.Prim
@@ -371,5 +377,64 @@ instance (Arg a, Arg b, Arg c, Arg d, Arg e) => Arg (a, b, c, d, e) where argMet
 instance (Arg a, Arg b, Arg c, Arg d, Arg e, Arg f) => Arg (a, b, c, d, e, f) where argMethods = makeArgMethods cons6 split6
 instance (Arg a, Arg b, Arg c, Arg d, Arg e, Arg f, Arg g) => Arg (a, b, c, d, e, f, g) where argMethods = makeArgMethods cons7 split7
 instance (Arg a, Arg b, Arg c, Arg d, Arg e, Arg f, Arg g, Arg h) => Arg (a, b, c, d, e, f, g, h) where argMethods = makeArgMethods cons8 split8
+
+-------------------------------------------------------------------------
+-- logic functions
+
+-- tuples
+
+newtype BoolTuple = BoolTuple { unBoolTuple :: GE [E] }
+
+toBoolTuple :: Tuple a => a -> BoolTuple
+toBoolTuple   = BoolTuple . fromTuple
+
+fromBoolTuple :: Tuple a => BoolTuple -> a
+fromBoolTuple = toTuple . unBoolTuple
+
+type instance BooleanOf BoolTuple = BoolSig
+
+instance IfB BoolTuple where
+    ifB mp (BoolTuple mas) (BoolTuple mbs) = BoolTuple $ 
+        liftA3 (\p as bs -> zipWith (ifB p) as bs) (toGE mp) mas mbs
+
+-- | @ifB@ for tuples of csound values.
+ifTuple :: (Tuple a) => BoolSig -> a -> a -> a
+ifTuple p a b = fromBoolTuple $ ifB p (toBoolTuple a) (toBoolTuple b)
+
+-- | @guardedB@ for tuples of csound values.
+guardedTuple :: (Tuple b) => [(BoolSig, b)] -> b -> b
+guardedTuple bs b = fromBoolTuple $ guardedB undefined (fmap (second toBoolTuple) bs) (toBoolTuple b)
+
+-- | @caseB@ for tuples of csound values.
+caseTuple :: (Tuple b) => a -> [(a -> BoolSig, b)] -> b -> b
+caseTuple a bs other = fromBoolTuple $ caseB a (fmap (second toBoolTuple) bs) (toBoolTuple other)
+
+-- arguments
+
+newtype BoolArg = BoolArg { unBoolArg :: GE [E] }
+
+toBoolArg :: (Arg a, Tuple a) => a -> BoolArg
+toBoolArg   = BoolArg . fromTuple
+
+fromBoolArg :: (Arg a, Tuple a) => BoolArg -> a
+fromBoolArg = toTuple . unBoolArg
+
+type instance BooleanOf BoolArg = BoolD
+
+instance IfB BoolArg where
+    ifB mp (BoolArg mas) (BoolArg mbs) = BoolArg $ 
+        liftA3 (\p as bs -> zipWith (ifB p) as bs) (toGE mp) mas mbs
+
+-- | @ifB@ for constants.
+ifArg :: (Arg a, Tuple a) => BoolD -> a -> a -> a
+ifArg p a b = fromBoolArg $ ifB p (toBoolArg a) (toBoolArg b)
+
+-- | @guardedB@ for constants.
+guardedArg :: (Tuple b, Arg b) => [(BoolD, b)] -> b -> b
+guardedArg bs b = fromBoolArg $ guardedB undefined (fmap (second toBoolArg) bs) (toBoolArg b)
+
+-- | @caseB@ for constants.
+caseArg :: (Tuple b, Arg b) => a -> [(a -> BoolD, b)] -> b -> b
+caseArg a bs other = fromBoolArg $ caseB a (fmap (second toBoolArg) bs) (toBoolArg other)
 
 

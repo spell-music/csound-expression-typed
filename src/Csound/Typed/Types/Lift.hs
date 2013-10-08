@@ -107,6 +107,8 @@ instance (PureSingle b) => PureSingle (Spec -> b)   where   pureSingleGE = ps1
 instance (PureSingle b) => PureSingle ([Sig] -> b)  where   pureSingleGE = pss
 instance (PureSingle b) => PureSingle ([D] -> b)    where   pureSingleGE = pss
 
+instance (PureSingle b) => PureSingle (Msg -> b)    where   pureSingleGE f = const $ pureSingleGE f
+
 -- dirty single
 
 ds0 :: (Val a) => GE ([E] -> Dep E) -> SE a
@@ -133,6 +135,8 @@ instance (DirtySingle b) => DirtySingle (Spec -> b)   where   dirtySingleGE = ds
 instance (DirtySingle b) => DirtySingle ([Sig] -> b)  where   dirtySingleGE = dss
 instance (DirtySingle b) => DirtySingle ([D] -> b)    where   dirtySingleGE = dss
 
+instance (DirtySingle b) => DirtySingle (Msg -> b)    where   dirtySingleGE f = const $ dirtySingleGE f
+
 -- procedure
 
 instance Procedure (SE ()) where
@@ -152,6 +156,8 @@ instance (Procedure b) => Procedure (Spec -> b)   where   procedureGE = pr1
 
 instance (Procedure b) => Procedure ([Sig] -> b)  where   procedureGE = prs
 instance (Procedure b) => Procedure ([D] -> b)    where   procedureGE = prs
+
+instance (Procedure b) => Procedure (Msg -> b)    where   procedureGE f = const $ procedureGE f
 
 -- pure multi
 
@@ -173,6 +179,8 @@ instance (PureMulti b) => PureMulti (Spec -> b)   where   pureMultiGE = pm1
 instance (PureMulti b) => PureMulti ([Sig] -> b)  where   pureMultiGE = pms
 instance (PureMulti b) => PureMulti ([D] -> b)    where   pureMultiGE = pms
 
+instance (PureMulti b) => PureMulti (Msg -> b)    where   pureMultiGE f = const $ pureMultiGE f
+
 -- dirty multi
 
 instance DirtyMulti Dm where
@@ -193,3 +201,4 @@ instance (DirtyMulti b) => DirtyMulti (Spec -> b)   where   dirtyMultiGE = dm1
 instance (DirtyMulti b) => DirtyMulti ([Sig] -> b)  where   dirtyMultiGE = dms
 instance (DirtyMulti b) => DirtyMulti ([D] -> b)    where   dirtyMultiGE = dms
 
+instance (DirtyMulti b) => DirtyMulti (Msg -> b)    where   dirtyMultiGE f = const $ dirtyMultiGE f

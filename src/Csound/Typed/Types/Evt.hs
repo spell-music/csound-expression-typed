@@ -3,7 +3,7 @@ module Csound.Typed.Types.Evt(
     Evt(..), Bam, 
     boolToEvt, evtToBool, sigToEvt, stepper,
     filterE, accumSE, accumE, filterAccumE, filterAccumSE,
-    Snap, snapshot, snaps
+    Snap, snapshot, snaps, readSnap
 ) where
 
 import Data.Monoid
