@@ -10,7 +10,9 @@ module Csound.Typed.Control (
     -- * Midi
     module Csound.Typed.Control.Midi,
     -- * Events
-    module Csound.Typed.Control.Evt
+    module Csound.Typed.Control.Evt,
+    -- * Band-limited oscillators
+    module Csound.Typed.Control.Vco
 ) where
     
 import Csound.Typed.GlobalState.SE
@@ -20,6 +22,7 @@ import Csound.Typed.Control.SERef
 import Csound.Typed.Control.Evt
 import Csound.Typed.Control.Mix
 import Csound.Typed.Control.Midi
+import Csound.Typed.Control.Vco
 
 import Csound.Typed.Types
 import Csound.Typed.GlobalState

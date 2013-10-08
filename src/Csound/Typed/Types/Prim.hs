@@ -1,9 +1,10 @@
 {-# Language TypeFamilies #-}
 module Csound.Typed.Types.Prim(
-    Sig, D, Tab, Str, Spec, BoolSig, BoolD, Val(..),
+    Sig, D, Tab, Str, Spec, BoolSig, BoolD, Val(..), hideGE,
 
     -- ** Tables
-    tab, TabSize(..), TabArgs(..), updateTabSize,
+    preTab, TabSize(..), TabArgs(..), updateTabSize,
+    fromPreTab, getPreTabUnsafe,
 
     -- ** constructors
     double, int, str, idur,
@@ -23,6 +24,7 @@ module Csound.Typed.Types.Prim(
 ) where
 
 import Control.Applicative hiding ((<*))
+import Control.Monad hiding (when)
 import Data.Monoid
 import qualified Data.IntMap as IM
 
@@ -64,8 +66,8 @@ data Tab
     = TabExp (GE E)
     | TabPre PreTab
 
-tab :: TabSize -> Int -> TabArgs -> Tab
-tab size gen args = TabPre $ PreTab size gen args
+preTab :: TabSize -> Int -> TabArgs -> Tab
+preTab size gen args = TabPre $ PreTab size gen args
 
 data PreTab = PreTab
     { preTabSize    :: TabSize
@@ -98,15 +100,23 @@ data TabArgs
     | FileAccess String [Double]
 
 renderTab :: PreTab -> GE E
-renderTab a = saveGen =<< (withOptions $ \opt -> fromPreTab (setTabFi opt) a)
+renderTab a = saveGen =<< fromPreTab a 
 
-fromPreTab :: TabFi -> PreTab -> Gen
-fromPreTab tabFi preTab = Gen size (preTabGen preTab) args file
-    where size = defineTabSize (getTabSizeBase tabFi preTab) (preTabSize preTab)
-          (args, file) = defineTabArgs size (preTabArgs preTab)
+getPreTabUnsafe :: String -> Tab -> PreTab
+getPreTabUnsafe msg x = case x of
+    TabPre a    -> a
+    _           -> error msg
+
+fromPreTab :: PreTab -> GE Gen
+fromPreTab a = withOptions $ \opt -> go (setTabFi opt) a
+    where
+        go :: TabFi -> PreTab -> Gen
+        go tabFi tab = Gen size (preTabGen tab) args file
+            where size = defineTabSize (getTabSizeBase tabFi tab) (preTabSize tab)
+                  (args, file) = defineTabArgs size (preTabArgs tab)
 
 getTabSizeBase :: TabFi -> PreTab -> Int
-getTabSizeBase tf preTab = IM.findWithDefault (tabFiBase tf) (preTabGen preTab) (tabFiGens tf)
+getTabSizeBase tf tab = IM.findWithDefault (tabFiBase tf) (preTabGen tab) (tabFiGens tf)
 
 defineTabSize :: Int -> TabSize -> Int
 defineTabSize base x = case x of
@@ -201,6 +211,9 @@ class Val a where
 
     fromE   :: E -> a
     fromE = fromGE . return
+
+hideGE :: Val a => GE a -> a
+hideGE = fromGE . join . fmap toGE
 
 instance Val Sig    where { fromGE = Sig    ; toGE = unSig  }
 instance Val D      where { fromGE = D      ; toGE = unD    }

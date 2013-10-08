@@ -12,6 +12,8 @@ module Csound.Typed.GlobalState.GE(
     TotalDur(..), getTotalDur, setDuration, setDurationToInfinite,
     -- * GEN routines
     saveGen,
+    -- * Band-limited waves
+    saveBandLimitedWave,
     -- * Strings
     saveStr
 ) where
@@ -53,15 +55,16 @@ instance MonadIO GE where
     liftIO = GE . liftIO . liftIO
     
 data History = History
-    { genMap        :: GenMap
-    , stringMap     :: StringMap
-    , globals       :: Globals
-    , locals        :: Locals
-    , instrs        :: Instrs
-    , midis         :: [MidiAssign]
-    , totalDur      :: Maybe TotalDur
-    , masterInstrId :: InstrId
-    , userInstr0    :: InstrBody }
+    { genMap            :: GenMap
+    , stringMap         :: StringMap
+    , globals           :: Globals
+    , locals            :: Locals
+    , instrs            :: Instrs
+    , midis             :: [MidiAssign]
+    , totalDur          :: Maybe TotalDur
+    , masterInstrId     :: InstrId
+    , userInstr0        :: InstrBody
+    , bandLimitedMap    :: BandLimitedMap }
 
 type Channel = Int
 data MidiType = Massign | Pgmassign (Maybe Int)
@@ -77,7 +80,7 @@ renderMidiAssign (MidiAssign ty chn instrId) = case ty of
         pgmassign pgm instr mchn = dep_ $ opcs "pgmassign" [(Xr, [Ir,Ir,Ir])] ([int pgm, prim $ PrimInstrId instr] ++ maybe [] (return . int) mchn)
 
 instance Default History where
-    def = History def def def def def def def (intInstrId 0) (return ())
+    def = History def def def def def def def (intInstrId 0) (return ()) def
 
 data TotalDur = NumDur Double | InfiniteDur
     deriving (Eq, Ord)
@@ -96,6 +99,12 @@ saveStr = fmap prim . onStringMap . newString
 saveGen :: Gen -> GE E
 saveGen = onGenMap . newGen
     where onGenMap = onHistory genMap (\val h -> h{ genMap = val })
+
+saveBandLimitedWave :: BandLimited -> GE Int
+saveBandLimitedWave = onBandLimitedMap . saveBandLimited
+    where onBandLimitedMap = onHistory 
+                (\a -> (genMap a, bandLimitedMap a)) 
+                (\(gm, blm) h -> h { genMap = gm, bandLimitedMap = blm})
 
 setDurationToInfinite :: GE ()
 setDurationToInfinite = setTotalDur InfiniteDur
