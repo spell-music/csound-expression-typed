@@ -12,8 +12,10 @@ module Csound.Typed.Types.GlobalState.Options (
 import Data.Default
 import qualified Data.IntMap as IM
 
+import Csound.Dynamic
+
 data Options = Options 
-    { setFlags          :: String
+    { setFlags          :: Flags
     , setSampleRate     :: Int
     , setBlockSize      :: Int    
     , setSeed           :: Maybe Double
@@ -22,7 +24,7 @@ data Options = Options
    
 instance Default Options where
     def = Options 
-        { setFlags      = "-d"
+        { setFlags      = def
         , setSampleRate = 44100
         , setBlockSize  = 64
         , setSeed       = Nothing
