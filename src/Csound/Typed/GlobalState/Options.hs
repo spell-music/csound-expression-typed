@@ -18,7 +18,7 @@ data Options = Options
     { setFlags          :: Flags
     , setSampleRate     :: Int
     , setBlockSize      :: Int    
-    , setSeed           :: Maybe Double
+    , setGain           :: Double
     , setInfiniteDur    :: Double
     , setTabFi          :: TabFi }
    
@@ -27,7 +27,7 @@ instance Default Options where
         { setFlags      = def
         , setSampleRate = 44100
         , setBlockSize  = 64
-        , setSeed       = Nothing
+        , setGain       = 0.5
         , setInfiniteDur = 7 * 24 * 60 * 60  -- a week
         , setTabFi      = fineFi 13 [(idLins, 11), (idExps, 11), (idConsts, 9), (idSplines, 11), (idStartEnds, 12)] }
 

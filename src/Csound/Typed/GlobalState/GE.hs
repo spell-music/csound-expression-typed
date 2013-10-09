@@ -1,5 +1,5 @@
 module Csound.Typed.GlobalState.GE(
-    GE, History(..), withOptions, execGE,
+    GE, History(..), withOptions, getOptions, execGE,
     -- * Globals
     onGlobals, 
     -- * Locals
@@ -139,6 +139,9 @@ setMasterInstrId masterId = onMasterInstrId $ put masterId
 
 withOptions :: (Options -> a) -> GE a
 withOptions f = GE $ asks f
+
+getOptions :: GE Options
+getOptions = withOptions id
 
 -- update fields
 

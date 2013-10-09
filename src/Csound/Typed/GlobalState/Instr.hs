@@ -9,6 +9,7 @@ import Csound.Typed.Types.MixSco
 import Csound.Typed.GlobalState.GE
 import Csound.Typed.GlobalState.SE
 import Csound.Typed.GlobalState.Converters
+import Csound.Typed.GlobalState.Options
 
 data Arity = Arity
     { arityIns      :: Int
@@ -38,7 +39,8 @@ saveMixInstr arity a = do
 
 saveMasterInstr :: Arity -> InsExp -> GE ()
 saveMasterInstr arity sigs = do
-    expr1 <- writeOut (C.sendOut (arityOuts arity) . C.safeOut) sigs
+    gainLevel <- fmap setGain getOptions 
+    expr1 <- writeOut (C.sendOut (arityOuts arity) . C.safeOut gainLevel) sigs
     expr2 <- getSysExpr 
     instrId <- onInstr $ C.saveInstr (expr1 >> expr2)
     setMasterInstrId instrId
