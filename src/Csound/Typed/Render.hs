@@ -42,8 +42,9 @@ getInstr0 nchnls opt hist = do
     globalConstants
     midiAssigns
     initGlobals
-    userInstr0 hist
     renderBandLimited (genMap hist) (bandLimitedMap hist)
+    userInstr0 hist
+    chnUpdateUdo 
     where
         globalConstants = do
             setSr       $ setSampleRate opt
