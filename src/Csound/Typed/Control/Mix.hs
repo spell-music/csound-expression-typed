@@ -1,6 +1,6 @@
 {-# Language FlexibleContexts #-}
 module Csound.Typed.Control.Mix(
-    Mix, sco, eff, mix
+    Mix, sco, eff, mix, CsdSco(..), CsdEventList(..), CsdEvent
 ) where
 
 import Control.Monad.IO.Class
