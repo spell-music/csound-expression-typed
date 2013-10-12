@@ -1,6 +1,6 @@
 {-# Language TypeFamilies #-}
 module Csound.Typed.Types.Prim(
-    Sig, D, Tab, Str, Spec, BoolSig, BoolD, Val(..), hideGE,
+    Sig, D, Tab, Str, Spec, Wspec, BoolSig, BoolD, Val(..), hideGE, SigOrD,
 
     -- ** Tables
     preTab, TabSize(..), TabArgs(..), updateTabSize,
@@ -45,7 +45,8 @@ newtype D    = D    { unD   :: GE E }
 newtype Str  = Str  { unStr :: GE E }
 
 -- | Spectrums
-newtype Spec = Spec { unSpec :: GE E }
+newtype Spec  = Spec  { unSpec  :: GE E }
+newtype Wspec = Wspec { unWspec :: GE E }
 
 -- Booleans
 
@@ -232,6 +233,7 @@ instance Val Sig    where { fromGE = Sig    ; toGE = unSig  }
 instance Val D      where { fromGE = D      ; toGE = unD    }
 instance Val Str    where { fromGE = Str    ; toGE = unStr  }
 instance Val Spec   where { fromGE = Spec   ; toGE = unSpec }
+instance Val Wspec  where { fromGE = Wspec  ; toGE = unWspec}
 
 instance Val Tab where 
     fromGE = TabExp 
@@ -241,6 +243,11 @@ instance Val Tab where
 
 instance Val BoolSig where { fromGE = BoolSig ; toGE = unBoolSig }
 instance Val BoolD   where { fromGE = BoolD   ; toGE = unBoolD   }
+
+class Val a => SigOrD a where
+
+instance SigOrD Sig where
+instance SigOrD D   where
 
 on0 :: Val a => E -> a
 on0 = fromE
