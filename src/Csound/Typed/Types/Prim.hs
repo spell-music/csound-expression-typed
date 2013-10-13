@@ -16,8 +16,7 @@ module Csound.Typed.Types.Prim(
     on0, on1, on2, on3,
 
     -- ** numeric funs
-    quotSig, remSig, divSig, modSig, ceilSig, floorSig, roundSig, intSig, fracSig,
-    quotD, remD, divD, modD, ceilD, floorD, roundD, intD, fracD,        
+    quot', rem', div', mod', ceil', floor', round', int', frac',
    
     -- ** logic funs
     when, boolSig
@@ -300,17 +299,11 @@ instance Floating D where
     ;  sin = on1 sin;  tan = on1 tan;  cos = on1 cos; sinh = on1 sinh; tanh = on1 tanh; cosh = on1 cosh
     ; asin = on1 asin; atan = on1 atan;  acos = on1 acos ; asinh = on1 asinh; acosh = on1 acosh; atanh = on1 atanh }
 
-ceilSig, floorSig, fracSig, intSig, roundSig :: Sig -> Sig
-quotSig, remSig, divSig, modSig :: Sig -> Sig -> Sig
+ceil', floor', frac', int', round' :: SigOrD a => a -> a
+quot', rem', div', mod' :: SigOrD a => a -> a -> a
 
-ceilSig = on1 ceilE;    floorSig = on1 floorE;  fracSig = on1 fracE;  intSig = on1 intE;    roundSig = on1 roundE
-quotSig = on2 quot; remSig = on2 rem;   divSig = on2 div;   modSig = on2 mod
-
-ceilD, floorD, fracD, intD, roundD :: D -> D
-quotD, remD, divD, modD :: Sig -> Sig -> Sig
-
-ceilD = on1 ceilE;    floorD = on1 floorE;  fracD = on1 fracE;  intD = on1 intE;    roundD = on1 roundE
-quotD = on2 quot;   remD = on2 rem; divD = on2 div; modD = on2 mod
+ceil' = on1 ceilE;    floor' = on1 floorE;  frac' = on1 fracE;  int' = on1 intE;    round' = on1 roundE
+quot' = on2 quot; rem' = on2 rem;   div' = on2 div;   mod' = on2 mod
 
 -------------------------------------------------------------------------------
 -- logic
