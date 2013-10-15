@@ -2,6 +2,7 @@
 {-# Language 
         TypeFamilies,
         FlexibleContexts,
+        FlexibleInstances,
         UndecidableInstances #-}
 module Csound.Typed.Types.Tuple(
     -- ** Tuple
@@ -273,7 +274,6 @@ instance (Monoid a, Monoid b, Monoid c, Monoid d, Monoid e, Monoid f, Monoid g, 
     mempty = (mempty, mempty, mempty, mempty, mempty, mempty, mempty, mempty)
     mappend (a1, a2, a3, a4, a5, a6, a7, a8) (b1, b2, b3, b4, b5, b6, b7, b8) = 
         (mappend a1 b1, mappend a2 b2, mappend a3 b3, mappend a4 b4, mappend a5 b5, mappend a6 b6, mappend a7 b7, mappend a8 b8)
-
 
 ---------------------------------------------------------------------------
 -- Arguments

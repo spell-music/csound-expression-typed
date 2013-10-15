@@ -7,7 +7,10 @@ module Csound.Typed.Types.Prim(
     fromPreTab, getPreTabUnsafe, skipNorm, forceNorm,
 
     -- ** constructors
-    double, int, str, idur,
+    double, int, str, 
+    
+    -- ** constants
+    idur, getSampleRate, getControlRate, getBlockSize, getZeroDbfs,
 
     -- ** converters
     ar, kr, ir, sig,
@@ -197,8 +200,23 @@ int = fromE . D.int
 str :: String -> Str
 str = fromE . D.str
 
+-------------------------------------------------------------------------------
+-- constants
+
 idur :: D 
 idur = fromE $ pn 3
+
+getSampleRate :: D
+getSampleRate = fromE $ readOnlyVar (VarVerbatim Ir "sr")
+
+getControlRate :: D
+getControlRate = fromE $ readOnlyVar (VarVerbatim Ir "kr")
+
+getBlockSize :: D
+getBlockSize = fromE $ readOnlyVar (VarVerbatim Ir "ksmps")
+
+getZeroDbfs :: D
+getZeroDbfs = fromE $ readOnlyVar (VarVerbatim Ir "0dbfs")
 
 -------------------------------------------------------------------------------
 -- converters
