@@ -3,7 +3,7 @@ module Csound.Typed.Types(
     module Csound.Typed.Types.Prim,
     module Csound.Typed.Types.Lift,
     -- * Init values
-    withInits, withDs, withSigs, withD, withSig, withTab, withSeed,
+    withInits, withDs, withSigs, withTabs, withD, withSig, withTab, withSeed,
     -- * Tuples
     module Csound.Typed.Types.Tuple,        
     -- * Events
@@ -36,6 +36,9 @@ withSigs a sigs = genWithInits a (mapM toGE sigs)
 
 withSig :: Val a => a -> Sig -> a
 withSig = withInits
+
+withTabs :: Val a => a -> [Tab] -> a
+withTabs a tabs = genWithInits a (mapM toGE tabs)
 
 withTab :: Val a => a -> Tab -> a
 withTab = withInits
