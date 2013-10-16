@@ -1,5 +1,6 @@
 module Csound.Typed.Render(
-    renderOut, renderOutBy,
+    renderOut, renderOutBy, 
+    renderOut_, renderOutBy_, 
     -- * Options
     module Csound.Typed.GlobalState.Options,
     module Csound.Dynamic.Flags
@@ -13,19 +14,25 @@ import Data.Tuple
 import Csound.Dynamic
 import Csound.Dynamic.Control
 import Csound.Dynamic.Flags
-import Csound.Typed.Types(Out, outArity)
+import Csound.Typed.Types
 import Csound.Typed.GlobalState
 import Csound.Typed.GlobalState.Options
 import Csound.Typed.Control.Instr
 
-toCsd :: Out a => Options -> a -> IO Csd
+toCsd :: Tuple a => Options -> SE a -> IO Csd
 toCsd options sigs = fmap (renderHistory (outArity sigs) options) 
-    $ execGE options (saveMasterInstr (masterArity sigs) (masterExp sigs))
+    $ execGE options (saveMasterInstr (constArity sigs) (masterExp sigs))
 
-renderOut :: Out a => a -> IO String
+renderOut_ :: SE () -> IO String
+renderOut_ = renderOutBy_ def 
+
+renderOutBy_ :: Options -> SE () -> IO String
+renderOutBy_ options = fmap renderCsd . (toCsd options) . unit
+
+renderOut :: Sigs a => SE a -> IO String
 renderOut = renderOutBy def
 
-renderOutBy :: Out a => Options -> a -> IO String
+renderOutBy :: Sigs a => Options -> SE a -> IO String
 renderOutBy options = fmap renderCsd . (toCsd options)
 
 renderHistory :: Int -> Options -> History -> Csd
@@ -49,7 +56,7 @@ getInstr0 nchnls opt hist = do
         globalConstants = do
             setSr       $ setSampleRate opt
             setKsmps    $ setBlockSize opt
-            setNchnls   nchnls
+            setNchnls   (max 1 nchnls)
             setZeroDbfs 1
 
         midiAssigns = mapM_ renderMidiAssign $ midis hist

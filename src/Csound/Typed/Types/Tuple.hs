@@ -2,23 +2,21 @@
 {-# Language 
         TypeFamilies,
         FlexibleContexts,
-        FlexibleInstances,
-        UndecidableInstances #-}
+        FlexibleInstances #-}
 module Csound.Typed.Types.Tuple(
     -- ** Tuple
     Tuple(..), TupleMethods, makeTupleMethods, 
     fromTuple, toTuple, tupleArity, tupleRates, defTuple,
 
     -- ** Outs
-    Out(..), OutMethods, makeOutMethods, outArity, tupleToOut,
-    toOut, fromOut, mapOut, pureOut, bindOut, accumOut, traverseOut,
-    
+    Sigs, outArity, 
+
     -- *** Multiple outs
     multiOuts,
     ar1, ar2, ar4, ar6, ar8,
 
     -- ** Arguments
-    Arg(..), makeArgMethods, arg, toNote, argArity, toArg,
+    Arg, arg, toNote, argArity, toArg,
 
     -- ** Logic functions
     ifTuple, guardedTuple, caseTuple,
@@ -73,58 +71,6 @@ makeTupleMethods to from = TupleMethods
     where proxy :: (a -> b) -> a
           proxy = undefined
 
--- | Output of the instrument.
-class (Monoid (NoSE a), Tuple (NoSE a)) => Out a where
-    type NoSE a :: *
-    outMethods :: OutMethods a
-   
-data OutMethods a = OutMethods 
-    { toOut_    :: a -> SE [Sig]
-    , fromOut_  :: GE [Sig] -> a
-    , mapOut_   :: (Sig -> Sig) -> (a -> a)
-    , pureOut_  :: Sig -> a
-    , bindOut_  :: a -> (Sig -> SE Sig) -> SE a
-    , accumOut_ :: ([Sig] -> Sig) -> [a] -> a }
-
-toOut :: Out a => a -> SE [Sig]
-toOut = toOut_ outMethods
-
-fromOut :: Out a => GE [Sig] -> a
-fromOut = fromOut_ outMethods
-
-mapOut  :: Out a => (Sig -> Sig) -> (a -> a)
-mapOut = mapOut_ outMethods
-
-pureOut :: Out a => Sig -> a
-pureOut = pureOut_ outMethods
-
-bindOut :: Out a => a -> (Sig -> SE Sig) -> SE a
-bindOut = bindOut_ outMethods
-
-accumOut :: Out a => ([Sig] -> Sig) -> [a] -> a
-accumOut = accumOut_ outMethods
-
-makeOutMethods :: Out a => (a -> b) -> (b -> a) -> OutMethods b
-makeOutMethods to from = OutMethods toOut' fromOut' mapOut' pureOut' bindOut' accumOut' 
-    where
-        toOut' = toOut . from
-        fromOut' = to . fromOut
-        mapOut' f = to . mapOut f . from
-        pureOut' = to . pureOut
-        bindOut' b f = fmap to $ bindOut (from b) f 
-        accumOut' f bs = to $ (accumOut f) (fmap from bs)
-
-traverseOut :: Out a => (Sig -> SE Sig) -> [a] -> SE [a]
-traverseOut f = mapM (flip bindOut f)
-
-outArity :: Out a => a -> Int
-outArity a = tupleArity (proxy a)
-    where proxy :: Out a => a -> NoSE a
-          proxy = undefined  
-
-tupleToOut :: Out a => NoSE a -> a
-tupleToOut = fromOut . fmap (fmap fromE) . fromTuple
-
 -- Tuple instances
 
 primTupleMethods :: (Val a, Default a) => Rate -> TupleMethods a
@@ -135,13 +81,13 @@ primTupleMethods rate = TupleMethods
         , tupleRates_ = const [rate]
         , defTuple_   = def }
 
-instance Tuple () where
+instance Tuple Unit where
     tupleMethods = TupleMethods 
-        { fromTuple_  = return $ return []
-        , toTuple_    = const ()
+        { fromTuple_  = \x -> unUnit x >> (return [])
+        , toTuple_    = \es -> Unit $ es >> return ()
         , tupleArity_ = const 0
         , tupleRates_ = const []
-        , defTuple_   = () }
+        , defTuple_   = Unit $ return () }
 
 instance Tuple Sig   where tupleMethods = primTupleMethods Ar        
 instance Tuple D     where tupleMethods = primTupleMethods Kr
@@ -189,194 +135,53 @@ ar1 = id;   ar2 = id;   ar4 = id;   ar6 = id;   ar8 = id
 ---------------------------------------------------------------------------------
 -- out instances
 
-instance Out () where
-    type NoSE () = ()
-    outMethods = OutMethods toOut' fromOut' mapOut' pureOut' bindOut' accumOut'
-        where
-            toOut' = const (return [])
-            fromOut' = const ()
-            mapOut' = const id
-            pureOut' = const ()
-            bindOut' a _ = return a    
-            accumOut' _ = const ()
+class (Monoid a, Tuple a) => Sigs a where
 
-instance Out Sig where
-    type NoSE Sig = Sig
-    outMethods = OutMethods toOut' fromOut' mapOut' pureOut' bindOut' accumOut'
-        where
-            toOut' = return . return
-            fromOut' = \x -> fromGE $ toGE =<< fmap head x
-            mapOut' = ($)
-            pureOut' = id
-            bindOut' = flip ($)
-            accumOut' = id
+instance Sigs Sig
 
-instance (Monoid (NoSE a), Out a, Tuple (NoSE a)) => Out (SE a) where
-    type NoSE (SE a) = NoSE a
-    outMethods = OutMethods toOut' fromOut' mapOut' pureOut' bindOut' accumOut'
-        where
-            toOut' = join . fmap toOut
-            fromOut' = return . fromOut
-            mapOut' f a = fmap (mapOut f) a 
-            pureOut' = return . pureOut
-            bindOut' a f = fmap (\x -> bindOut x f) a
-            accumOut' f as = fmap (accumOut f) $ sequence as
+instance (Sigs a, Sigs b) => Sigs (a, b)
+instance (Sigs a, Sigs b, Sigs c) => Sigs (a, b, c)
+instance (Sigs a, Sigs b, Sigs c, Sigs d) => Sigs (a, b, c, d)
 
-instance (Tuple a, Tuple b, Out a, Out b) => Out (a, b) where
-    type NoSE (a, b) = (NoSE a, NoSE b)
-    outMethods = OutMethods toOut' fromOut' mapOut' pureOut' bindOut' accumOut'
-        where
-            toOut' (a, b) = liftA2 (++) (toOut a) (toOut b)
-            fromOut' = \x -> toTuple $ mapM toGE =<< x
-            mapOut' f (a, b) = (mapOut f a, mapOut f b)
-            pureOut' a = (pureOut a, pureOut a)
-            bindOut' (a, b) f =  (,) <$> bindOut a f <*> bindOut b f
-            accumOut' f xs = (accumOut f a, accumOut f b)
-                where (a, b) = unzip xs
-
-instance (Tuple a, Tuple b, Tuple c, Out a, Out b, Out c) => Out (a, b, c) where
-    type NoSE (a, b, c) = (NoSE a, NoSE b, NoSE c)
-    outMethods = makeOutMethods cons3 split3
-
-instance (Tuple a, Tuple b, Tuple c, Tuple d, Out a, Out b, Out c, Out d) => Out (a, b, c, d) where
-    type NoSE (a, b, c, d) = (NoSE a, NoSE b, NoSE c, NoSE d)
-    outMethods = makeOutMethods cons4 split4
-
-instance (Tuple a, Tuple b, Tuple c, Tuple d, Tuple e, Out a, Out b, Out c, Out d, Out e) => Out (a, b, c, d, e) where
-    type NoSE (a, b, c, d, e) = (NoSE a, NoSE b, NoSE c, NoSE d, NoSE e)
-    outMethods = makeOutMethods cons5 split5
-
-instance (Tuple a, Tuple b, Tuple c, Tuple d, Tuple e, Tuple f, Out a, Out b, Out c, Out d, Out e, Out f) => Out (a, b, c, d, e, f) where
-    type NoSE (a, b, c, d, e, f) = (NoSE a, NoSE b, NoSE c, NoSE d, NoSE e, NoSE f)
-    outMethods = makeOutMethods cons6 split6
-
-instance (Tuple a, Tuple b, Tuple c, Tuple d, Tuple e, Tuple f, Tuple g, Out a, Out b, Out c, Out d, Out e, Out f, Out g) => Out (a, b, c, d, e, f, g) where
-    type NoSE (a, b, c, d, e, f, g) = (NoSE a, NoSE b, NoSE c, NoSE d, NoSE e, NoSE f, NoSE g)
-    outMethods = makeOutMethods cons7 split7
-
-instance (Tuple a, Tuple b, Tuple c, Tuple d, Tuple e, Tuple f, Tuple g, Tuple h, Out a, Out b, Out c, Out d, Out e, Out f, Out g, Out h) => Out (a, b, c, d, e, f, g, h) where
-    type NoSE (a, b, c, d, e, f, g, h) = (NoSE a, NoSE b, NoSE c, NoSE d, NoSE e, NoSE f, NoSE g, NoSE h)
-    outMethods = makeOutMethods cons8 split8
-
--- missing tuple monoids
-
-instance (Monoid a, Monoid b, Monoid c, Monoid d, Monoid e, Monoid f) => Monoid (a, b, c, d, e, f) where
-    mempty = (mempty, mempty, mempty, mempty, mempty, mempty)
-    mappend (a1, a2, a3, a4, a5, a6) (b1, b2, b3, b4, b5, b6) = 
-        (mappend a1 b1, mappend a2 b2, mappend a3 b3, mappend a4 b4, mappend a5 b5, mappend a6 b6)
-
-instance (Monoid a, Monoid b, Monoid c, Monoid d, Monoid e, Monoid f, Monoid g) => Monoid (a, b, c, d, e, f, g) where
-    mempty = (mempty, mempty, mempty, mempty, mempty, mempty, mempty)
-    mappend (a1, a2, a3, a4, a5, a6, a7) (b1, b2, b3, b4, b5, b6, b7) = 
-        (mappend a1 b1, mappend a2 b2, mappend a3 b3, mappend a4 b4, mappend a5 b5, mappend a6 b6, mappend a7 b7)
-
-instance (Monoid a, Monoid b, Monoid c, Monoid d, Monoid e, Monoid f, Monoid g, Monoid h) => Monoid (a, b, c, d, e, f, g, h) where
-    mempty = (mempty, mempty, mempty, mempty, mempty, mempty, mempty, mempty)
-    mappend (a1, a2, a3, a4, a5, a6, a7, a8) (b1, b2, b3, b4, b5, b6, b7, b8) = 
-        (mappend a1 b1, mappend a2 b2, mappend a3 b3, mappend a4 b4, mappend a5 b5, mappend a6 b6, mappend a7 b7, mappend a8 b8)
+outArity :: Tuple a => SE a -> Int
+outArity = tupleArity . proxy
+    where
+        proxy :: SE a -> a
+        proxy = const undefined
 
 ---------------------------------------------------------------------------
 -- Arguments
 
--- | Describes all Csound values that can be used in the score section. 
--- Instruments are triggered with the values from this type class.
--- Actual methods are hidden, but you can easily make instances for your own types
--- with function 'makeArgMethods'. You need to describe the new instance in  terms 
--- of some existing one. For example:
---
--- > data Note = Note 
--- >     { noteAmplitude    :: D
--- >     , notePitch        :: D
--- >     , noteVibrato      :: D
--- >     , noteSample       :: Str
--- >     }
--- > 
--- > instance Arg Note where
--- >     argMethods = makeArgMethods to from
--- >         where to (amp, pch, vibr, sample) = Note amp pch vibr sample
--- >               from (Note amp pch vibr sample) = (amp, pch, vibr, sample)
--- 
--- Then you can use this type in an instrument definition.
--- 
--- > instr :: Note -> Out
--- > instr x = ...
-class Arg a where
-    argMethods :: ArgMethods a
+class (Tuple a) => Arg a where
 
--- | The abstract type of methods for the class 'Arg'.
-data ArgMethods a = ArgMethods 
-    { arg_      :: Int -> a
-    , toNote_   :: a -> GE [E]
-    , argArity_ :: a -> Int }
+instance Arg Unit
+instance Arg D
+instance Arg Str
+instance Arg Tab
+
+instance (Arg a, Arg b) => Arg (a, b)
+instance (Arg a, Arg b, Arg c) => Arg (a, b, c)
+instance (Arg a, Arg b, Arg c, Arg d) => Arg (a, b, c, d)
 
 arg :: Arg a => Int -> a
-arg = arg_ argMethods
-
-toNote :: Arg a => a -> GE [E]
-toNote = toNote_ argMethods
-
-argArity :: Arg a => a -> Int
-argArity = argArity_ argMethods
+arg n = toTuple $ return $ fmap pn [n ..]
 
 toArg :: Arg a => a
 toArg = arg 4
 
--- | Defines instance of type class 'Arg' for a new type in terms of an already defined one.
-makeArgMethods :: (Arg a) => (a -> b) -> (b -> a) -> ArgMethods b
-makeArgMethods to from = ArgMethods {
-    arg_ = to . arg,
-    toNote_ = toNote . from,
-    argArity_ = const $ argArity $ proxy to }
-    where proxy :: (a -> b) -> a
-          proxy = const $ error "i'm a stupid proxy, fix me"
+argArity :: Arg a => a -> Int
+argArity = tupleArity
 
-instance Arg () where
-    argMethods = ArgMethods 
-        { arg_ = const ()
-        , toNote_ = pure . const []
-        , argArity_ = const 0 }
-
-instance Arg InstrId where
-    argMethods = ArgMethods 
-        { arg_ = error "method arg is undefined for InstrId"
-        , toNote_ = pure . pure . prim . PrimInstrId
-        , argArity_ = const 0 }
-
-primArgMethods :: Val a => ArgMethods a
-primArgMethods = ArgMethods {
-        arg_ = fromE . pn,
-        toNote_ = fmap pure . toGE ,
-        argArity_ = const 1 }
-
-instance Arg D      where argMethods = primArgMethods
-instance Arg Tab    where argMethods = primArgMethods
-
-instance Arg Str    where 
-    argMethods = ArgMethods
-        { arg_ = fromE . pn
-        , toNote_ = \x -> fmap pure $ saveStr . getStringUnsafe =<< toGE x
-        , argArity_ = const 1 }
-        where 
-            getStringUnsafe x = case getPrimUnsafe x of
-                PrimString a    -> a
-                _               -> error "Arg(Str):getStringUnsafe value is not a string"
-
-instance (Arg a, Arg b) => Arg (a, b) where
-    argMethods = ArgMethods arg' toNote' arity' 
-        where arg' n = (a, b)
-                  where a = arg n
-                        b = arg (n + argArity a)
-              toNote' (a, b) = liftA2 (++) (toNote a) (toNote b)
-              arity' x = let (a, b) = proxy x in argArity a + argArity b    
-                  where proxy :: (a, b) -> (a, b)
-                        proxy = const (undefined, undefined)
-
-instance (Arg a, Arg b, Arg c) => Arg (a, b, c) where argMethods = makeArgMethods cons3 split3
-instance (Arg a, Arg b, Arg c, Arg d) => Arg (a, b, c, d) where argMethods = makeArgMethods cons4 split4
-instance (Arg a, Arg b, Arg c, Arg d, Arg e) => Arg (a, b, c, d, e) where argMethods = makeArgMethods cons5 split5
-instance (Arg a, Arg b, Arg c, Arg d, Arg e, Arg f) => Arg (a, b, c, d, e, f) where argMethods = makeArgMethods cons6 split6
-instance (Arg a, Arg b, Arg c, Arg d, Arg e, Arg f, Arg g) => Arg (a, b, c, d, e, f, g) where argMethods = makeArgMethods cons7 split7
-instance (Arg a, Arg b, Arg c, Arg d, Arg e, Arg f, Arg g, Arg h) => Arg (a, b, c, d, e, f, g, h) where argMethods = makeArgMethods cons8 split8
+toNote :: Arg a => a -> GE [E]
+toNote a = zipWithM phi (tupleRates a) =<< fromTuple a
+    where
+        phi rate x = case rate of            
+            Sr -> saveStr $ getStringUnsafe x
+            _  -> return x
+            
+        getStringUnsafe x = case getPrimUnsafe x of
+            PrimString y    -> y
+            _               -> error "Arg(Str):getStringUnsafe value is not a string"
 
 -------------------------------------------------------------------------
 -- logic functions

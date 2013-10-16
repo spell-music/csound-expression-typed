@@ -44,7 +44,7 @@ withTab :: Val a => a -> Tab -> a
 withTab = withInits
 
 withSeed :: SE Sig -> D -> Sig
-withSeed a d = evalSE $ fmap (flip withD d) a
+withSeed a d = hideGE $ evalSE $ fmap (flip withD d) a
 
 genWithInits :: (Val a) => a -> GE [E] -> a
 genWithInits a vals = fromGE $ liftA2 D.withInits (toGE a) vals

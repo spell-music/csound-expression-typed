@@ -12,10 +12,10 @@ module Csound.Typed.Types.Lift(
     Procedure, procedure,
 
     -- ** Pure multi 
-    PureMulti, Pm, fromPm, fromPmOut, pureMulti,
+    PureMulti, Pm, fromPm, pureMulti,
 
     -- ** Dirty multi
-    DirtyMulti, Dm, fromDm, fromDmOut, dirtyMulti
+    DirtyMulti, Dm, fromDm, dirtyMulti
         
 ) where
 
@@ -66,9 +66,6 @@ fromPm :: Tuple a => Pm -> a
 fromPm (Pm a) = res
     where res = toTuple $ fmap ( $ tupleArity res) a
 
-fromPmOut :: (Out a) => Pm -> a
-fromPmOut = tupleToOut . fromPm
-
 fromDm :: Tuple a => Dm -> SE a
 fromDm (Dm a) = res
     where 
@@ -76,11 +73,6 @@ fromDm (Dm a) = res
 
         proxy :: SE a -> a
         proxy = const undefined
-
-fromDmOut :: (Out a) => Dm -> SE a
-fromDmOut = fmap tupleToOut . fromDm
-
---fromDmOut :: (Tuple a, Out a) => 
 
 -- pure single
 

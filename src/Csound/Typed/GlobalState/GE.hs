@@ -2,8 +2,6 @@ module Csound.Typed.GlobalState.GE(
     GE, History(..), withOptions, getOptions, execGE,
     -- * Globals
     onGlobals, 
-    -- * Locals
-    onLocals, 
     -- * Midi
     MidiAssign(..), Channel, MidiType(..), Msg(..), renderMidiAssign, saveMidi,  
     -- * Instruments
@@ -58,7 +56,6 @@ data History = History
     { genMap            :: GenMap
     , stringMap         :: StringMap
     , globals           :: Globals
-    , locals            :: Locals
     , instrs            :: Instrs
     , midis             :: [MidiAssign]
     , totalDur          :: Maybe TotalDur
@@ -80,7 +77,7 @@ renderMidiAssign (MidiAssign ty chn instrId) = case ty of
         pgmassign pgm instr mchn = dep_ $ opcs "pgmassign" [(Xr, [Ir,Ir,Ir])] ([int pgm, prim $ PrimInstrId instr] ++ maybe [] (return . int) mchn)
 
 instance Default History where
-    def = History def def def def def def def (intInstrId 0) (return ()) def
+    def = History def def def def def def (intInstrId 0) (return ()) def
 
 data TotalDur = NumDur Double | InfiniteDur
     deriving (Eq, Ord)
@@ -157,7 +154,4 @@ onInstr = onHistory instrs (\a h -> h { instrs = a })
 
 onGlobals :: UpdField Globals a
 onGlobals = onHistory globals (\a h -> h { globals = a })
-
-onLocals :: UpdField Locals a
-onLocals = onHistory locals (\a h -> h { locals = a })
 

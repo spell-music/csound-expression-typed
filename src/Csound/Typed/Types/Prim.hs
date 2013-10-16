@@ -1,6 +1,6 @@
 {-# Language TypeFamilies #-}
 module Csound.Typed.Types.Prim(
-    Sig, D, Tab, Str, Spec, Wspec, BoolSig, BoolD, Val(..), hideGE, SigOrD,
+    Sig, D, Tab, Str, Spec, Wspec, BoolSig, BoolD, Unit(..), unit, Val(..), hideGE, SigOrD,
 
     -- ** Tables
     preTab, TabSize(..), TabArgs(..), updateTabSize,
@@ -61,6 +61,17 @@ type instance BooleanOf D    = BoolD
 type instance BooleanOf Str  = BoolD
 type instance BooleanOf Tab  = BoolD
 type instance BooleanOf Spec = BoolD
+
+-- Procedures
+
+newtype Unit = Unit { unUnit :: GE () } 
+
+unit :: SE () -> SE Unit
+unit = fmap (Unit . return)
+
+instance Monoid Unit where
+    mempty = Unit (return ())
+    mappend a b = Unit $ (unUnit a) >> (unUnit b)
 
 -- tables
 

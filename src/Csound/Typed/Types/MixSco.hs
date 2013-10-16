@@ -1,5 +1,5 @@
 module Csound.Typed.Types.MixSco(
-    M(..), rescaleCsdEventListM, renderMixSco
+    M(..), rescaleCsdEventListM, renderMixSco, renderMixSco_
 ) where
 
 import Control.Monad
@@ -45,4 +45,19 @@ renderMixSco arity evts = do
             inId <- chnRefAlloc arityIn
             event_i $ Event instrId (double start) (double dur) [chnRefId inId, chnRefId outId]
             go inId es
+
+renderMixSco_ :: CsdEventList M -> Dep ()
+renderMixSco_ evts = mapM_ onEvent $ csdEventListNotes evts
+    where
+        onEvent :: CsdEvent M -> Dep ()
+        onEvent (start, dur, x) = case x of
+            Snd instrId es      -> onSnd instrId es
+            Eff instrId es _    -> onEff instrId start dur es
+
+        onSnd instrId es = forM_ (csdEventListNotes es) $ \(start, dur, args) ->
+            event_i $ Event instrId (double start) (double dur) args
+
+        onEff instrId start dur es = do
+            event_i $ Event instrId (double start) (double dur) []
+            renderMixSco_ es
 

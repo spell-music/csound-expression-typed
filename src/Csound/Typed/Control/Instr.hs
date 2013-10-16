@@ -1,53 +1,33 @@
 -- | Converts to low-level instruments
 module Csound.Typed.Control.Instr(
     Arity(..), InsExp, EffExp,
-    insArity, effArity, masterArity, midiArity,
-    insExp, effExp, masterExp, midiExp,
-    -- * out from expression
-    outGE, outFromE, outFromGE
+    funArity, constArity, 
+    insExp, effExp, masterExp, midiExp
 ) where
-
-import Csound.Dynamic
 
 import Csound.Typed.Types
 import Csound.Typed.GlobalState
 
-funProxy :: (a -> b) -> (a, b)
+funProxy :: (a -> f b) -> (a, b)
 funProxy = const (msg, msg)
-    where msg = error "I'm a Csound.Typed.Types.Tuple.funProxy"
+    where msg = error "I'm a Csound.Typed.Control.Instr.funProxy"
 
-insArity :: (Arg a, Out b) => (a -> b) -> Arity
-insArity instr = Arity (argArity a) (outArity b)
+funArity :: (Tuple a, Tuple b) => (a -> SE b) -> Arity
+funArity instr = Arity (tupleArity a) (tupleArity b)
     where (a, b) = funProxy instr
 
-effArity :: (Out a, Out b) => (a -> b) -> Arity
-effArity instr = Arity (outArity a) (outArity b)
-    where (a, b) = funProxy instr
-
-masterArity :: (Out a) => a -> Arity
-masterArity a = Arity 0 (outArity a)
-
-midiArity :: (Out a) => (Msg -> a) -> Arity
-midiArity a = Arity 0 (outArity $ snd $ funProxy a)
+constArity :: (Tuple a) => SE a -> Arity
+constArity a = Arity 0 (outArity a)
    
-insExp :: (Arg a, Out b) => (a -> b) -> InsExp 
-insExp instr = outGE $ instr toArg
+insExp :: (Arg a, Tuple b) => (a -> SE b) -> InsExp 
+insExp instr = fmap fromTuple $ instr toArg
 
-effExp :: (Out a, Out b) => (a -> b) -> EffExp
-effExp instr = outGE . instr . outFromE
+effExp :: (Tuple a, Tuple b) => (a -> SE b) -> EffExp
+effExp instr = fmap fromTuple . instr . toTuple . return 
 
-masterExp :: (Out a) => a -> InsExp
-masterExp = outGE
+masterExp :: (Tuple a) => SE a -> InsExp
+masterExp = fmap fromTuple
 
-midiExp :: (Out a) => (Msg -> a) -> InsExp
-midiExp instr = outGE $ instr Msg
-
-outGE :: Out a => a -> SE (GE [E])
-outGE = fmap (mapM toGE) . toOut
-
-outFromE :: Out a => [E] -> a
-outFromE = fromOut . return . fmap fromE
-
-outFromGE :: Out a => GE [E] -> a
-outFromGE = fromOut . fmap (fmap fromE)
+midiExp :: (Tuple a) => (Msg -> SE a) -> InsExp
+midiExp instr = fmap fromTuple $ instr Msg
 

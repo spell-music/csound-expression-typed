@@ -1,6 +1,6 @@
 {-# Language FlexibleContexts #-}
 module Csound.Typed.Control.Mix(
-    Mix, sco, eff, mix, CsdSco(..), CsdEventList(..), CsdEvent
+    Mix, sco, sco_, eff, mix, mix_, CsdSco(..), CsdEventList(..), CsdEvent
 ) where
 
 import Control.Monad.IO.Class
@@ -49,12 +49,20 @@ wrapSco notes getContent = singleCsdEvent (0, csdEventListDur evts, Mix $ getCon
 -- opcodes that have side effects. We need it within one instrument. But when 
 -- instrument is rendered we no longer need 'SE' type. So 'NoSE' lets me drop it
 -- from the output type. 
-sco :: (CsdSco f, Arg a, Out b) => (a -> b) -> f a -> f (Mix (NoSE b))
+sco :: (CsdSco f, Arg a, Sigs b) => (a -> SE b) -> f a -> f (Mix b)
 sco instr notes = wrapSco notes $ \events -> do
     events' <- traverse toNote events
     cacheName <- liftIO $ C.makeCacheName instr
-    instrId <- saveSourceInstrCached cacheName (insArity instr) (insExp instr)
+    instrId <- saveSourceInstrCached cacheName (funArity instr) (insExp instr)
     return $ Snd instrId events'
+
+sco_ :: (CsdSco f, Arg a) => (a -> SE ()) -> f a -> f (Mix Unit)
+sco_ instr notes = wrapSco notes $ \events -> do
+    events' <- traverse toNote events
+    cacheName <- liftIO $ C.makeCacheName instr
+    instrId <- saveSourceInstrCached cacheName (funArity instr') (insExp instr')
+    return $ Snd instrId events'
+    where instr' = unit . instr
 
 -- | Applies an effect to the sound. Effect is applied to the sound on the give track. 
 --
@@ -71,22 +79,24 @@ sco instr notes = wrapSco notes $ \events -> do
 -- board it produces the value that you can arrange with functions from your
 -- favorite Score-generation library. You can delay it or mix with some other track and 
 -- apply some another effect on top of it!
-eff :: (CsdSco f, Out a, Out b) => (a -> b) -> f (Mix a) -> f (Mix b)
+eff :: (CsdSco f, Sigs a, Sigs b) => (a -> SE b) -> f (Mix a) -> f (Mix b)
 eff ef sigs = wrapSco sigs $ \events -> do
     notes <- traverse unMix events
-    instrId <- saveEffectInstr (effArity ef) (effExp ef)
-    return $ Eff instrId notes (arityIns $ effArity ef)
+    instrId <- saveEffectInstr (funArity ef) (effExp ef)
+    return $ Eff instrId notes (arityIns $ funArity ef)
 
 -- | Renders a scores to global variable that contains a resulting sound signals.
-mix :: (Out (NoSE a), Out a, CsdSco f) => f (Mix a) -> NoSE a
-mix a = fromOut $ do
-    events  <- fmap rescaleCsdEventListM $ traverse unMix $ toCsdEventList a
-    sigs    <- saveMixInstr (mixArity a) events
-    return $ fmap fromE sigs
+mix :: (Sigs a, CsdSco f) => f (Mix a) -> a
+mix a = toTuple $ saveMixInstr (mixArity a) =<< 
+    (fmap rescaleCsdEventListM $ traverse unMix $ toCsdEventList a)
     where 
-        mixArity :: Out a => f (Mix a) -> Int
-        mixArity = outArity . proxy
+        mixArity :: Sigs a => f (Mix a) -> Int
+        mixArity = tupleArity . proxy
             where
                 proxy :: f (Mix a) -> a
-                proxy = undefined
+                proxy = const undefined
+
+mix_ :: (CsdSco f) => f (Mix Unit) -> SE ()
+mix_ a = fromDep_ $ saveMixInstr_ 
+    =<< (fmap rescaleCsdEventListM $ traverse unMix $ toCsdEventList a)
 

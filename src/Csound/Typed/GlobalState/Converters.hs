@@ -2,6 +2,7 @@ module Csound.Typed.GlobalState.Converters(
     execSG, execSG2        
 ) where
 
+import Control.Monad
 import Control.Monad.Trans.State.Strict
 
 import Csound.Dynamic
@@ -11,20 +12,33 @@ import Csound.Typed.GlobalState.SE
 ---------------------------------------------------------------
 -- magic
 
-genExecSG :: Maybe (GE E) -> SE (GE (Dep ())) -> GE (Dep ())
-genExecSG s0 (SE x) = do
-    res  <- mres
-    expr <- case ms of
-        Nothing -> return Nothing
-        Just y  -> fmap Just y
-    return $ Dep $ put $ snd $ runState (unDep res) expr
-    where 
-        (mres, ms) = runState x s0
-
+{-
 execSG :: SE (GE (Dep ())) -> GE (Dep ())
-execSG = genExecSG Nothing
+execSG = execSE 
 
 execSG2 :: Dep (SE (GE (Dep ()))) -> GE (Dep ())
-execSG2 (Dep x) = genExecSG (fmap return s) y
+execSG2 = swapDep . fmap execSE
+
+swapDep :: Dep (GE (Dep ())) -> GE (Dep ())
+swapDep (Dep x) = fmap (Dep . (put s >> ) . unDep) y
+    where (y, s) = runState x Nothing
+-}
+
+
+
+genExecSG :: GE (Maybe E) -> SE (GE (Dep ())) -> GE (Dep ())
+genExecSG ms0 (SE x) = do
+    s0 <- ms0
+    (mres, ms) <- runStateT x (LocalHistory s0 0) 
+    res  <- mres
+    return $ Dep $ put $ snd $ runState (unDep res) (expDependency ms)
+
+execSG :: SE (GE (Dep ())) -> GE (Dep ())
+execSG = execSE -- join $ fmap fst $ runSE x
+
+-- genExecSG (return Nothing)
+
+execSG2 :: Dep (SE (GE (Dep ()))) -> GE (Dep ())
+execSG2 (Dep x) = genExecSG (return s) y
     where (y, s) = runState x Nothing
 

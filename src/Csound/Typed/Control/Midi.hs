@@ -11,16 +11,14 @@ midiE :: Channel -> Evt Msg
 midiE = undefined
 
 -- | Triggers a midi-instrument (aka Csound's massign). 
-midi :: (Out a, Out (NoSE a)) => Channel -> (Msg -> a) -> NoSE a
+midi :: (Sigs a) => Channel -> (Msg -> SE a) -> a
 midi = genMidi Massign
 
 -- | Triggers a - midi-instrument (aka Csound's pgmassign). 
-pgmidi :: (Out a, Out (NoSE a)) => Maybe Int -> Channel -> (Msg -> a) -> NoSE a
+pgmidi :: (Sigs a) => Maybe Int -> Channel -> (Msg -> SE a) -> a
 pgmidi mchn = genMidi (Pgmassign mchn)
 
-genMidi :: (Out a, Out (NoSE a)) => MidiType -> Channel -> (Msg -> a) -> NoSE a
-genMidi midiType chn instr = fromOut $ do
-    setDurationToInfinite
-    sigs <- saveMidiInstr midiType chn (midiArity instr) (midiExp instr)
-    return $ fmap fromE sigs
+genMidi :: (Sigs a) => MidiType -> Channel -> (Msg -> SE a) -> a
+genMidi midiType chn instr = toTuple $ setDurationToInfinite >>
+    saveMidiInstr midiType chn (constArity $ instr Msg) (midiExp instr)
 

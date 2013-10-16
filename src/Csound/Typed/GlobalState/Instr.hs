@@ -11,6 +11,10 @@ import Csound.Typed.GlobalState.SE
 import Csound.Typed.GlobalState.Converters
 import Csound.Typed.GlobalState.Options
 
+import Debug.Trace
+
+
+
 data Arity = Arity
     { arityIns      :: Int
     , arityOuts     :: Int }
@@ -19,7 +23,7 @@ type InsExp = SE (GE [E])
 type EffExp = [E] -> SE (GE [E])
 
 writeOut :: ([E] -> Dep ()) -> InsExp -> GE C.InstrBody
-writeOut f expr = execSG $ fmap (fmap f) expr
+writeOut f expr = execSE $ join $ fmap (fromDep_ . fmap f) expr
 
 saveSourceInstrCached :: C.CacheName -> Arity -> InsExp -> GE InstrId
 saveSourceInstrCached cacheName arity instr = onInstr . C.saveCachedInstr cacheName =<< writeOut toOut instr
@@ -32,13 +36,18 @@ saveEffectInstr arity eff = onInstr . C.saveInstr =<< (execSG2 $ fmap (fmap (fma
         getIns  = C.readChn  $ C.chnRefFromParg 4 (arityIns  arity)
 
 saveMixInstr :: Int -> CsdEventList M -> GE [E]
-saveMixInstr arity a = do
+saveMixInstr arity a = traceShow ("mix") $ do
     setDuration $ csdEventListDur a
     instrId <- onInstr $ C.saveInstr $ C.sendOut arity =<< renderMixSco arity a
     return $ C.subinstr arity instrId []
 
+saveMixInstr_ :: CsdEventList M -> GE (Dep ())
+saveMixInstr_ a = traceShow ("mix_") $ do
+    setDuration $ csdEventListDur a
+    return $ renderMixSco_ a
+
 saveMasterInstr :: Arity -> InsExp -> GE ()
-saveMasterInstr arity sigs = do
+saveMasterInstr arity sigs = traceShow ("master") $ do
     gainLevel <- fmap setGain getOptions 
     expr1 <- writeOut (C.sendOut (arityOuts arity) . C.safeOut gainLevel) sigs
     expr2 <- getSysExpr 

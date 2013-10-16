@@ -1,10 +1,7 @@
 module Csound.Typed.Control.SERef where
 
-import Control.Applicative
 import Control.Monad
-
 import Csound.Dynamic
-import Csound.Dynamic.Control
 
 import Csound.Typed.Types.Tuple
 import Csound.Typed.GlobalState
@@ -14,14 +11,11 @@ data SERef a = SERef
     , readSERef  :: SE a }
 
 newSERef :: Tuple a => a -> SE (SERef a)
-newSERef a = return $ SERef writeRef readRef        
-    where 
-        writeRef x = fromDep_ $ liftA2 (zipWithM_ writeVar) vars (fromTuple x)
-        readRef    = fmap toTuple $ fromDep $ fmap (mapM readVar) vars
-
-        vars = do
-            initVals <- fromTuple a
-            onLocals $ zipWithM newLocalVar (tupleRates a) initVals
+newSERef t = do
+    vars <- newLocalVars (tupleRates t) (fromTuple t)
+    let wr a = fromDep_ $ fmap (zipWithM_ writeVar vars) (fromTuple a)
+        re   = fmap toTuple $ fromDep  $ return $ mapM readVar vars
+    return (SERef wr re)
 
 sensorsSE :: Tuple a => a -> SE (SE a, a -> SE ())
 sensorsSE a = do

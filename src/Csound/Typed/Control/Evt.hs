@@ -4,7 +4,6 @@ module Csound.Typed.Control.Evt(
 ) where
 
 import Control.Applicative
-import Control.Monad(join)
 import Control.Monad.IO.Class
 
 import qualified Csound.Dynamic as C
@@ -17,16 +16,16 @@ import Csound.Typed.Control.Instr
 -------------------------------------------------
 -- triggereing the events
 
-trig :: (Arg a, Out b, Out (NoSE b)) => (a -> b) -> Evt (D, D, a) -> NoSE b
-trig instr evts = fromOut $ do
+trig :: (Arg a, Sigs b) => (a -> SE b) -> Evt (D, D, a) -> b
+trig instr evts = toTuple $ do
     cacheName <- liftIO $ C.makeCacheName instr
-    instrId <- saveSourceInstrCached cacheName (insArity instr) (insExp instr)
-    saveEvtInstr (arityOuts$ insArity instr) instrId evts
+    instrId <- saveSourceInstrCached cacheName (funArity instr) (insExp instr)
+    saveEvtInstr (arityOuts $ funArity instr) instrId evts
      
-saveEvtInstr :: Arg a => Int -> C.InstrId -> Evt (D, D, a) -> GE [Sig]
+saveEvtInstr :: Arg a => Int -> C.InstrId -> Evt (D, D, a) -> GE [E]
 saveEvtInstr arity instrId evts = do
     evtMixInstrId <- onInstr . C.saveInstr =<< evtMixInstr
-    return $ fmap fromE $ C.subinstr arity evtMixInstrId []
+    return $ C.subinstr arity evtMixInstrId []
     where
         evtMixInstr :: GE C.InstrBody
         evtMixInstr = execSG $ fmap (return . return) $ do
@@ -41,25 +40,21 @@ saveEvtInstr arity instrId evts = do
                 e <- C.Event instrId <$> toGE start <*> toGE dur <*> (fmap (++ [C.chnRefId chnId]) $ toNote args) 
                 return $ C.event e 
 
-
-sched :: (Arg a, Out b, Out (NoSE b)) => (a -> b) -> Evt (D, a) -> NoSE b
+sched :: (Arg a, Sigs b) => (a -> SE b) -> Evt (D, a) -> b
 sched instr evts = trig instr (fmap phi evts)
     where phi (a, b) = (0, a, b)
 
-schedHarp :: (Arg a, Out b, Out (NoSE b)) => (a -> b) -> Evt a -> NoSE b
-schedHarp instr evts = fromOut $ do
+schedHarp :: (Arg a, Sigs b) => (a -> SE b) -> Evt a -> b
+schedHarp instr evts = toTuple $ do
     cacheName <- liftIO $ C.makeCacheName instr
-    instrId <- saveSourceInstrCached cacheName (insArity instr) (insExp $ autoOff 2 . instr)
-    saveEvtInstr (arityOuts $ insArity instr) instrId (fmap phi evts)
+    instrId <- saveSourceInstrCached cacheName (funArity instr) (insExp $ (autoOff 2 =<< ) . instr)
+    saveEvtInstr (arityOuts $ funArity instr) instrId (fmap phi evts)
     where phi a = (0, -1, a)
 
-autoOff :: Out a => D -> a -> SE a
-autoOff dt sigs = fmap outFromGE $ magic $ fmap (phi =<< ) $ outGE sigs
+autoOff :: Sigs a => D -> a -> SE a
+autoOff dt sigs = fmap toTuple $ fromDep $ phi =<< fromTuple sigs
     where 
         phi x = do
             dtE <- toGE dt
             return $ C.autoOff dtE x
-
-        magic :: SE (GE (C.Dep a)) -> SE (GE a)
-        magic = join . fmap fromDep
 
