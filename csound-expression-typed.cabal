@@ -57,5 +57,6 @@ Library
     Csound.Typed.Control.Midi
     Csound.Typed.Control.SERef
     Csound.Typed.Control.Instr
+    Csound.Typed.Control.Overload
 
 
