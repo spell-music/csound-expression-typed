@@ -11,20 +11,6 @@ import Csound.Typed.GlobalState.SE
 ---------------------------------------------------------------
 -- magic
 
-{-
-execSG :: SE (GE (Dep ())) -> GE (Dep ())
-execSG = execSE 
-
-execSG2 :: Dep (SE (GE (Dep ()))) -> GE (Dep ())
-execSG2 = swapDep . fmap execSE
-
-swapDep :: Dep (GE (Dep ())) -> GE (Dep ())
-swapDep (Dep x) = fmap (Dep . (put s >> ) . unDep) y
-    where (y, s) = runState x Nothing
--}
-
-
-
 genExecSG :: GE (Maybe E) -> SE (GE (Dep ())) -> GE (Dep ())
 genExecSG ms0 (SE x) = do
     s0 <- ms0

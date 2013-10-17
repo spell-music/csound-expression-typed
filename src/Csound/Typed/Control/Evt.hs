@@ -1,7 +1,8 @@
 {-# Language FlexibleContexts #-}
 module Csound.Typed.Control.Evt(
     trig, sched, schedHarp, autoOff,
-    trig_, sched_
+    trig_, sched_,
+    trigBy, schedBy, schedHarpBy
 ) where
 
 import Control.Applicative
@@ -18,15 +19,19 @@ import Csound.Typed.Control.Instr
 -- triggereing the events
 
 trig :: (Arg a, Sigs b) => (a -> SE b) -> Evt (D, D, a) -> b
-trig instr evts = toTuple $ do
+trig instr evts = trigBy instr (const $ evts) (Unit $ return ())
+    
+trigBy :: (Arg a, Sigs b, Arg c) => (a -> SE b) -> (c -> Evt (D, D, a)) -> (c -> b)
+trigBy instr evts args = toTuple $ do
     cacheName <- liftIO $ C.makeCacheName instr
     instrId <- saveSourceInstrCached cacheName (funArity instr) (insExp instr)
-    saveEvtInstr (arityOuts $ funArity instr) instrId evts
+    justArgs <- fromTuple args
+    saveEvtInstr (arityOuts $ funArity instr) instrId justArgs (evts toArg)
      
-saveEvtInstr :: Arg a => Int -> C.InstrId -> Evt (D, D, a) -> GE [E]
-saveEvtInstr arity instrId evts = do
+saveEvtInstr :: Arg a => Int -> C.InstrId -> [E] -> Evt (D, D, a) -> GE [E]
+saveEvtInstr arity instrId evtArgs evts = do
     evtMixInstrId <- onInstr . C.saveInstr =<< evtMixInstr
-    return $ C.subinstr arity evtMixInstrId []
+    return $ C.subinstr arity evtMixInstrId evtArgs
     where
         evtMixInstr :: GE C.InstrBody
         evtMixInstr = execSG $ fmap (return . return) $ do
@@ -45,11 +50,19 @@ sched :: (Arg a, Sigs b) => (a -> SE b) -> Evt (D, a) -> b
 sched instr evts = trig instr (fmap phi evts)
     where phi (a, b) = (0, a, b)
 
+schedBy :: (Arg a, Sigs b, Arg c) => (a -> SE b) -> (c -> Evt (D, a)) -> (c -> b)
+schedBy instr evts = trigBy instr (fmap (fmap phi) evts)
+    where phi (a, b) = (0, a, b)
+
 schedHarp :: (Arg a, Sigs b) => (a -> SE b) -> Evt a -> b
-schedHarp instr evts = toTuple $ do
+schedHarp instr evts = schedHarpBy instr (const evts) (Unit $ return ())
+
+schedHarpBy :: (Arg a, Sigs b, Arg c) => (a -> SE b) -> (c -> Evt a) -> (c -> b)
+schedHarpBy instr evts args = toTuple $ do
     cacheName <- liftIO $ C.makeCacheName instr
     instrId <- saveSourceInstrCached cacheName (funArity instr) (insExp $ (autoOff 2 =<< ) . instr)
-    saveEvtInstr (arityOuts $ funArity instr) instrId (fmap phi evts)
+    justArgs <- fromTuple args
+    saveEvtInstr (arityOuts $ funArity instr) instrId justArgs (fmap phi $ evts toArg)
     where phi a = (0, -1, a)
 
 autoOff :: Sigs a => D -> a -> SE a

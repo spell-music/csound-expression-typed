@@ -39,11 +39,11 @@ saveEffectInstr arity eff = onInstr . C.saveInstr =<< (execSG2 $ fmap (fmap (fma
         setOuts = C.writeChn $ C.chnRefFromParg 5 (arityOuts arity)
         getIns  = C.readChn  $ C.chnRefFromParg 4 (arityIns  arity)
 
-saveMixInstr :: Int -> CsdEventList M -> GE [E]
-saveMixInstr arity a = traceShow ("mix") $ do
+saveMixInstr :: Int -> [E] -> CsdEventList M -> GE [E]
+saveMixInstr arity args a = traceShow ("mix") $ do
     setDuration $ csdEventListDur a
     instrId <- onInstr $ C.saveInstr $ C.sendOut arity =<< renderMixSco arity a
-    return $ C.subinstr arity instrId []
+    return $ C.subinstr arity instrId args
 
 saveMixInstr_ :: CsdEventList M -> GE (Dep ())
 saveMixInstr_ a = traceShow ("mix_") $ do

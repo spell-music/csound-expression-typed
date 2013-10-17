@@ -1,6 +1,7 @@
 {-# Language FlexibleContexts #-}
 module Csound.Typed.Control.Mix(
-    Mix, sco, sco_, eff, mix, mix_, CsdSco(..), CsdEventList(..), CsdEvent
+    Mix, sco, sco_, eff, mix, mixBy, mix_, mixBy_, 
+    CsdSco(..), CsdEventList(..), CsdEvent
 ) where
 
 import Control.Monad.IO.Class
@@ -86,16 +87,24 @@ eff ef sigs = wrapSco sigs $ \events -> do
 
 -- | Renders a scores to global variable that contains a resulting sound signals.
 mix :: (Sigs a, CsdSco f) => f (Mix a) -> a
-mix a = toTuple $ saveMixInstr (mixArity a) =<< 
-    (fmap rescaleCsdEventListM $ traverse unMix $ toCsdEventList a)
+mix a = mixBy (const a) (Unit $ return ())
+
+mixBy :: (Arg a, Sigs b, CsdSco f) => (a -> f (Mix b)) -> (a -> b)
+mixBy evts args = toTuple $ do
+    justArgs <- fromTuple args
+    justEvts <- fmap rescaleCsdEventListM $ traverse unMix $ toCsdEventList $ evts toArg
+    saveMixInstr (mixArity evts) justArgs justEvts
     where 
-        mixArity :: Sigs a => f (Mix a) -> Int
+        mixArity :: Sigs b => (a -> f (Mix b)) -> Int
         mixArity = tupleArity . proxy
             where
-                proxy :: f (Mix a) -> a
+                proxy :: (a -> f (Mix b)) -> b
                 proxy = const undefined
 
 mix_ :: (CsdSco f) => f (Mix Unit) -> SE ()
 mix_ a = fromDep_ $ saveMixInstr_ 
     =<< (fmap rescaleCsdEventListM $ traverse unMix $ toCsdEventList a)
+
+mixBy_ :: (Arg a, CsdSco f) => (a -> f (Mix Unit)) -> (a -> SE ())
+mixBy_ evts args = mix_ $ evts args
 
