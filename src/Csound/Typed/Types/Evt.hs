@@ -2,7 +2,7 @@
 module Csound.Typed.Types.Evt(
     Evt(..), Bam, 
     boolToEvt, evtToBool, sigToEvt, stepper,
-    filterE, accumSE, accumE, filterAccumE, filterAccumSE,
+    filterE, filterSE, accumSE, accumE, filterAccumE, filterAccumSE,
     Snap, snapshot, snaps, readSnap
 ) where
 
@@ -40,6 +40,12 @@ sigToEvt = boolToEvt . ( ==* 1) . kr
 filterE :: (a -> BoolD) -> Evt a -> Evt a
 filterE pr evt = Evt $ \bam -> runEvt evt $ \a ->
     when1 (boolSig $ pr a) $ bam a
+
+-- | Filters events with effectful predicate.
+filterSE :: (a -> SE BoolD) -> Evt a -> Evt a
+filterSE mpr evt = Evt $ \bam -> runEvt evt $ \a -> do
+    pr <- mpr a
+    when1 (boolSig pr) $ bam a    
 
 -- | Accumulator for events with side effects.
 accumSE :: (Tuple s) => s -> (a -> s -> SE (b, s)) -> Evt a -> Evt b
