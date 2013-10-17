@@ -60,9 +60,8 @@ sco_ :: (CsdSco f, Arg a) => (a -> SE ()) -> f a -> f (Mix Unit)
 sco_ instr notes = wrapSco notes $ \events -> do
     events' <- traverse toNote events
     cacheName <- liftIO $ C.makeCacheName instr
-    instrId <- saveSourceInstrCached cacheName (funArity instr') (insExp instr')
+    instrId <- saveSourceInstrCached_ cacheName (unitExp $ unit $ instr toArg)
     return $ Snd instrId events'
-    where instr' = unit . instr
 
 -- | Applies an effect to the sound. Effect is applied to the sound on the give track. 
 --

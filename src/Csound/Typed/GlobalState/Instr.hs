@@ -21,6 +21,7 @@ data Arity = Arity
 
 type InsExp = SE (GE [E])
 type EffExp = [E] -> SE (GE [E])
+type UnitExp = GE (Dep ())
 
 writeOut :: ([E] -> Dep ()) -> InsExp -> GE C.InstrBody
 writeOut f expr = execSE $ join $ fmap (fromDep_ . fmap f) expr
@@ -28,6 +29,9 @@ writeOut f expr = execSE $ join $ fmap (fromDep_ . fmap f) expr
 saveSourceInstrCached :: C.CacheName -> Arity -> InsExp -> GE InstrId
 saveSourceInstrCached cacheName arity instr = onInstr . C.saveCachedInstr cacheName =<< writeOut toOut instr
     where toOut = C.sendChn (arityIns arity) (arityOuts arity)
+
+saveSourceInstrCached_ :: C.CacheName -> UnitExp -> GE InstrId
+saveSourceInstrCached_ cacheName instr = onInstr . C.saveCachedInstr cacheName =<< instr
 
 saveEffectInstr :: Arity -> EffExp -> GE InstrId
 saveEffectInstr arity eff = onInstr . C.saveInstr =<< (execSG2 $ fmap (fmap (fmap setOuts) . eff) getIns)
@@ -61,6 +65,12 @@ saveMidiInstr midiType channel arity instr = do
     instrId <- onInstr $ C.saveInstr expr
     saveMidi $ MidiAssign midiType channel instrId
     return $ fmap readOnlyVar vars 
+
+saveMidiInstr_ :: MidiType -> Channel -> UnitExp -> GE (Dep ())
+saveMidiInstr_ midiType channel instr = do
+    instrId <- onInstr . C.saveInstr =<< instr
+    saveMidi $ MidiAssign midiType channel instrId
+    return $ return ()
 
 saveIns0 :: Int -> [Rate] -> SE (GE [E]) -> GE [E]
 saveIns0 arity rates as = do

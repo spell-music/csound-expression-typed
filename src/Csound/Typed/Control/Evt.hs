@@ -1,6 +1,7 @@
 {-# Language FlexibleContexts #-}
 module Csound.Typed.Control.Evt(
-    trig, sched, schedHarp, autoOff        
+    trig, sched, schedHarp, autoOff,
+    trig_, sched_
 ) where
 
 import Control.Applicative
@@ -57,4 +58,21 @@ autoOff dt sigs = fmap toTuple $ fromDep $ phi =<< fromTuple sigs
         phi x = do
             dtE <- toGE dt
             return $ C.autoOff dtE x
+
+-----------------------------------------------------------------------
+--
+
+trig_ :: (Arg a) => (a -> SE ()) -> Evt (D, D, a) -> SE ()
+trig_ instr evts = fromDep_ $ do
+    cacheName <- liftIO $ C.makeCacheName instr
+    instrId <- saveSourceInstrCached_ cacheName (unitExp $ unit $ instr toArg)
+    saveEvtInstr_ instrId evts
+
+saveEvtInstr_ :: Arg a => C.InstrId -> Evt (D, D, a) -> GE (C.Dep ())
+saveEvtInstr_ instrId evts = execSE $ runEvt evts $ \(start, dur, args) -> fromDep_ $ 
+    fmap C.event $ C.Event instrId <$> toGE start <*> toGE dur <*> toNote args
+
+sched_ :: (Arg a) => (a -> SE ()) -> Evt (D, a) -> SE ()
+sched_ instr evts = trig_ instr (fmap phi evts)
+    where phi (a, b) = (0, a, b)
 

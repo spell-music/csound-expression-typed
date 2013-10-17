@@ -1,12 +1,13 @@
 module Csound.Typed.GlobalState.SE(
     SE(..), LocalHistory(..), 
-    runSE, execSE, evalSE, 
+    runSE, execSE, evalSE, execGEinSE, 
     fromDep, fromDep_, 
     newLocalVar, newLocalVars        
 ) where
 
 import Control.Applicative
 import Control.Monad
+import Control.Monad.Trans.Class
 import Control.Monad.Trans.State.Strict
 import Data.Default
 
@@ -38,6 +39,12 @@ runSE a = runStateT (unSE a) def
 
 execSE :: SE a -> GE (Dep ())
 execSE = fmap (Dep . put . expDependency . snd) . runSE
+
+execGEinSE :: SE (GE a) -> SE a
+execGEinSE (SE sa) = SE $ do
+    ga <- sa
+    a  <- lift ga
+    return a
 
 fromDep :: GE (Dep a) -> SE (GE a)
 fromDep ma = fmap return $ SE $ StateT $ \s -> do

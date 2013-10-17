@@ -2,7 +2,7 @@
 module Csound.Typed.Control.Instr(
     Arity(..), InsExp, EffExp,
     funArity, constArity, 
-    insExp, effExp, masterExp, midiExp
+    insExp, effExp, masterExp, midiExp, unitExp
 ) where
 
 import Csound.Typed.Types
@@ -30,4 +30,7 @@ masterExp = fmap fromTuple
 
 midiExp :: (Tuple a) => (Msg -> SE a) -> InsExp
 midiExp instr = fmap fromTuple $ instr Msg
+
+unitExp :: SE Unit -> UnitExp
+unitExp = execSE . execGEinSE . fmap unUnit
 

@@ -2,7 +2,6 @@ module Csound.Typed.GlobalState.Converters(
     execSG, execSG2        
 ) where
 
-import Control.Monad
 import Control.Monad.Trans.State.Strict
 
 import Csound.Dynamic
