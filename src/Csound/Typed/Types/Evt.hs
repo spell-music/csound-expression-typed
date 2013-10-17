@@ -30,7 +30,7 @@ instance Monoid (Evt a) where
     
 -- | Converts booleans to events.
 boolToEvt :: BoolSig -> Evt ()
-boolToEvt b = Evt $ \bam -> when b $ bam ()
+boolToEvt b = Evt $ \bam -> when1 b $ bam ()
 
 -- | Triggers an event when signal equals to 1.
 sigToEvt :: Sig -> Evt ()
@@ -39,7 +39,7 @@ sigToEvt = boolToEvt . ( ==* 1) . kr
 -- | Filters events with predicate.
 filterE :: (a -> BoolD) -> Evt a -> Evt a
 filterE pr evt = Evt $ \bam -> runEvt evt $ \a ->
-    when (boolSig $ pr a) $ bam a
+    when1 (boolSig $ pr a) $ bam a
 
 -- | Accumulator for events with side effects.
 accumSE :: (Tuple s) => s -> (a -> s -> SE (b, s)) -> Evt a -> Evt b
@@ -63,7 +63,7 @@ filterAccumSE s0 update evt = Evt $ \bam -> do
     runEvt evt $ \a -> do
         s1 <- readSt
         (isOn, b, s2) <- update a s1
-        when (boolSig isOn) $ bam b
+        when1 (boolSig isOn) $ bam b
         writeSt s2
 
 -- | Accumulator with filtering. It can skip the events from the event stream.

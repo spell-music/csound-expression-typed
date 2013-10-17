@@ -22,19 +22,19 @@ module Csound.Typed.Types.Prim(
     quot', rem', div', mod', ceil', floor', round', int', frac',
    
     -- ** logic funs
-    when, boolSig
+    when1, whens, boolSig
 ) where
 
 import Control.Applicative hiding ((<*))
-import Control.Monad hiding (when)
+import Control.Monad
 import Data.Monoid
 import qualified Data.IntMap as IM
 
 import Data.Default
 import Data.Boolean
 
-import Csound.Dynamic hiding (double, int, str, when)
-import qualified Csound.Dynamic as D(double, int, str, when)
+import Csound.Dynamic hiding (double, int, str, when1, whens, ifBegin, ifEnd, elseBegin, elseIfBegin)
+import qualified Csound.Dynamic as D(double, int, str, ifBegin, ifEnd, elseBegin, elseIfBegin)
 import Csound.Typed.GlobalState
 
 -- | Signals
@@ -352,12 +352,35 @@ instance EqB D    where { (==*) = on2 (==*);    (/=*) = on2 (/=*) }
 instance OrdB Sig where { (<*)  = on2 (<*) ;    (>*)  = on2 (>*);     (<=*) = on2 (<=*);    (>=*) = on2 (>=*) }
 instance OrdB D   where { (<*)  = on2 (<*) ;    (>*)  = on2 (>*);     (<=*) = on2 (<=*);    (>=*) = on2 (>=*) }
 
-when :: BoolSig -> SE () -> SE ()
-when p body = do
-    bodyDep <- fmap return body
-    fromDep_ $ do
-        pDep <- toGE p
-        return $ D.when pDep bodyDep 
+when1 :: BoolSig -> SE () -> SE ()
+when1 p body = do
+    ifBegin p
+    body
+    ifEnd
+
+whens :: [(BoolSig, SE ())] -> SE () -> SE ()
+whens bodies el = case bodies of
+    []   -> el
+    a:as -> do
+        ifBegin (fst a)
+        snd a
+        elseIfs as
+        elseBegin 
+        el
+        ifEnd
+    where elseIfs = mapM_ (\(p, body) -> elseIfBegin p >> body)
+
+ifBegin :: BoolSig -> SE ()
+ifBegin a = fromDep_ $ fmap D.ifBegin $ toGE a
+
+ifEnd :: SE ()
+ifEnd = fromDep_ $ return $ D.ifEnd
+
+elseBegin :: SE ()
+elseBegin = fromDep_ $ return D.elseBegin
+
+elseIfBegin :: BoolSig -> SE ()
+elseIfBegin a = fromDep_ $ fmap D.elseIfBegin $ toGE a
 
 boolSig :: BoolD -> BoolSig
 boolSig = fromGE . toGE
