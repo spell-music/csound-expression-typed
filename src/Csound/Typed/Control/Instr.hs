@@ -2,7 +2,8 @@
 module Csound.Typed.Control.Instr(
     Arity(..), InsExp, EffExp,
     funArity, constArity, 
-    insExp, effExp, masterExp, midiExp, unitExp, apInstr
+    insExp, effExp, masterExp, midiExp, unitExp, 
+    apInstr, apInstr0
 ) where
 
 import Csound.Dynamic(InstrId)
@@ -44,4 +45,7 @@ apInstr instrIdGE args = res
             instrId <- instrIdGE
             argList <- fromTuple args
             return $ C.subinstr (tupleArity res) instrId argList
+
+apInstr0 :: (Sigs b) => GE InstrId -> b
+apInstr0 instrId = apInstr instrId (Unit $ return ())
 

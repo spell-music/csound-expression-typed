@@ -14,7 +14,14 @@ module Csound.Typed.GlobalState.Cache(
     saveMixKey, getMixKey,
     -- ** Procedures
     CacheMixProc, 
-    saveMixProcKey, getMixProcKey
+    saveMixProcKey, getMixProcKey,
+    -- * Evt
+    -- ** Functions
+    CacheEvt, EvtKey(..),
+    saveEvtKey, getEvtKey,
+    -- ** Procedures
+    CacheEvtProc, 
+    saveEvtProcKey, getEvtProcKey
 ) where
 
 import qualified Data.Map as M
@@ -26,10 +33,12 @@ data Cache = Cache
     { cacheMidi     :: CacheMidi 
     , cacheMidiProc :: CacheMidiProc
     , cacheMix      :: CacheMix
-    , cacheMixProc  :: CacheMixProc }
+    , cacheMixProc  :: CacheMixProc
+    , cacheEvt      :: CacheEvt
+    , cacheEvtProc  :: CacheEvtProc }
 
 instance Default Cache where
-    def = Cache def def def def
+    def = Cache def def def def def def
 
 type HashKey = Int
 
@@ -100,4 +109,32 @@ getMixProcKey = getKeyMap cacheMixProc
 
 saveMixProcKey :: SaveKey MixKey (Dep ())
 saveMixProcKey = saveKeyMap cacheMixProc (\a x -> x { cacheMixProc = a })
+
+----------------------------------------------------------
+-- Evt
+
+-- Evt functions
+
+data EvtKey = EvtKey HashKey HashKey
+    deriving (Eq, Ord)
+
+type    EvtVal = InstrId
+
+type CacheEvt = M.Map EvtKey EvtVal
+
+getEvtKey :: GetKey EvtKey EvtVal
+getEvtKey = getKeyMap cacheEvt
+
+saveEvtKey :: SaveKey EvtKey EvtVal
+saveEvtKey = saveKeyMap cacheEvt (\a x -> x { cacheEvt = a })
+
+-- Evt procedures
+
+type CacheEvtProc = M.Map EvtKey (Dep ())
+
+getEvtProcKey :: GetKey EvtKey (Dep ())
+getEvtProcKey = getKeyMap cacheEvtProc
+
+saveEvtProcKey :: SaveKey EvtKey (Dep ())
+saveEvtProcKey = saveKeyMap cacheEvtProc (\a x -> x { cacheEvtProc = a })
 
