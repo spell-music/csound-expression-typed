@@ -437,6 +437,54 @@ class AmpInstr a where
     type AmpInstrOut a :: *
     ampInstr :: a -> D -> SE (AmpInstrOut a)
 
+instance AmpInstr (D -> SE Sig) where
+    type AmpInstrOut (D -> SE Sig) = Sig
+    ampInstr = id
+
+instance AmpInstr (D -> SE (Sig, Sig)) where
+    type AmpInstrOut (D -> SE (Sig, Sig)) = (Sig, Sig)
+    ampInstr = id
+
+instance AmpInstr (D -> Sig) where
+    type AmpInstrOut (D -> Sig) = Sig
+    ampInstr f = return . f
+
+instance AmpInstr (D -> (Sig, Sig)) where
+    type AmpInstrOut (D -> (Sig, Sig)) = (Sig, Sig)
+    ampInstr f = return . f
+
+instance AmpInstr (Sig -> SE Sig) where
+    type AmpInstrOut (Sig -> SE Sig) = Sig
+    ampInstr f = f . sig
+
+instance AmpInstr (Sig -> SE (Sig, Sig)) where
+    type AmpInstrOut (Sig -> SE (Sig, Sig)) = (Sig, Sig)
+    ampInstr f = f . sig
+
+instance AmpInstr (Sig -> Sig) where
+    type AmpInstrOut (Sig -> Sig) = Sig
+    ampInstr f = return . f . sig
+
+instance AmpInstr (Sig -> (Sig, Sig)) where
+    type AmpInstrOut (Sig -> (Sig, Sig)) = (Sig, Sig)
+    ampInstr f = return . f . sig
+
+instance AmpInstr (SE Sig) where
+    type AmpInstrOut (SE Sig) = Sig
+    ampInstr a amp = fmap (sig amp * ) a
+
+instance AmpInstr (SE (Sig, Sig)) where
+    type AmpInstrOut (SE (Sig, Sig)) = (Sig, Sig)
+    ampInstr a amp = fmap (\(a1, a2) -> (sig amp * a1, sig amp * a2)) a 
+
+instance AmpInstr Sig where
+    type AmpInstrOut Sig = Sig
+    ampInstr a amp = return $ a * sig amp
+
+instance AmpInstr (Sig, Sig) where
+    type AmpInstrOut (Sig, Sig) = (Sig, Sig)
+    ampInstr (a1, a2) amp = return (a1 * sig amp, a2 * sig amp)
+
 ------------------------------------------------------------------------
 
 class CpsInstr a where
