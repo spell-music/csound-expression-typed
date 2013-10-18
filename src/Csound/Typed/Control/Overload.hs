@@ -1,8 +1,11 @@
 {-# Language TypeFamilies, FlexibleInstances, FlexibleContexts #-}
-module Csound.Typed.Control.Overload where
+module Csound.Typed.Control.Overload(
+    Instr(..), MidiInstr(..), AmpInstr(..), CpsInstr(..)        
+) where
 
 import Csound.Dynamic hiding (Instr)
-import Csound.Typed
+import Csound.Typed.Types
+import Csound.Typed.GlobalState
  
 ampCps :: Msg -> (D, D)
 ampCps _ = (ampmidi, cpsmidi)
@@ -428,4 +431,15 @@ instance MidiInstr (D -> SE (Sig, Sig, Sig, Sig)) where
         (a1, a2, a3, a4) <- f (cpsmidi)
         return $ (sig ampmidi * a1, sig ampmidi * a2, sig ampmidi * a3, sig ampmidi * a4)
 
+------------------------------------------------------------------------
+
+class AmpInstr a where
+    type AmpInstrOut a :: *
+    ampInstr :: a -> D -> SE (AmpInstrOut a)
+
+------------------------------------------------------------------------
+
+class CpsInstr a where
+    type CpsInstrOut a :: *
+    cpsInstr :: a -> (D, D) -> SE (CpsInstrOut a)
 

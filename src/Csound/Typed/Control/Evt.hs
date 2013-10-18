@@ -1,8 +1,9 @@
-{-# Language FlexibleContexts #-}
+{-# Language TypeFamilies, FlexibleContexts #-}
 module Csound.Typed.Control.Evt(
-    trig, sched, schedHarp, autoOff,
+    trig, sched, schedHarp, trigBy, schedBy, schedHarpBy,
+    trig', sched', schedHarp', autoOff,
     trig_, sched_,
-    trigBy, schedBy, schedHarpBy
+    trigBy', schedBy', schedHarpBy'
 ) where
 
 import Control.Applicative
@@ -14,15 +15,22 @@ import qualified Csound.Dynamic.Control as C
 import Csound.Typed.Types
 import Csound.Typed.GlobalState
 import Csound.Typed.Control.Instr
+import Csound.Typed.Control.Overload
 
 -------------------------------------------------
 -- triggereing the events
 
-trig :: (Arg a, Sigs b) => (a -> SE b) -> Evt (D, D, a) -> b
-trig instr evts = trigBy instr (const $ evts) (Unit $ return ())
+trig :: (Arg a, Sigs b, Instr f, a ~ InstrIn f, b ~ InstrOut f) => f -> Evt (D, D, a) -> InstrOut f
+trig instr evts = trig' (toInstr instr) evts
+
+trig' :: (Arg a, Sigs b) => (a -> SE b) -> Evt (D, D, a) -> b
+trig' instr evts = trigBy' instr (const $ evts) (Unit $ return ())
     
-trigBy :: (Arg a, Sigs b, Arg c) => (a -> SE b) -> (c -> Evt (D, D, a)) -> (c -> b)
-trigBy instr evts args = toTuple $ do
+trigBy :: (Arg a, Arg c, Instr f, InstrIn f ~ a, Sigs (InstrOut f)) => f -> (c -> Evt (D, D, a)) -> (c -> InstrOut f)
+trigBy instr = trigBy' (toInstr instr) 
+
+trigBy' :: (Arg a, Sigs b, Arg c) => (a -> SE b) -> (c -> Evt (D, D, a)) -> (c -> b)
+trigBy' instr evts args = toTuple $ do
     cacheName <- liftIO $ C.makeCacheName instr
     instrId <- saveSourceInstrCached cacheName (funArity instr) (insExp instr)
     justArgs <- fromTuple args
@@ -46,19 +54,31 @@ saveEvtInstr arity instrId evtArgs evts = do
                 e <- C.Event instrId <$> toGE start <*> toGE dur <*> (fmap (++ [C.chnRefId chnId]) $ toNote args) 
                 return $ C.event e 
 
-sched :: (Arg a, Sigs b) => (a -> SE b) -> Evt (D, a) -> b
-sched instr evts = trig instr (fmap phi evts)
+sched :: (Arg a, Instr f, a ~ InstrIn f, Sigs (InstrOut f)) => f -> Evt (D, a) -> InstrOut f
+sched = sched' . toInstr
+
+sched' :: (Arg a, Sigs b) => (a -> SE b) -> Evt (D, a) -> b
+sched' instr evts = trig' instr (fmap phi evts)
     where phi (a, b) = (0, a, b)
 
-schedBy :: (Arg a, Sigs b, Arg c) => (a -> SE b) -> (c -> Evt (D, a)) -> (c -> b)
-schedBy instr evts = trigBy instr (fmap (fmap phi) evts)
+schedBy :: (Arg a, Instr f, Sigs (InstrOut f), a ~ InstrIn f, Arg c) => f -> (c -> Evt (D, a)) -> (c -> InstrOut f)
+schedBy = schedBy' . toInstr
+
+schedBy' :: (Arg a, Sigs b, Arg c) => (a -> SE b) -> (c -> Evt (D, a)) -> (c -> b)
+schedBy' instr evts = trigBy' instr (fmap (fmap phi) evts)
     where phi (a, b) = (0, a, b)
 
-schedHarp :: (Arg a, Sigs b) => (a -> SE b) -> Evt a -> b
-schedHarp instr evts = schedHarpBy instr (const evts) (Unit $ return ())
+schedHarp :: (Arg a, Instr f, a ~ InstrIn f, Sigs (InstrOut f)) => f -> Evt a -> InstrOut f
+schedHarp = schedHarp' . toInstr
 
-schedHarpBy :: (Arg a, Sigs b, Arg c) => (a -> SE b) -> (c -> Evt a) -> (c -> b)
-schedHarpBy instr evts args = toTuple $ do
+schedHarp' :: (Arg a, Sigs b) => (a -> SE b) -> Evt a -> b
+schedHarp' instr evts = schedHarpBy' instr (const evts) (Unit $ return ())
+
+schedHarpBy :: (Arg a, Instr f, a ~ InstrIn f, Sigs (InstrOut f), Arg c) => f -> (c -> Evt a) -> (c -> InstrOut f)
+schedHarpBy = schedHarpBy' . toInstr
+
+schedHarpBy' :: (Arg a, Sigs b, Arg c) => (a -> SE b) -> (c -> Evt a) -> (c -> b)
+schedHarpBy' instr evts args = toTuple $ do
     cacheName <- liftIO $ C.makeCacheName instr
     instrId <- saveSourceInstrCached cacheName (funArity instr) (insExp $ (autoOff 2 =<< ) . instr)
     justArgs <- fromTuple args
