@@ -7,6 +7,10 @@ module Csound.Typed.Control.Midi(
     midi_, midin_, pgmidi_
 ) where
 
+import System.Mem.StableName
+
+import Control.Applicative
+import Control.Monad.IO.Class
 import Csound.Typed.Types
 import Csound.Typed.GlobalState
 import Csound.Typed.Control.Instr
@@ -24,21 +28,23 @@ midi' = midin' 0
 
 -- | Triggers a midi-instrument (aka Csound's massign). 
 midin :: (MidiInstr f, Sigs (MidiInstrOut f)) => Channel -> f -> MidiInstrOut f
-midin n f = midin' n (toMidiInstr f)
+midin n f = genMidi Massign n (toMidiInstr f) f
 
 midin' :: (Sigs a) => Channel -> (Msg -> SE a) -> a
-midin' = genMidi Massign
+midin' n f = genMidi Massign n f f
 
 -- | Triggers a - midi-instrument (aka Csound's pgmassign). 
 pgmidi :: (MidiInstr f, Sigs (MidiInstrOut f)) => Maybe Int -> Channel -> f -> MidiInstrOut f
-pgmidi n m f = pgmidi' n m (toMidiInstr f)
+pgmidi mchn n f = genMidi (Pgmassign mchn) n (toMidiInstr f) f
 
 pgmidi' :: (Sigs a) => Maybe Int -> Channel -> (Msg -> SE a) -> a
-pgmidi' mchn = genMidi (Pgmassign mchn)
+pgmidi' mchn n f = genMidi (Pgmassign mchn) n f f
 
-genMidi :: (Sigs a) => MidiType -> Channel -> (Msg -> SE a) -> a
-genMidi midiType chn instr = toTuple $ setDurationToInfinite >>
-    saveMidiInstr midiType chn (constArity $ instr Msg) (midiExp instr)
+genMidi :: (Sigs a) => MidiType -> Channel -> (Msg -> SE a) -> b -> a
+genMidi midiType chn instr cacheName = toTuple $ do    
+    setDurationToInfinite 
+    key <- liftIO $ midiKey midiType chn cacheName
+    saveMidiInstr key (constArity $ instr Msg) (midiExp instr)
 
 -----------------------------------------------------------------
 --
@@ -58,3 +64,11 @@ genMidi_ :: MidiType -> Channel -> (Msg -> SE ()) -> SE ()
 genMidi_ midiType chn instr = fromDep_ $ setDurationToInfinite >>
     saveMidiInstr_ midiType chn (unitExp $ instr' Msg)
     where instr' = unit . instr
+
+-----------------------------------------------------------------
+--
+
+midiKey :: MidiType -> Channel -> a -> IO MidiKey
+midiKey ty chn a = MidiKey ty chn . hashStableName <$> makeStableName a  
+
+

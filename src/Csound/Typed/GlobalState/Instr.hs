@@ -10,6 +10,7 @@ import Csound.Typed.GlobalState.GE
 import Csound.Typed.GlobalState.SE
 import Csound.Typed.GlobalState.Converters
 import Csound.Typed.GlobalState.Options
+import Csound.Typed.GlobalState.Cache
 
 import Debug.Trace
 
@@ -58,13 +59,19 @@ saveMasterInstr arity sigs = traceShow ("master") $ do
     instrId <- onInstr $ C.saveInstr (expr1 >> expr2)
     setMasterInstrId instrId
 
-saveMidiInstr :: MidiType -> Channel -> Arity -> InsExp -> GE [E]
-saveMidiInstr midiType channel arity instr = do
-    vars <- onGlobals $ sequence $ replicate (arityOuts arity) (C.newClearableGlobalVar Ar 0)
-    expr <- writeOut (zipWithM_ (appendVarBy (+)) vars) instr
-    instrId <- onInstr $ C.saveInstr expr
-    saveMidi $ MidiAssign midiType channel instrId
-    return $ fmap readOnlyVar vars 
+saveMidiInstr :: MidiKey -> Arity -> InsExp -> GE [E]
+saveMidiInstr key@(MidiKey midiType channel _) arity instr = do
+    midiInstr <- getMidiInstrFromCache key
+    case midiInstr of 
+        Just res    -> return res
+        Nothing     -> do
+            vars <- onGlobals $ sequence $ replicate (arityOuts arity) (C.newClearableGlobalVar Ar 0)
+            expr <- writeOut (zipWithM_ (appendVarBy (+)) vars) instr
+            instrId <- onInstr $ C.saveInstr expr
+            saveMidi $ MidiAssign midiType channel instrId
+            let res = fmap readOnlyVar vars 
+            saveMidiInstrToCache key res
+            return res
 
 saveMidiInstr_ :: MidiType -> Channel -> UnitExp -> GE (Dep ())
 saveMidiInstr_ midiType channel instr = do

@@ -3,7 +3,7 @@ module Csound.Typed.GlobalState.GE(
     -- * Globals
     onGlobals, 
     -- * Midi
-    MidiAssign(..), Channel, MidiType(..), Msg(..), renderMidiAssign, saveMidi,  
+    MidiAssign(..), Msg(..), renderMidiAssign, saveMidi,  
     -- * Instruments
     setMasterInstrId, onInstr, saveUserInstr0, getSysExpr,
     -- * Total duration
@@ -13,7 +13,10 @@ module Csound.Typed.GlobalState.GE(
     -- * Band-limited waves
     saveBandLimitedWave,
     -- * Strings
-    saveStr
+    saveStr,
+    -- * Cache
+    -- ** Midi
+    getMidiInstrFromCache, saveMidiInstrToCache
 ) where
 
 import Control.Applicative
@@ -21,6 +24,7 @@ import Control.Monad
 import Data.Default
 
 import Control.Monad.IO.Class
+import Control.Monad.Trans.Class
 import Control.Monad.Trans.State.Strict
 import Control.Monad.Trans.Reader
 
@@ -28,6 +32,7 @@ import Csound.Dynamic
 import Csound.Dynamic.Control
 
 import Csound.Typed.GlobalState.Options
+import Csound.Typed.GlobalState.Cache
 
 -- global side effects
 newtype GE a = GE { unGE :: ReaderT Options (StateT History IO) a }
@@ -61,10 +66,12 @@ data History = History
     , totalDur          :: Maybe TotalDur
     , masterInstrId     :: InstrId
     , userInstr0        :: InstrBody
-    , bandLimitedMap    :: BandLimitedMap }
+    , bandLimitedMap    :: BandLimitedMap
+    , cache             :: Cache }
 
-type Channel = Int
-data MidiType = Massign | Pgmassign (Maybe Int)
+instance Default History where
+    def = History def def def def def def (intInstrId 0) (return ()) def def
+
 data Msg = Msg
 data MidiAssign = MidiAssign MidiType Channel InstrId
             
@@ -75,9 +82,6 @@ renderMidiAssign (MidiAssign ty chn instrId) = case ty of
     where
         massign n instr = dep_ $ opcs "massign" [(Xr, [Ir,Ir])] [int n, prim $ PrimInstrId instr]
         pgmassign pgm instr mchn = dep_ $ opcs "pgmassign" [(Xr, [Ir,Ir,Ir])] ([int pgm, prim $ PrimInstrId instr] ++ maybe [] (return . int) mchn)
-
-instance Default History where
-    def = History def def def def def def (intInstrId 0) (return ()) def
 
 data TotalDur = NumDur Double | InfiniteDur
     deriving (Eq, Ord)
@@ -140,6 +144,12 @@ withOptions f = GE $ asks f
 getOptions :: GE Options
 getOptions = withOptions id
 
+withHistory :: (History -> a) -> GE a
+withHistory f = GE $ lift $ fmap f get
+
+modifyHistory :: (History -> History) -> GE ()
+modifyHistory = GE . lift . modify
+
 -- update fields
 
 onHistory :: (History -> a) -> (a -> History -> History) -> State a b -> GE b
@@ -154,4 +164,13 @@ onInstr = onHistory instrs (\a h -> h { instrs = a })
 
 onGlobals :: UpdField Globals a
 onGlobals = onHistory globals (\a h -> h { globals = a })
+
+----------------------------------------------------------------------
+-- cache
+
+getMidiInstrFromCache :: MidiKey -> GE (Maybe [E])
+getMidiInstrFromCache key = withHistory $ getMidiKey key . cache
+
+saveMidiInstrToCache :: MidiKey -> [E] -> GE ()
+saveMidiInstrToCache key val = modifyHistory $ \h -> h { cache = saveMidiKey key val (cache h) }
 

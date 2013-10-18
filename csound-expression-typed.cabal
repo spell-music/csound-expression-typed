@@ -24,7 +24,7 @@ Source-repository head
 Library
   Ghc-Options:    -Wall
   Build-Depends:
-        base >= 4, base < 5, containers, transformers, Boolean >= 0.1.0, data-default,
+        base >= 4, base < 5, ghc-prim, containers, transformers, Boolean >= 0.1.0, data-default,
         csound-expression-dynamic, csound-expression-control
   Hs-Source-Dirs:      src/
   Exposed-Modules:
@@ -47,6 +47,7 @@ Library
     Csound.Typed.GlobalState.SE
     Csound.Typed.GlobalState.Converters
     Csound.Typed.GlobalState.Instr
+    Csound.Typed.GlobalState.Cache
 
     Csound.Typed.Types.TupleHelpers
     Csound.Typed.Types.MixSco
