@@ -42,9 +42,9 @@ pgmidi' mchn n f = genMidi (Pgmassign mchn) n f f
 
 genMidi :: (Sigs a) => MidiType -> Channel -> (Msg -> SE a) -> b -> a
 genMidi midiType chn instr cacheName = toTuple $ do    
-    setDurationToInfinite 
-    key <- liftIO $ midiKey midiType chn cacheName
-    saveMidiInstr key (constArity $ instr Msg) (midiExp instr)
+    key <- midiKey midiType chn cacheName
+    withCache getMidiKey saveMidiKey key $
+        saveMidiInstr midiType chn (constArity $ instr Msg) (midiExp instr)
 
 -----------------------------------------------------------------
 --
@@ -61,14 +61,13 @@ pgmidi_ :: Maybe Int -> Channel -> (Msg -> SE ()) -> SE ()
 pgmidi_ mchn = genMidi_ (Pgmassign mchn)
 
 genMidi_ :: MidiType -> Channel -> (Msg -> SE ()) -> SE ()
-genMidi_ midiType chn instr = fromDep_ $ setDurationToInfinite >>
-    saveMidiInstr_ midiType chn (unitExp $ instr' Msg)
-    where instr' = unit . instr
+genMidi_ midiType chn instr = fromDep_ $ do
+    key <- midiKey midiType chn instr
+    withCache getMidiProcKey saveMidiProcKey key $ 
+        saveMidiInstr_ midiType chn (unitExp $ unit $ instr Msg)
 
 -----------------------------------------------------------------
---
 
-midiKey :: MidiType -> Channel -> a -> IO MidiKey
-midiKey ty chn a = MidiKey ty chn . hashStableName <$> makeStableName a  
-
+midiKey :: MidiType -> Channel -> a -> GE MidiKey
+midiKey ty chn a = liftIO $ MidiKey ty chn . hashStableName <$> makeStableName a  
 

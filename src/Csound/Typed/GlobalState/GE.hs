@@ -15,8 +15,7 @@ module Csound.Typed.GlobalState.GE(
     -- * Strings
     saveStr,
     -- * Cache
-    -- ** Midi
-    getMidiInstrFromCache, saveMidiInstrToCache
+    GetCache, SetCache, withCache
 ) where
 
 import Control.Applicative
@@ -168,9 +167,25 @@ onGlobals = onHistory globals (\a h -> h { globals = a })
 ----------------------------------------------------------------------
 -- cache
 
-getMidiInstrFromCache :: MidiKey -> GE (Maybe [E])
-getMidiInstrFromCache key = withHistory $ getMidiKey key . cache
+-- midi functions
 
-saveMidiInstrToCache :: MidiKey -> [E] -> GE ()
-saveMidiInstrToCache key val = modifyHistory $ \h -> h { cache = saveMidiKey key val (cache h) }
+type GetCache a b = a -> Cache -> Maybe b
+
+fromCache :: GetCache a b -> a -> GE (Maybe b)
+fromCache f key = withHistory $ f key . cache
+
+type SetCache a b = a -> b -> Cache -> Cache
+
+toCache :: SetCache a b -> a -> b -> GE () 
+toCache f key val = modifyHistory $ \h -> h { cache = f key val (cache h) }
+
+withCache :: GetCache key val -> SetCache key val -> key -> GE val -> GE val
+withCache lookupResult saveResult key getResult = do    
+    ma <- fromCache lookupResult key
+    case ma of
+        Just a      -> return a
+        Nothing     -> do
+            res <- getResult
+            toCache saveResult key res
+            return res          
 

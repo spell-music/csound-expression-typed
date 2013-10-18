@@ -9,6 +9,7 @@ module Csound.Typed.Control.Mix(
 
 import Control.Monad.IO.Class
 import Data.Traversable
+import System.Mem.StableName
 
 import Csound.Dynamic hiding (Instr)
 import qualified Csound.Dynamic.Control as C
@@ -55,12 +56,15 @@ wrapSco notes getContent = singleCsdEvent (0, csdEventListDur evts, Mix $ getCon
 -- instrument is rendered we no longer need 'SE' type. So 'NoSE' lets me drop it
 -- from the output type. 
 sco :: (CsdSco f, Arg a, Instr snd, a ~ InstrIn snd, Sigs (InstrOut snd)) => snd -> f a -> f (Mix (InstrOut snd))
-sco instr notes = sco' (toInstr instr) notes
+sco instr notes = genSco (toInstr instr) notes instr
 
 sco' :: (CsdSco f, Arg a, Sigs b) => (a -> SE b) -> f a -> f (Mix b)
-sco' instr notes = wrapSco notes $ \events -> do
+sco' instr notes = genSco instr notes instr
+
+genSco :: (CsdSco f, Arg a, Sigs b) => (a -> SE b) -> f a -> d -> f (Mix b)
+genSco instr notes cacheInstr = wrapSco notes $ \events -> do
     events' <- traverse toNote events
-    cacheName <- liftIO $ C.makeCacheName instr
+    cacheName <- liftIO $ C.makeCacheName cacheInstr
     instrId <- saveSourceInstrCached cacheName (funArity instr) (insExp instr)
     return $ Snd instrId events'
 
@@ -97,24 +101,42 @@ eff' ef sigs = wrapSco sigs $ \events -> do
 
 -- | Renders a scores to global variable that contains a resulting sound signals.
 mix :: (Sigs a, CsdSco f) => f (Mix a) -> a
-mix a = mixBy (const a) (Unit $ return ())
+mix a = flip apInstr (Unit $ return ()) $ do
+    key <- mixKey a
+    withCache getMixKey saveMixKey key $ 
+        saveMixInstr (mixArity a) =<< toEventList a
 
 mixBy :: (Arg a, Sigs b, CsdSco f) => (a -> f (Mix b)) -> (a -> b)
-mixBy evts args = toTuple $ do
-    justArgs <- fromTuple args
-    justEvts <- fmap rescaleCsdEventListM $ traverse unMix $ toCsdEventList $ evts toArg
-    saveMixInstr (mixArity evts) justArgs justEvts
-    where 
-        mixArity :: Sigs b => (a -> f (Mix b)) -> Int
-        mixArity = tupleArity . proxy
-            where
-                proxy :: (a -> f (Mix b)) -> b
-                proxy = const undefined
+mixBy evts args = flip apInstr args $ do
+    key <- mixKey evts
+    withCache getMixKey saveMixKey key $ 
+        saveMixInstr (mixArityFun evts) =<< (toEventList $ evts toArg)
 
 mix_ :: (CsdSco f) => f (Mix Unit) -> SE ()
-mix_ a = fromDep_ $ saveMixInstr_ 
-    =<< (fmap rescaleCsdEventListM $ traverse unMix $ toCsdEventList a)
+mix_ a = fromDep_ $ do
+    key <- mixKey a
+    withCache getMixProcKey saveMixProcKey key $
+        saveMixInstr_ =<< toEventList a
 
 mixBy_ :: (Arg a, CsdSco f) => (a -> f (Mix Unit)) -> (a -> SE ())
 mixBy_ evts args = mix_ $ evts args
 
+----------------------------------------------------------
+
+mixKey :: a -> GE MixKey
+mixKey = liftIO . fmap (MixKey . hashStableName) . makeStableName
+
+toEventList :: (CsdSco f) => f (Mix a) -> GE (CsdEventList M)
+toEventList evts = fmap rescaleCsdEventListM $ traverse unMix $ toCsdEventList $ evts
+
+mixArity :: Sigs b => f (Mix b) -> Int
+mixArity = tupleArity . proxy
+    where
+        proxy :: f (Mix b) -> b
+        proxy = const undefined
+
+mixArityFun :: Sigs b => (a -> f (Mix b)) -> Int
+mixArityFun = tupleArity . proxy
+    where
+        proxy :: (a -> f (Mix b)) -> b
+        proxy = const undefined

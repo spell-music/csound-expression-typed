@@ -12,10 +12,6 @@ import Csound.Typed.GlobalState.Converters
 import Csound.Typed.GlobalState.Options
 import Csound.Typed.GlobalState.Cache
 
-import Debug.Trace
-
-
-
 data Arity = Arity
     { arityIns      :: Int
     , arityOuts     :: Int }
@@ -40,38 +36,32 @@ saveEffectInstr arity eff = onInstr . C.saveInstr =<< (execSG2 $ fmap (fmap (fma
         setOuts = C.writeChn $ C.chnRefFromParg 5 (arityOuts arity)
         getIns  = C.readChn  $ C.chnRefFromParg 4 (arityIns  arity)
 
-saveMixInstr :: Int -> [E] -> CsdEventList M -> GE [E]
-saveMixInstr arity args a = traceShow ("mix") $ do
+saveMixInstr :: Int -> CsdEventList M -> GE InstrId
+saveMixInstr arity a = do
     setDuration $ csdEventListDur a
-    instrId <- onInstr $ C.saveInstr $ C.sendOut arity =<< renderMixSco arity a
-    return $ C.subinstr arity instrId args
+    onInstr $ C.saveInstr $ C.sendOut arity =<< renderMixSco arity a
 
 saveMixInstr_ :: CsdEventList M -> GE (Dep ())
-saveMixInstr_ a = traceShow ("mix_") $ do
+saveMixInstr_ a = do
     setDuration $ csdEventListDur a
     return $ renderMixSco_ a
 
 saveMasterInstr :: Arity -> InsExp -> GE ()
-saveMasterInstr arity sigs = traceShow ("master") $ do
+saveMasterInstr arity sigs = do
     gainLevel <- fmap setGain getOptions 
     expr1 <- writeOut (C.sendOut (arityOuts arity) . C.safeOut gainLevel) sigs
     expr2 <- getSysExpr 
     instrId <- onInstr $ C.saveInstr (expr1 >> expr2)
     setMasterInstrId instrId
 
-saveMidiInstr :: MidiKey -> Arity -> InsExp -> GE [E]
-saveMidiInstr key@(MidiKey midiType channel _) arity instr = do
-    midiInstr <- getMidiInstrFromCache key
-    case midiInstr of 
-        Just res    -> return res
-        Nothing     -> do
-            vars <- onGlobals $ sequence $ replicate (arityOuts arity) (C.newClearableGlobalVar Ar 0)
-            expr <- writeOut (zipWithM_ (appendVarBy (+)) vars) instr
-            instrId <- onInstr $ C.saveInstr expr
-            saveMidi $ MidiAssign midiType channel instrId
-            let res = fmap readOnlyVar vars 
-            saveMidiInstrToCache key res
-            return res
+saveMidiInstr :: MidiType -> Channel -> Arity -> InsExp -> GE [E]
+saveMidiInstr midiType channel arity instr = do
+    setDurationToInfinite
+    vars <- onGlobals $ sequence $ replicate (arityOuts arity) (C.newClearableGlobalVar Ar 0)
+    expr <- writeOut (zipWithM_ (appendVarBy (+)) vars) instr
+    instrId <- onInstr $ C.saveInstr expr
+    saveMidi $ MidiAssign midiType channel instrId
+    return $ fmap readOnlyVar vars 
 
 saveMidiInstr_ :: MidiType -> Channel -> UnitExp -> GE (Dep ())
 saveMidiInstr_ midiType channel instr = do
