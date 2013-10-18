@@ -60,4 +60,7 @@ Library
     Csound.Typed.Control.Instr
     Csound.Typed.Control.Overload
 
+    Csound.Typed.Control.Overload.Instr
+    Csound.Typed.Control.Overload.MidiInstr
+    Csound.Typed.Control.Overload.SpecInstr
 

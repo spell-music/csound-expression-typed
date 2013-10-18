@@ -12,7 +12,9 @@ module Csound.Typed.Control (
     -- * Events
     module Csound.Typed.Control.Evt,
     -- * Band-limited oscillators
-    module Csound.Typed.Control.Vco
+    module Csound.Typed.Control.Vco,
+    -- * Overloaded instruments
+    module Csound.Typed.Control.Overload
 ) where
     
 import Csound.Typed.GlobalState.SE
@@ -26,6 +28,8 @@ import Csound.Typed.Control.Vco
 
 import Csound.Typed.Types
 import Csound.Typed.GlobalState
+
+import Csound.Typed.Control.Overload
 
 instr0 :: Tuple a => SE a -> SE a
 instr0 a = return $ toTuple $ saveIns0 ins0Arity (tupleRates $ proxy a) ins0Exp
