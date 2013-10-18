@@ -3,6 +3,8 @@ module Csound.Typed.Control.Overload(
     Instr(..), MidiInstr(..), AmpInstr(..), CpsInstr(..)        
 ) where
 
+import Control.Arrow(first, second)
+
 import Csound.Dynamic hiding (Instr)
 import Csound.Typed.Types
 import Csound.Typed.GlobalState
@@ -490,4 +492,102 @@ instance AmpInstr (Sig, Sig) where
 class CpsInstr a where
     type CpsInstrOut a :: *
     cpsInstr :: a -> (D, D) -> SE (CpsInstrOut a)
+
+instance CpsInstr ((D, D) -> SE Sig) where
+    type CpsInstrOut ((D, D) -> SE Sig) = Sig
+    cpsInstr = id
+
+instance CpsInstr ((D, D) -> SE (Sig, Sig)) where
+    type CpsInstrOut ((D, D) -> SE (Sig, Sig)) = (Sig, Sig)
+    cpsInstr = id
+
+instance CpsInstr ((D, D) -> Sig) where
+    type CpsInstrOut ((D, D) -> Sig) = Sig
+    cpsInstr f = return . f
+
+instance CpsInstr ((D, D) -> (Sig, Sig)) where
+    type CpsInstrOut ((D, D) -> (Sig, Sig)) = (Sig, Sig)
+    cpsInstr f = return . f
+
+instance CpsInstr ((D, Sig) -> SE Sig) where
+    type CpsInstrOut ((D, Sig) -> SE Sig) = Sig
+    cpsInstr f = f . second sig
+
+instance CpsInstr ((D, Sig) -> SE (Sig, Sig)) where
+    type CpsInstrOut ((D, Sig) -> SE (Sig, Sig)) = (Sig, Sig)
+    cpsInstr f = f . second sig
+
+instance CpsInstr ((D, Sig) -> Sig) where
+    type CpsInstrOut ((D, Sig) -> Sig) = Sig
+    cpsInstr f = return . f . second sig
+
+instance CpsInstr ((D, Sig) -> (Sig, Sig)) where
+    type CpsInstrOut ((D, Sig) -> (Sig, Sig)) = (Sig, Sig)
+    cpsInstr f = return . f . second sig
+
+instance CpsInstr ((Sig, D) -> SE Sig) where
+    type CpsInstrOut ((Sig, D) -> SE Sig) = Sig
+    cpsInstr f = f . first sig
+
+instance CpsInstr ((Sig, D) -> SE (Sig, Sig)) where
+    type CpsInstrOut ((Sig, D) -> SE (Sig, Sig)) = (Sig, Sig)
+    cpsInstr f = f . first sig
+
+instance CpsInstr ((Sig, D) -> Sig) where
+    type CpsInstrOut ((Sig, D) -> Sig) = Sig
+    cpsInstr f = return . f . first sig
+
+instance CpsInstr ((Sig, D) -> (Sig, Sig)) where
+    type CpsInstrOut ((Sig, D) -> (Sig, Sig)) = (Sig, Sig)
+    cpsInstr f = return . f . first sig
+
+instance CpsInstr ((Sig, Sig) -> SE Sig) where
+    type CpsInstrOut ((Sig, Sig) -> SE Sig) = Sig
+    cpsInstr f = f . first sig . second sig
+
+instance CpsInstr ((Sig, Sig) -> SE (Sig, Sig)) where
+    type CpsInstrOut ((Sig, Sig) -> SE (Sig, Sig)) = (Sig, Sig)
+    cpsInstr f = f . first sig . second sig
+
+instance CpsInstr ((Sig, Sig) -> Sig) where
+    type CpsInstrOut ((Sig, Sig) -> Sig) = Sig
+    cpsInstr f = return . f . first sig . second sig
+
+instance CpsInstr ((Sig, Sig) -> (Sig, Sig)) where
+    type CpsInstrOut ((Sig, Sig) -> (Sig, Sig)) = (Sig, Sig)
+    cpsInstr f = return . f . first sig . second sig
+
+instance CpsInstr (D -> SE Sig) where
+    type CpsInstrOut (D -> SE Sig) = Sig
+    cpsInstr f (amp, cps) = fmap (* sig amp) $ f cps
+
+instance CpsInstr (D -> SE (Sig, Sig)) where
+    type CpsInstrOut (D -> SE (Sig, Sig)) = (Sig, Sig)
+    cpsInstr f (amp, cps) = fmap (first (* sig amp) . second (* sig amp)) $ f cps
+
+instance CpsInstr (D -> Sig) where
+    type CpsInstrOut (D -> Sig) = Sig
+    cpsInstr f (amp, cps) = return $ sig amp * f cps
+
+instance CpsInstr (D -> (Sig, Sig)) where
+    type CpsInstrOut (D -> (Sig, Sig)) = (Sig, Sig)
+    cpsInstr f (amp, cps) = return $ first (* sig amp) $ second (* sig amp) $ f cps
+
+instance CpsInstr (Sig -> SE Sig) where
+    type CpsInstrOut (Sig -> SE Sig) = Sig
+    cpsInstr f (amp, cps) = fmap (* sig amp) $ f $ sig cps
+
+instance CpsInstr (Sig -> SE (Sig, Sig)) where
+    type CpsInstrOut (Sig -> SE (Sig, Sig)) = (Sig, Sig)
+    cpsInstr f (amp, cps) = fmap (first (* sig amp) . second (* sig amp)) $ f $ sig cps
+
+instance CpsInstr (Sig -> Sig) where
+    type CpsInstrOut (Sig -> Sig) = Sig
+    cpsInstr f (amp, cps) = return $ sig amp * f (sig cps)
+
+instance CpsInstr (Sig -> (Sig, Sig)) where
+    type CpsInstrOut (Sig -> (Sig, Sig)) = (Sig, Sig)
+    cpsInstr f (amp, cps) = return $ first (* sig amp) $ second (* sig amp) $ f $ sig cps
+
+
 
