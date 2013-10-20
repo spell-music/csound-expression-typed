@@ -1,8 +1,7 @@
-{-# Language TypeFamilies,  FlexibleContexts #-}
+{-# Language FlexibleContexts #-}
 module Csound.Typed.Control.Mix(
     Mix, 
     sco, eff, mix, mixBy,
-    sco', eff',
     sco_, mix_, mixBy_,
     CsdSco(..), CsdEventList(..), CsdEvent
 ) where
@@ -18,7 +17,6 @@ import Csound.Typed.Types
 import Csound.Typed.Types.MixSco
 import Csound.Typed.GlobalState
 import Csound.Typed.Control.Instr
-import Csound.Typed.Control.Overload
 
 -- | Special type that represents a scores of sound signals.
 -- If an instrument is triggered with the scores the result is wrapped
@@ -55,16 +53,10 @@ wrapSco notes getContent = singleCsdEvent (0, csdEventListDur evts, Mix $ getCon
 -- opcodes that have side effects. We need it within one instrument. But when 
 -- instrument is rendered we no longer need 'SE' type. So 'NoSE' lets me drop it
 -- from the output type. 
-sco :: (CsdSco f, Arg a, Instr snd, a ~ InstrIn snd, Sigs (InstrOut snd)) => snd -> f a -> f (Mix (InstrOut snd))
-sco instr notes = genSco (toInstr instr) notes instr
-
-sco' :: (CsdSco f, Arg a, Sigs b) => (a -> SE b) -> f a -> f (Mix b)
-sco' instr notes = genSco instr notes instr
-
-genSco :: (CsdSco f, Arg a, Sigs b) => (a -> SE b) -> f a -> d -> f (Mix b)
-genSco instr notes cacheInstr = wrapSco notes $ \events -> do
+sco :: (CsdSco f, Arg a, Sigs b) => (a -> SE b) -> f a -> f (Mix b)
+sco instr notes = wrapSco notes $ \events -> do
     events' <- traverse toNote events
-    cacheName <- liftIO $ C.makeCacheName cacheInstr
+    cacheName <- liftIO $ C.makeCacheName instr
     instrId <- saveSourceInstrCached cacheName (funArity instr) (insExp instr)
     return $ Snd instrId events'
 
@@ -90,11 +82,8 @@ sco_ instr notes = wrapSco notes $ \events -> do
 -- board it produces the value that you can arrange with functions from your
 -- favorite Score-generation library. You can delay it or mix with some other track and 
 -- apply some another effect on top of it!
-eff :: (CsdSco f, Sigs a, Sigs b, Instr e, a ~ InstrIn e, b ~ InstrOut e) => e -> f (Mix a) -> f (Mix b)
-eff effect notes = eff' (toInstr effect) notes
-
-eff' :: (CsdSco f, Sigs a, Sigs b) => (a -> SE b) -> f (Mix a) -> f (Mix b)
-eff' ef sigs = wrapSco sigs $ \events -> do
+eff :: (CsdSco f, Sigs a, Sigs b) => (a -> SE b) -> f (Mix a) -> f (Mix b)
+eff ef sigs = wrapSco sigs $ \events -> do
     notes <- traverse unMix events
     instrId <- saveEffectInstr (funArity ef) (effExp ef)
     return $ Eff instrId notes (arityIns $ funArity ef)

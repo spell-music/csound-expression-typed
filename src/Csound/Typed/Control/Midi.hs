@@ -1,9 +1,7 @@
-{-# Language TypeFamilies, FlexibleContexts #-}
+{-# Language FlexibleContexts #-}
 module Csound.Typed.Control.Midi(
     Msg, Channel,
-    midiE, 
     midi, midin, pgmidi, 
-    midi', midin', pgmidi',
     midi_, midin_, pgmidi_
 ) where
 
@@ -15,34 +13,20 @@ import Csound.Typed.Types
 import Csound.Typed.GlobalState
 import Csound.Typed.Control.Instr
 
-import Csound.Typed.Control.Overload
-
-midiE :: Channel -> Evt Msg
-midiE = undefined
-
-midi :: (MidiInstr f, Sigs (MidiInstrOut f)) => f -> MidiInstrOut f
-midi f = midi' (toMidiInstr f)
-
-midi' :: (Sigs a) => (Msg -> SE a) -> a
-midi' = midin' 0
+midi :: (Sigs a) => (Msg -> SE a) -> a
+midi = midin 0
 
 -- | Triggers a midi-instrument (aka Csound's massign). 
-midin :: (MidiInstr f, Sigs (MidiInstrOut f)) => Channel -> f -> MidiInstrOut f
-midin n f = genMidi Massign n (toMidiInstr f) f
-
-midin' :: (Sigs a) => Channel -> (Msg -> SE a) -> a
-midin' n f = genMidi Massign n f f
+midin :: (Sigs a) => Channel -> (Msg -> SE a) -> a
+midin n f = genMidi Massign n f
 
 -- | Triggers a - midi-instrument (aka Csound's pgmassign). 
-pgmidi :: (MidiInstr f, Sigs (MidiInstrOut f)) => Maybe Int -> Channel -> f -> MidiInstrOut f
-pgmidi mchn n f = genMidi (Pgmassign mchn) n (toMidiInstr f) f
+pgmidi :: (Sigs a) => Maybe Int -> Channel -> (Msg -> SE a) -> a
+pgmidi mchn n f = genMidi (Pgmassign mchn) n f 
 
-pgmidi' :: (Sigs a) => Maybe Int -> Channel -> (Msg -> SE a) -> a
-pgmidi' mchn n f = genMidi (Pgmassign mchn) n f f
-
-genMidi :: (Sigs a) => MidiType -> Channel -> (Msg -> SE a) -> b -> a
-genMidi midiType chn instr cacheName = toTuple $ do    
-    key <- midiKey midiType chn cacheName
+genMidi :: (Sigs a) => MidiType -> Channel -> (Msg -> SE a) -> a
+genMidi midiType chn instr = toTuple $ do    
+    key <- midiKey midiType chn instr
     withCache getMidiKey saveMidiKey key $
         saveMidiInstr midiType chn (constArity $ instr Msg) (midiExp instr)
 
