@@ -4,7 +4,7 @@ module Csound.Typed.Control (
     -- ** SE reference
     module Csound.Typed.Control.SERef,
     -- * Global settings
-    instr0,
+    instr0, getIns,
     -- * Score
     module Csound.Typed.Control.Mix,
     -- * Midi
@@ -14,7 +14,9 @@ module Csound.Typed.Control (
     -- * Band-limited oscillators
     module Csound.Typed.Control.Vco
 ) where
-    
+
+import qualified Csound.Dynamic.Control as C
+
 import Csound.Typed.GlobalState.SE
 
 import Csound.Typed.Control.SERef
@@ -36,4 +38,13 @@ instr0 a = return $ toTuple $ saveIns0 ins0Arity (tupleRates $ proxy a) ins0Exp
 
         proxy :: Tuple a => SE a -> a
         proxy = const (toTuple $ return $ repeat undefined)
+
+getIns :: Sigs a => SE a
+getIns = res
+    where 
+        res = fmap toTuple $ fromDep $ return $ C.getIn (tupleArity $ proxy res) 
+
+        proxy :: SE a -> a
+        proxy = const undefined
+
 

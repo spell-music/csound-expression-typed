@@ -26,7 +26,6 @@ module Csound.Typed.Types.Tuple(
 import Control.Arrow
 import Control.Applicative
 import Control.Monad
-import Data.Monoid
 import Data.Default
 import Data.Boolean
 
@@ -137,13 +136,20 @@ ar1 = id;   ar2 = id;   ar4 = id;   ar6 = id;   ar8 = id
 -- out instances
 
 -- | The tuples of signals.
-class (Monoid a, Tuple a) => Sigs a where
+class (Tuple a) => Sigs a where
 
 instance Sigs Sig
+instance Sigs (Sig, Sig)
+instance Sigs (Sig, Sig, Sig, Sig)
+instance Sigs (Sig, Sig, Sig, Sig, Sig, Sig)
+instance Sigs (Sig, Sig, Sig, Sig, Sig, Sig, Sig, Sig)
+instance Sigs ( (Sig, Sig, Sig, Sig, Sig, Sig, Sig, Sig)
+              , (Sig, Sig, Sig, Sig, Sig, Sig, Sig, Sig) )
 
-instance (Sigs a, Sigs b) => Sigs (a, b)
-instance (Sigs a, Sigs b, Sigs c) => Sigs (a, b, c)
-instance (Sigs a, Sigs b, Sigs c, Sigs d) => Sigs (a, b, c, d)
+instance Sigs ( (Sig, Sig, Sig, Sig, Sig, Sig, Sig, Sig)
+              , (Sig, Sig, Sig, Sig, Sig, Sig, Sig, Sig)
+              , (Sig, Sig, Sig, Sig, Sig, Sig, Sig, Sig)
+              , (Sig, Sig, Sig, Sig, Sig, Sig, Sig, Sig) )
 
 outArity :: Tuple a => SE a -> Int
 outArity = tupleArity . proxy

@@ -1,5 +1,6 @@
 module Csound.Typed.Render(
     renderOut, renderOutBy, 
+    renderEff, renderEffBy,
     renderOut_, renderOutBy_, 
     -- * Options
     module Csound.Typed.GlobalState.Options,
@@ -18,6 +19,7 @@ import Csound.Typed.Types
 import Csound.Typed.GlobalState
 import Csound.Typed.GlobalState.Options
 import Csound.Typed.Control.Instr
+import Csound.Typed.Control(getIns)
 
 toCsd :: Tuple a => Options -> SE a -> IO Csd
 toCsd options sigs = fmap (renderHistory (outArity sigs) options) 
@@ -34,6 +36,12 @@ renderOut = renderOutBy def
 
 renderOutBy :: Sigs a => Options -> SE a -> IO String
 renderOutBy options = fmap renderCsd . (toCsd options)
+
+renderEff :: (Sigs a, Sigs b) => (a -> SE b) -> IO String
+renderEff = renderEffBy def
+
+renderEffBy :: (Sigs a, Sigs b) => Options -> (a -> SE b) -> IO String
+renderEffBy options eff = renderOutBy options $ eff =<< getIns
 
 renderHistory :: Int -> Options -> History -> Csd
 renderHistory nchnls opt hist = Csd flags orc sco
