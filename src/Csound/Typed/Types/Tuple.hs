@@ -35,6 +35,7 @@ import Csound.Typed.Types.Prim
 import Csound.Typed.GlobalState
 import Csound.Typed.Types.TupleHelpers
 
+-- | A tuple of Csound values.
 class Tuple a where
     tupleMethods :: TupleMethods a
 
@@ -135,6 +136,7 @@ ar1 = id;   ar2 = id;   ar4 = id;   ar6 = id;   ar8 = id
 ---------------------------------------------------------------------------------
 -- out instances
 
+-- | The tuples of signals.
 class (Monoid a, Tuple a) => Sigs a where
 
 instance Sigs Sig

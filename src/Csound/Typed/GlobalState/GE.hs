@@ -86,11 +86,12 @@ data TotalDur = NumDur Double | InfiniteDur
     deriving (Eq, Ord)
 
 getTotalDur :: Options -> (Maybe TotalDur) -> Double
-getTotalDur opt = toDouble . maybe InfiniteDur id  
+getTotalDur _ = toDouble . maybe InfiniteDur id  
     where 
         toDouble x = case x of
             NumDur d    -> d
-            InfiniteDur -> setInfiniteDur opt
+            InfiniteDur -> infiniteDur
+        infiniteDur = 7 * 24 * 60 * 60 -- a week
 
 saveStr :: String -> GE E
 saveStr = fmap prim . onStringMap . newString

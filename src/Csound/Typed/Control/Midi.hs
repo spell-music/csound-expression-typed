@@ -13,14 +13,16 @@ import Csound.Typed.Types
 import Csound.Typed.GlobalState
 import Csound.Typed.Control.Instr
 
+-- | Triggers a midi-instrument (aka Csound's massign) for all channels. 
+-- It's useful to test a single instrument.
 midi :: (Sigs a) => (Msg -> SE a) -> a
 midi = midin 0
 
--- | Triggers a midi-instrument (aka Csound's massign). 
+-- | Triggers a midi-instrument (aka Csound's massign) on the specified channel. 
 midin :: (Sigs a) => Channel -> (Msg -> SE a) -> a
 midin n f = genMidi Massign n f
 
--- | Triggers a - midi-instrument (aka Csound's pgmassign). 
+-- | Triggers a midi-instrument (aka Csound's pgmassign) on the specified programm bank. 
 pgmidi :: (Sigs a) => Maybe Int -> Channel -> (Msg -> SE a) -> a
 pgmidi mchn n f = genMidi (Pgmassign mchn) n f 
 
@@ -33,14 +35,15 @@ genMidi midiType chn instr = toTuple $ do
 -----------------------------------------------------------------
 --
 
+-- | Triggers a midi-procedure (aka Csound's massign) for all channels. 
 midi_ :: (Msg -> SE ()) -> SE ()
 midi_ = midin_ 0
 
--- | Triggers a midi-instrument (aka Csound's massign). 
+-- | Triggers a midi-procedure (aka Csound's pgmassign) on the given channel. 
 midin_ :: Channel -> (Msg -> SE ()) -> SE ()
 midin_ = genMidi_ Massign
 
--- | Triggers a - midi-instrument (aka Csound's pgmassign). 
+-- | Triggers a midi-procedure (aka Csound's pgmassign) on the given programm bank. 
 pgmidi_ :: Maybe Int -> Channel -> (Msg -> SE ()) -> SE ()
 pgmidi_ mchn = genMidi_ (Pgmassign mchn)
 
@@ -48,7 +51,7 @@ genMidi_ :: MidiType -> Channel -> (Msg -> SE ()) -> SE ()
 genMidi_ midiType chn instr = fromDep_ $ do
     key <- midiKey midiType chn instr
     withCache getMidiProcKey saveMidiProcKey key $ 
-        saveMidiInstr_ midiType chn (unitExp $ unit $ instr Msg)
+        saveMidiInstr_ midiType chn (unitExp $ fmap (const unit) $ instr Msg)
 
 -----------------------------------------------------------------
 

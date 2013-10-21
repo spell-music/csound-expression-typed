@@ -1,5 +1,6 @@
 module Csound.Typed.GlobalState.Options (
-    Options(..), 
+    Options(..),
+    defGain, defSampleRate, defBlockSize, defTabFi,
     -- ** Table fidelity
     TabFi(..), fineFi, coarseFi,
     -- *** Gen identifiers
@@ -9,32 +10,61 @@ module Csound.Typed.GlobalState.Options (
     idExps, idSplines, idStartEnds,  idPolys, idChebs1, idChebs2, idBessels, idWins
 ) where
 
+import Control.Applicative
+import Data.Monoid
 import Data.Default
 import qualified Data.IntMap as IM
 
 import Csound.Dynamic
 
+-- | Csound options. The default values are
+--
+-- > flags      = def     -- the only flag set by default is "no-displays" 
+-- >                      -- to supress the display of the tables
+-- > sampleRate = 44100
+-- > blockSize  = 64
+-- > gain       = 0.5
+-- > tabFi      = fineFi 13 [(idLins, 11), (idExps, 11), (idConsts, 9), (idSplines, 11), (idStartEnds, 12)] }
 data Options = Options 
-    { setFlags          :: Flags
-    , setSampleRate     :: Int
-    , setBlockSize      :: Int    
-    , setGain           :: Double
-    , setInfiniteDur    :: Double
-    , setTabFi          :: TabFi }
+    { setFlags          :: Flags        -- ^ Csound command line flags
+    , setSampleRate     :: Maybe Int          -- ^ The sample rate
+    , setBlockSize      :: Maybe Int          -- ^ The number of audio samples in one control step
+    , setGain           :: Maybe Double       -- ^ A gain of the final output
+    , setTabFi          :: Maybe TabFi        -- ^ Default fidelity of the arrays
+    }
    
 instance Default Options where
-    def = Options 
-        { setFlags      = def
-        , setSampleRate = 44100
-        , setBlockSize  = 64
-        , setGain       = 0.5
-        , setInfiniteDur = 7 * 24 * 60 * 60  -- a week
-        , setTabFi      = fineFi 13 [(idLins, 11), (idExps, 11), (idConsts, 9), (idSplines, 11), (idStartEnds, 12)] }
+    def = Options def def def def def
 
+instance Monoid Options where
+    mempty = def
+    mappend a b = Options
+        { setFlags          = mappend (setFlags a) (setFlags b)
+        , setSampleRate     = setSampleRate a <|> setSampleRate b
+        , setBlockSize      = setBlockSize a <|> setBlockSize b
+        , setGain           = setGain a <|> setGain b
+        , setTabFi          = setTabFi a <|> setTabFi b }
+
+defGain :: Options -> Double
+defGain = maybe 0.5 id . setGain
+
+defSampleRate :: Options -> Int
+defSampleRate = maybe 44100 id . setSampleRate
+
+defBlockSize :: Options -> Int
+defBlockSize = maybe 64 id . setBlockSize
+
+defTabFi :: Options -> TabFi
+defTabFi = maybe def id . setTabFi
+    
 -- | Table size fidelity (how many points in the table by default).
 data TabFi = TabFi
     { tabFiBase   :: Int
     , tabFiGens   :: IM.IntMap Int }
+
+instance Default TabFi where
+    def = fineFi 13 [(idLins, 11), (idExps, 11), (idConsts, 9), (idSplines, 11), (idStartEnds, 12)]
+        
 
 -- | Sets different table size for different GEN-routines. 
 --

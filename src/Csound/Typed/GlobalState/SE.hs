@@ -14,6 +14,8 @@ import Data.Default
 import Csound.Dynamic
 import Csound.Typed.GlobalState.GE
 
+-- | The Csound's @IO@-monad. All values that produce side effects are wrapped
+-- in the @SE@-monad.
 newtype SE a = SE { unSE :: StateT LocalHistory GE a }
 
 data LocalHistory = LocalHistory

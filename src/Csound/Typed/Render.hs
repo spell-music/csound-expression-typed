@@ -27,7 +27,7 @@ renderOut_ :: SE () -> IO String
 renderOut_ = renderOutBy_ def 
 
 renderOutBy_ :: Options -> SE () -> IO String
-renderOutBy_ options = fmap renderCsd . (toCsd options) . unit
+renderOutBy_ options = fmap renderCsd . (toCsd options) . fmap (const unit)
 
 renderOut :: Sigs a => SE a -> IO String
 renderOut = renderOutBy def
@@ -54,8 +54,8 @@ getInstr0 nchnls opt hist = do
     chnUpdateUdo 
     where
         globalConstants = do
-            setSr       $ setSampleRate opt
-            setKsmps    $ setBlockSize opt
+            setSr       $ defSampleRate opt
+            setKsmps    $ defBlockSize opt
             setNchnls   (max 1 nchnls)
             setZeroDbfs 1
 

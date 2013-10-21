@@ -3,6 +3,9 @@ module Csound.Typed.Types(
     module Csound.Typed.Types.Prim,
     module Csound.Typed.Types.Lift,
     -- * Init values
+    -- | In Csound we can supply an opcodes with initialization arguments.
+    -- They are optional. To imitate this functionality in haskell we
+    -- can use these functions.
     withInits, withDs, withSigs, withTabs, withD, withSig, withTab, withSeed,
     -- * Tuples
     module Csound.Typed.Types.Tuple,        
@@ -22,27 +25,41 @@ import Csound.Typed.GlobalState(evalSE, SE)
 
 -- appends inits
 
+-- | Appends initialisation arguments. It's up to user to supply arguments with the right types. For example:
+--
+-- > oscil 0.5 440 sinWave `withInits` (0.5 :: D)
 withInits :: (Val a, Tuple b) => a -> b -> a
 withInits a b = genWithInits a (fromTuple b)
 
+-- | A special case of @withInits@. Here all inits are numbers. 
 withDs :: Val a => a -> [D] -> a
 withDs a ds = genWithInits a (mapM toGE ds)
 
+-- | Appends an init value which is a number.
 withD :: Val a => a -> D -> a
 withD = withInits
 
+-- | A special case of @withInits@. Here all inits are signals. 
 withSigs :: Val a => a -> [Sig] -> a
 withSigs a sigs = genWithInits a (mapM toGE sigs)
 
+-- | Appends an init value which is a signal.
 withSig :: Val a => a -> Sig -> a
 withSig = withInits
 
+-- | A special case of @withInits@. Here all inits are arrays. 
 withTabs :: Val a => a -> [Tab] -> a
 withTabs a tabs = genWithInits a (mapM toGE tabs)
 
+-- | Appends an init value which is a table.
 withTab :: Val a => a -> Tab -> a
 withTab = withInits
 
+-- | Applies a seed to the random value. 
+-- It's equivalent to the @withD@ but it has a special 
+-- meaning of canceling the side effect. When random
+-- opcode is provided with seed value it's no longer
+-- contains a side effect so we don't need to restrict it.
 withSeed :: SE Sig -> D -> Sig
 withSeed a d = hideGE $ evalSE $ fmap (flip withD d) a
 

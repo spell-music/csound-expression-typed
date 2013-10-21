@@ -7,7 +7,7 @@ module Csound.Typed.Types.Prim(
     fromPreTab, getPreTabUnsafe, skipNorm, forceNorm,
 
     -- ** constructors
-    double, int, str, 
+    double, int, text, 
     
     -- ** constants
     idur, getSampleRate, getControlRate, getBlockSize, getZeroDbfs,
@@ -46,13 +46,18 @@ newtype D    = D    { unD   :: GE E }
 -- | Strings
 newtype Str  = Str  { unStr :: GE E }
 
--- | Spectrums
+-- | Spectrum. It's @fsig@ in the Csound.
 newtype Spec  = Spec  { unSpec  :: GE E }
+
+-- | Another type for spectrum. It's @wsig@ in the Csound.
 newtype Wspec = Wspec { unWspec :: GE E }
 
 -- Booleans
 
+-- | A signal of booleans.
 newtype BoolSig = BoolSig { unBoolSig :: GE E }
+
+-- | A constant boolean value.
 newtype BoolD   = BoolD   { unBoolD   :: GE E }
 
 type instance BooleanOf Sig  = BoolSig
@@ -64,10 +69,12 @@ type instance BooleanOf Spec = BoolD
 
 -- Procedures
 
+-- | Csound's empty tuple.
 newtype Unit = Unit { unUnit :: GE () } 
 
-unit :: SE () -> SE Unit
-unit = fmap (Unit . return)
+-- | Constructs Csound's empty tuple.
+unit :: Unit
+unit = Unit $ return ()
 
 instance Monoid Unit where
     mempty = Unit (return ())
@@ -122,7 +129,7 @@ getPreTabUnsafe msg x = case x of
     _           -> error msg
 
 fromPreTab :: PreTab -> GE Gen
-fromPreTab a = withOptions $ \opt -> go (setTabFi opt) a
+fromPreTab a = withOptions $ \opt -> go (defTabFi opt) a
     where
         go :: TabFi -> PreTab -> Gen
         go tabFi tab = Gen size (preTabGen tab) args file
@@ -202,18 +209,22 @@ updateTabSize phi x = case x of
 -------------------------------------------------------------------------------
 -- constructors
 
+-- | Constructs a number.
 double :: Double -> D
 double = fromE . D.double
 
+-- | Constructs an integer.
 int :: Int -> D
 int = fromE . D.int
 
-str :: String -> Str
-str = fromE . D.str
+-- | Constructs a string.
+text :: String -> Str
+text = fromE . D.str
 
 -------------------------------------------------------------------------------
 -- constants
 
+-- | Querries a total duration of the note. It's equivallent to Csound's @p3@ field.
 idur :: D 
 idur = fromE $ pn 3
 
@@ -232,21 +243,26 @@ getZeroDbfs = fromE $ readOnlyVar (VarVerbatim Ir "0dbfs")
 -------------------------------------------------------------------------------
 -- converters
 
+-- | Sets a rate of the signal to audio rate.
 ar :: Sig -> Sig
 ar = on1 $ setRate Ar
 
+-- | Sets a rate of the signal to control rate.
 kr :: Sig -> Sig
 kr = on1 $ setRate Kr
 
+-- | Converts a signal to the number (initial value of the signal).
 ir :: Sig -> D
 ir = on1 $ setRate Ir
 
+-- | Makes a constant signal from the number.
 sig :: D -> Sig
 sig = on1 $ setRate Kr
 
 -------------------------------------------------------------------------------
 -- single wrapper
 
+-- | Contains all Csound values.
 class Val a where
     fromGE  :: GE E -> a
     toGE    :: a -> GE E
@@ -295,7 +311,7 @@ on3 f a b c = fromGE $ liftA3 f (toGE a) (toGE b) (toGE c)
 instance Default Sig    where def = 0
 instance Default D      where def = 0
 instance Default Tab    where def = fromE 0
-instance Default Str    where def = str ""
+instance Default Str    where def = text ""
 instance Default Spec   where def = fromE 0 
 
 -------------------------------------------------------------------------------
@@ -352,12 +368,15 @@ instance EqB D    where { (==*) = on2 (==*);    (/=*) = on2 (/=*) }
 instance OrdB Sig where { (<*)  = on2 (<*) ;    (>*)  = on2 (>*);     (<=*) = on2 (<=*);    (>=*) = on2 (>=*) }
 instance OrdB D   where { (<*)  = on2 (<*) ;    (>*)  = on2 (>*);     (<=*) = on2 (<=*);    (>=*) = on2 (>=*) }
 
+-- | Invokes the given procedure if the boolean signal is true.
 when1 :: BoolSig -> SE () -> SE ()
 when1 p body = do
     ifBegin p
     body
     ifEnd
 
+-- | The chain of @when1@s. Tests all the conditions in sequence
+-- if everything is false it invokes the procedure given in the second argument.
 whens :: [(BoolSig, SE ())] -> SE () -> SE ()
 whens bodies el = case bodies of
     []   -> el
@@ -382,6 +401,7 @@ elseBegin = fromDep_ $ return D.elseBegin
 elseIfBegin :: BoolSig -> SE ()
 elseIfBegin a = fromDep_ $ fmap D.elseIfBegin $ toGE a
 
+-- | Creates a constant boolean signal.
 boolSig :: BoolD -> BoolSig
 boolSig = fromGE . toGE
 

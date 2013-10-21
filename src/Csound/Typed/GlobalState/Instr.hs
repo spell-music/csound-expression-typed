@@ -48,7 +48,7 @@ saveMixInstr_ a = do
 
 saveMasterInstr :: Arity -> InsExp -> GE ()
 saveMasterInstr arity sigs = do
-    gainLevel <- fmap setGain getOptions 
+    gainLevel <- fmap defGain getOptions 
     expr1 <- writeOut (C.sendOut (arityOuts arity) . C.safeOut gainLevel) sigs
     expr2 <- getSysExpr 
     instrId <- onInstr $ C.saveInstr (expr1 >> expr2)

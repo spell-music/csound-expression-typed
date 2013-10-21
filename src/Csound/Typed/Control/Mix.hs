@@ -27,32 +27,9 @@ wrapSco :: (CsdSco f) => f a -> (CsdEventList a -> GE M) -> f (Mix b)
 wrapSco notes getContent = singleCsdEvent (0, csdEventListDur evts, Mix $ getContent evts)
     where evts = toCsdEventList notes
 
--- | Play a bunch of notes with the given instrument.
+-- | Plays a bunch of notes with the given instrument.
 --
 -- > res = sco instrument scores 
---
--- * @instrument@ is a function that takes notes and produces a 
---   tuple of signals (maybe with some side effect)
---  
--- * @scores@ are some notes (see the type class 'Csound.Base.CsdSco')
---
--- Let's try to understand the type of the output. It's @CsdSco f => f (Mix (NoSE a))@. 
--- What does it mean? Let's look at the different parts of this type:
---
--- * @CsdSco f => f a@ - you can think of it as a container of some values of 
---   type @a@ (every value of type @a@ starts at some time and lasts 
---   for some time in seconds)
---
--- * @Mix a@ - is an output of Csound instrument it can be one or several 
---   signals ('Csound.Base.Sig' or 'Csound.Base.CsdTuple'). 
---
--- *NoSE a* - it's a tricky part of the output. 'NoSE' means literaly 'no SE'. 
--- It tells to the type checker that it can skip the 'Csound.Base.SE' wrapper
--- from the type 'a' so that @SE a@ becomes just @a@ or @SE (a, SE b, c)@ 
--- becomes @(a, b, c)@. Why should it be? We need 'SE' to deduce the order of the
--- opcodes that have side effects. We need it within one instrument. But when 
--- instrument is rendered we no longer need 'SE' type. So 'NoSE' lets me drop it
--- from the output type. 
 sco :: (CsdSco f, Arg a, Sigs b) => (a -> SE b) -> f a -> f (Mix b)
 sco instr notes = wrapSco notes $ \events -> do
     events' <- traverse toNote events
@@ -60,11 +37,12 @@ sco instr notes = wrapSco notes $ \events -> do
     instrId <- saveSourceInstrCached cacheName (funArity instr) (insExp instr)
     return $ Snd instrId events'
 
+-- | Invokes a procedure for the given bunch of events.
 sco_ :: (CsdSco f, Arg a) => (a -> SE ()) -> f a -> f (Mix Unit)
 sco_ instr notes = wrapSco notes $ \events -> do
     events' <- traverse toNote events
     cacheName <- liftIO $ C.makeCacheName instr
-    instrId <- saveSourceInstrCached_ cacheName (unitExp $ unit $ instr toArg)
+    instrId <- saveSourceInstrCached_ cacheName (unitExp $ fmap (const unit) $ instr toArg)
     return $ Snd instrId events'
 
 -- | Applies an effect to the sound. Effect is applied to the sound on the give track. 
@@ -88,25 +66,32 @@ eff ef sigs = wrapSco sigs $ \events -> do
     instrId <- saveEffectInstr (funArity ef) (effExp ef)
     return $ Eff instrId notes (arityIns $ funArity ef)
 
--- | Renders a scores to global variable that contains a resulting sound signals.
+-- | Renders a scores to the sound signals. we can use it inside the other instruments.
+-- Warning: if we use a score that lasts for an hour in the note that lasts for 5 seconds
+-- all the events would be generated, though we will hear only first five seconds.
+-- So the semantics is good but implementation is inefficient for such a cases 
+-- (consider event streams for such cases). 
 mix :: (Sigs a, CsdSco f) => f (Mix a) -> a
-mix a = flip apInstr (Unit $ return ()) $ do
+mix a = flip apInstr unit $ do
     key <- mixKey a
     withCache getMixKey saveMixKey key $ 
         saveMixInstr (mixArity a) =<< toEventList a
 
+-- | Imitates a closure for a bunch of notes to be played within another instrument. 
 mixBy :: (Arg a, Sigs b, CsdSco f) => (a -> f (Mix b)) -> (a -> b)
 mixBy evts args = flip apInstr args $ do
     key <- mixKey evts
     withCache getMixKey saveMixKey key $ 
         saveMixInstr (mixArityFun evts) =<< (toEventList $ evts toArg)
 
+-- | Converts a bunch of procedures scheduled with scores to a single procedure.
 mix_ :: (CsdSco f) => f (Mix Unit) -> SE ()
 mix_ a = fromDep_ $ do
     key <- mixKey a
     withCache getMixProcKey saveMixProcKey key $
         saveMixInstr_ =<< toEventList a
 
+-- | Imitates a closure for a bunch of procedures to be played within another instrument. 
 mixBy_ :: (Arg a, CsdSco f) => (a -> f (Mix Unit)) -> (a -> SE ())
 mixBy_ evts args = mix_ $ evts args
 

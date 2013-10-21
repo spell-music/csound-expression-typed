@@ -17,8 +17,12 @@ import Csound.Typed.Types.Tuple
 import Csound.Typed.GlobalState
 import Csound.Typed.Control.SERef
 
+-- | A stream of events. We can convert a stream of events to
+-- the procedure with the function @runEvt@. It waits for events
+-- and invokes the given procedure when the event happens.
 data Evt a = Evt { runEvt :: Bam a -> SE () }
 
+-- | A procedure. Something that takes a value and suddenly bams with it.
 type Bam a = a -> SE ()
 
 instance Functor Evt where

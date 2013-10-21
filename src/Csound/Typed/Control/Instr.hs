@@ -47,5 +47,5 @@ apInstr instrIdGE args = res
             return $ C.subinstr (tupleArity res) instrId argList
 
 apInstr0 :: (Sigs b) => GE InstrId -> b
-apInstr0 instrId = apInstr instrId (Unit $ return ())
+apInstr0 instrId = apInstr instrId unit
 
