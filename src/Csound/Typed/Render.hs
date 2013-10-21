@@ -11,7 +11,7 @@ import Data.Default
 import Data.Maybe
 import Data.Tuple
 
-import Csound.Dynamic
+import Csound.Dynamic hiding (csdFlags)
 import Csound.Dynamic.Control
 import Csound.Dynamic.Flags
 import Csound.Typed.Types
@@ -38,7 +38,7 @@ renderOutBy options = fmap renderCsd . (toCsd options)
 renderHistory :: Int -> Options -> History -> Csd
 renderHistory nchnls opt hist = Csd flags orc sco
     where
-        flags   = reactOnMidi hist $ setFlags opt
+        flags   = reactOnMidi hist $ csdFlags opt
         orc     = Orc (getInstr0 nchnls opt hist) (fmap (uncurry Instr) $ instrsContent $ instrs hist)
         sco     = Sco (Just $ getTotalDur opt $ totalDur hist) (renderGens $ genMap hist) [alwaysOn $ masterInstrId hist]
 
