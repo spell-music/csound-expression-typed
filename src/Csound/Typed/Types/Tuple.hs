@@ -170,6 +170,10 @@ instance Arg Tab
 instance (Arg a, Arg b) => Arg (a, b)
 instance (Arg a, Arg b, Arg c) => Arg (a, b, c)
 instance (Arg a, Arg b, Arg c, Arg d) => Arg (a, b, c, d)
+instance (Arg a, Arg b, Arg c, Arg d, Arg e) => Arg (a, b, c, d, e)
+instance (Arg a, Arg b, Arg c, Arg d, Arg e, Arg f) => Arg (a, b, c, d, e, f)
+instance (Arg a, Arg b, Arg c, Arg d, Arg e, Arg f, Arg h) => Arg (a, b, c, d, e, f, h)
+instance (Arg a, Arg b, Arg c, Arg d, Arg e, Arg f, Arg h, Arg g) => Arg (a, b, c, d, e, f, h, g)
 
 arg :: Arg a => Int -> a
 arg n = toTuple $ return $ fmap pn [n ..]
