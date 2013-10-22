@@ -1,5 +1,5 @@
 module Csound.Typed.Types.MixSco(
-    M(..), rescaleCsdEventListM, renderMixSco, renderMixSco_
+    M(..), delayAndRescaleCsdEventListM, renderMixSco, renderMixSco_
 ) where
 
 import Control.Monad
@@ -10,6 +10,19 @@ import Csound.Dynamic.Control
 data M 
     = Snd InstrId (CsdEventList [E])
     | Eff InstrId (CsdEventList M) Int   
+
+delayAndRescaleCsdEventListM :: CsdEventList M -> CsdEventList M
+delayAndRescaleCsdEventListM = delayCsdEventListM . rescaleCsdEventListM
+
+delayCsdEventListM :: CsdEventList M -> CsdEventList M
+delayCsdEventListM es = 
+    es { csdEventListNotes = fmap delayCsdEventM $ csdEventListNotes es }
+
+delayCsdEventM :: CsdEvent M -> CsdEvent M
+delayCsdEventM (start, dur, evt) = (start, dur, phi evt)
+    where phi x = case x of
+            Snd n evts          -> Snd n $ delayCsdEventList start evts
+            Eff n evts arityIn  -> Eff n (delayCsdEventListM $ delayCsdEventList start evts) arityIn        
 
 rescaleCsdEventListM :: CsdEventList M -> CsdEventList M
 rescaleCsdEventListM es = 
@@ -33,7 +46,7 @@ renderMixSco arity evts = do
         go :: ChnRef -> CsdEventList M -> Dep ()
         go outId xs = mapM_ (onEvent outId) $ csdEventListNotes xs
 
-        onEvent :: ChnRef -> CsdEvent M -> Dep ()
+        onEvent ::  ChnRef -> CsdEvent M -> Dep ()
         onEvent outId (start, dur, x) = case x of
             Snd instrId es          -> onSnd instrId outId es
             Eff instrId es arityIn  -> onEff instrId start dur outId es arityIn

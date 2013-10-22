@@ -101,7 +101,7 @@ mixKey :: a -> GE MixKey
 mixKey = liftIO . fmap (MixKey . hashStableName) . makeStableName
 
 toEventList :: (CsdSco f) => f (Mix a) -> GE (CsdEventList M)
-toEventList evts = fmap rescaleCsdEventListM $ traverse unMix $ toCsdEventList $ evts
+toEventList evts = fmap delayAndRescaleCsdEventListM $ traverse unMix $ toCsdEventList $ evts
 
 mixArity :: Sigs b => f (Mix b) -> Int
 mixArity = tupleArity . proxy
