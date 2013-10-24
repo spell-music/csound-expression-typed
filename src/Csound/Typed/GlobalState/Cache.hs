@@ -29,26 +29,26 @@ import Data.Default
 
 import Csound.Dynamic
 
-data Cache = Cache 
+data Cache m = Cache 
     { cacheMidi     :: CacheMidi 
-    , cacheMidiProc :: CacheMidiProc
+    , cacheMidiProc :: CacheMidiProc m
     , cacheMix      :: CacheMix
-    , cacheMixProc  :: CacheMixProc
+    , cacheMixProc  :: CacheMixProc m
     , cacheEvt      :: CacheEvt
-    , cacheEvtProc  :: CacheEvtProc }
+    , cacheEvtProc  :: CacheEvtProc m }
 
-instance Default Cache where
+instance Default (Cache m) where
     def = Cache def def def def def def
 
 type HashKey = Int
 
-type GetKey  a b = a -> Cache -> Maybe b
-type SaveKey a b = a -> b -> Cache -> Cache
+type GetKey  m a b = a -> Cache m -> Maybe b
+type SaveKey m a b = a -> b -> Cache m -> Cache m
 
-getKeyMap :: (Ord key) => (Cache -> M.Map key val) -> GetKey key val
+getKeyMap :: (Ord key) => (Cache m -> M.Map key val) -> GetKey m key val
 getKeyMap f key x = M.lookup key $ f x
 
-saveKeyMap :: (Ord key) => (Cache -> M.Map key val) -> (M.Map key val -> Cache -> Cache) -> SaveKey key val
+saveKeyMap :: (Ord key) => (Cache m -> M.Map key val) -> (M.Map key val -> Cache m -> Cache m) -> SaveKey m key val
 saveKeyMap getter setter key val cache = setter (M.insert key val $ getter cache) cache
 
 ----------------------------------------------------------
@@ -66,20 +66,20 @@ data MidiKey = MidiKey MidiType Channel HashKey
 
 type CacheMidi = M.Map MidiKey [E]
 
-getMidiKey :: GetKey MidiKey [E]
+getMidiKey :: GetKey m MidiKey [E]
 getMidiKey = getKeyMap cacheMidi
 
-saveMidiKey :: SaveKey MidiKey [E]
+saveMidiKey :: SaveKey m MidiKey [E]
 saveMidiKey = saveKeyMap cacheMidi (\a x -> x { cacheMidi = a })
 
 -- Midi procedures
 
-type CacheMidiProc = M.Map MidiKey (Dep ())
+type CacheMidiProc m = M.Map MidiKey (DepT m ())
 
-getMidiProcKey :: GetKey MidiKey (Dep ())
+getMidiProcKey :: GetKey m MidiKey (DepT m ())
 getMidiProcKey = getKeyMap cacheMidiProc
 
-saveMidiProcKey :: SaveKey MidiKey (Dep ())
+saveMidiProcKey :: SaveKey m MidiKey (DepT m ())
 saveMidiProcKey = saveKeyMap cacheMidiProc (\a x -> x { cacheMidiProc = a })
 
 ----------------------------------------------------------
@@ -94,20 +94,20 @@ type    MixVal = InstrId
 
 type CacheMix = M.Map MixKey MixVal
 
-getMixKey :: GetKey MixKey MixVal
+getMixKey :: GetKey m MixKey MixVal
 getMixKey = getKeyMap cacheMix
 
-saveMixKey :: SaveKey MixKey MixVal
+saveMixKey :: SaveKey m MixKey MixVal
 saveMixKey = saveKeyMap cacheMix (\a x -> x { cacheMix = a })
 
 -- Mix procedures
 
-type CacheMixProc = M.Map MixKey (Dep ())
+type CacheMixProc m = M.Map MixKey (DepT m ())
 
-getMixProcKey :: GetKey MixKey (Dep ())
+getMixProcKey :: GetKey m MixKey (DepT m ())
 getMixProcKey = getKeyMap cacheMixProc
 
-saveMixProcKey :: SaveKey MixKey (Dep ())
+saveMixProcKey :: SaveKey m MixKey (DepT m ())
 saveMixProcKey = saveKeyMap cacheMixProc (\a x -> x { cacheMixProc = a })
 
 ----------------------------------------------------------
@@ -122,19 +122,19 @@ type    EvtVal = InstrId
 
 type CacheEvt = M.Map EvtKey EvtVal
 
-getEvtKey :: GetKey EvtKey EvtVal
+getEvtKey :: GetKey m EvtKey EvtVal
 getEvtKey = getKeyMap cacheEvt
 
-saveEvtKey :: SaveKey EvtKey EvtVal
+saveEvtKey :: SaveKey m EvtKey EvtVal
 saveEvtKey = saveKeyMap cacheEvt (\a x -> x { cacheEvt = a })
 
 -- Evt procedures
 
-type CacheEvtProc = M.Map EvtKey (Dep ())
+type CacheEvtProc m = M.Map EvtKey (DepT m ())
 
-getEvtProcKey :: GetKey EvtKey (Dep ())
+getEvtProcKey :: GetKey m EvtKey (DepT m ())
 getEvtProcKey = getKeyMap cacheEvtProc
 
-saveEvtProcKey :: SaveKey EvtKey (Dep ())
+saveEvtProcKey :: SaveKey m EvtKey (DepT m ())
 saveEvtProcKey = saveKeyMap cacheEvtProc (\a x -> x { cacheEvtProc = a })
 

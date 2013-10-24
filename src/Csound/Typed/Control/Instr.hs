@@ -24,16 +24,16 @@ constArity :: (Tuple a) => SE a -> Arity
 constArity a = Arity 0 (outArity a)
    
 insExp :: (Arg a, Tuple b) => (a -> SE b) -> InsExp 
-insExp instr = fmap fromTuple $ instr toArg
+insExp instr = execGEinSE $ fmap fromTuple $ instr toArg
 
 effExp :: (Tuple a, Tuple b) => (a -> SE b) -> EffExp
-effExp instr = fmap fromTuple . instr . toTuple . return 
+effExp instr = execGEinSE . fmap fromTuple . instr . toTuple . return 
 
 masterExp :: (Tuple a) => SE a -> InsExp
-masterExp = fmap fromTuple
+masterExp = execGEinSE . fmap fromTuple
 
 midiExp :: (Tuple a) => (Msg -> SE a) -> InsExp
-midiExp instr = fmap fromTuple $ instr Msg
+midiExp instr = execGEinSE $ fmap fromTuple $ instr Msg
 
 unitExp :: SE Unit -> UnitExp
 unitExp = execSE . execGEinSE . fmap unUnit

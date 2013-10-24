@@ -1,6 +1,6 @@
 module Csound.Typed.GlobalState.SE(
     SE(..), LocalHistory(..), 
-    runSE, execSE, evalSE, execGEinSE, 
+    runSE, execSE, evalSE, execGEinSE, hideGEinDep, 
     fromDep, fromDep_, 
     newLocalVar, newLocalVars        
 ) where
@@ -8,22 +8,14 @@ module Csound.Typed.GlobalState.SE(
 import Control.Applicative
 import Control.Monad
 import Control.Monad.Trans.Class
-import Control.Monad.Trans.State.Strict
-import Data.Default
 
-import Csound.Dynamic
+import Csound.Dynamic hiding (newLocalVar, newLocalVars)
+import qualified Csound.Dynamic as D(newLocalVar, newLocalVars)
 import Csound.Typed.GlobalState.GE
 
 -- | The Csound's @IO@-monad. All values that produce side effects are wrapped
 -- in the @SE@-monad.
-newtype SE a = SE { unSE :: StateT LocalHistory GE a }
-
-data LocalHistory = LocalHistory
-    { expDependency :: Maybe E
-    , newVarId      :: Int }
-
-instance Default LocalHistory where
-    def = LocalHistory def def
+newtype SE a = SE { unSE :: Dep a }
 
 instance Functor SE where
     fmap f = SE . fmap f . unSE
@@ -37,10 +29,10 @@ instance Monad SE where
     ma >>= mf = SE $ unSE ma >>= unSE . mf
 
 runSE :: SE a -> GE (a, LocalHistory)
-runSE a = runStateT (unSE a) def
+runSE = runDepT . unSE
 
-execSE :: SE a -> GE (Dep ())
-execSE = fmap (Dep . put . expDependency . snd) . runSE
+execSE :: SE a -> Dep () 
+execSE = depT_ . execDepT . unSE 
 
 execGEinSE :: SE (GE a) -> SE a
 execGEinSE (SE sa) = SE $ do
@@ -48,14 +40,14 @@ execGEinSE (SE sa) = SE $ do
     a  <- lift ga
     return a
 
-fromDep :: GE (Dep a) -> SE (GE a)
-fromDep ma = fmap return $ SE $ StateT $ \s -> do
-    depA  <- ma
-    let (res, dep1) = runState (unDep depA) (expDependency s)
-    return (res, s{ expDependency = dep1 })
+hideGEinDep :: GE (Dep a) -> Dep a
+hideGEinDep = join . lift
 
-fromDep_ :: GE (Dep ()) -> SE ()
-fromDep_ = fmap (const ()) . fromDep
+fromDep :: Dep a -> SE (GE a)
+fromDep = fmap return . SE 
+
+fromDep_ :: Dep () -> SE ()
+fromDep_ = SE
             
 evalSE :: SE a -> GE a
 evalSE = fmap fst . runSE
@@ -64,27 +56,8 @@ evalSE = fmap fst . runSE
 -- allocation of the local vars
 
 newLocalVars :: [Rate] -> GE [E] -> SE [Var]
-newLocalVars rs vs = do
-    vars <- mapM newVar rs
-    initNewVars vars vs
-    return vars
-
-initNewVars :: [Var] -> GE [E] -> SE ()
-initNewVars vars vals = fromDep_ $ fmap (zipWithM_ initVar vars) vals
+newLocalVars rs vs = SE $ D.newLocalVars rs vs
 
 newLocalVar :: Rate -> GE E -> SE Var
-newLocalVar rate val = do
-    var <- newVar rate
-    initNewVar var val
-    return var
-
-newVar :: Rate -> SE Var
-newVar rate = SE $ do
-    s <- get
-    let v = Var LocalVar rate (show $ newVarId s)    
-    put $ s { newVarId = succ $ newVarId s }
-    return v
-
-initNewVar :: Var -> GE E -> SE ()
-initNewVar var val = fromDep_ $ fmap (initVar var) val
+newLocalVar rate val = SE $ D.newLocalVar rate val
 

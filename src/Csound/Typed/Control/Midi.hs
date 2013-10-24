@@ -48,7 +48,7 @@ pgmidi_ :: Maybe Int -> Channel -> (Msg -> SE ()) -> SE ()
 pgmidi_ mchn = genMidi_ (Pgmassign mchn)
 
 genMidi_ :: MidiType -> Channel -> (Msg -> SE ()) -> SE ()
-genMidi_ midiType chn instr = fromDep_ $ do
+genMidi_ midiType chn instr = fromDep_ $ hideGEinDep $ do
     key <- midiKey midiType chn instr
     withCache getMidiProcKey saveMidiProcKey key $ 
         saveMidiInstr_ midiType chn (unitExp $ fmap (const unit) $ instr Msg)

@@ -86,7 +86,7 @@ mixBy evts args = flip apInstr args $ do
 
 -- | Converts a bunch of procedures scheduled with scores to a single procedure.
 mix_ :: (CsdSco f) => f (Mix Unit) -> SE ()
-mix_ a = fromDep_ $ do
+mix_ a = fromDep_ $ hideGEinDep $ do
     key <- mixKey a
     withCache getMixProcKey saveMixProcKey key $
         saveMixInstr_ =<< toEventList a

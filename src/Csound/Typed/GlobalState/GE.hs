@@ -1,5 +1,5 @@
 module Csound.Typed.GlobalState.GE(
-    GE, History(..), withOptions, getOptions, execGE,
+    GE, Dep, History(..), withOptions, withHistory, getOptions, evalGE, execGE,
     -- * Globals
     onGlobals, 
     -- * Midi
@@ -29,15 +29,19 @@ import Control.Monad.Trans.Reader
 
 import Csound.Dynamic 
 import Csound.Dynamic.Control
-
 import Csound.Typed.GlobalState.Options
 import Csound.Typed.GlobalState.Cache
+
+type Dep a = DepT GE a
 
 -- global side effects
 newtype GE a = GE { unGE :: ReaderT Options (StateT History IO) a }
 
 runGE :: GE a -> Options -> History -> IO (a, History)
 runGE (GE f) opt hist = runStateT (runReaderT f opt) hist
+
+evalGE :: Options -> GE a -> IO a
+evalGE options a = fmap fst $ runGE a options def
 
 execGE :: Options -> GE a -> IO History
 execGE options a = fmap snd $ runGE a options def
@@ -59,14 +63,14 @@ instance MonadIO GE where
 data History = History
     { genMap            :: GenMap
     , stringMap         :: StringMap
-    , globals           :: Globals
-    , instrs            :: Instrs
+    , globals           :: Globals GE
+    , instrs            :: Instrs GE
     , midis             :: [MidiAssign]
     , totalDur          :: Maybe TotalDur
     , masterInstrId     :: InstrId
-    , userInstr0        :: InstrBody
+    , userInstr0        :: InstrBody GE
     , bandLimitedMap    :: BandLimitedMap
-    , cache             :: Cache }
+    , cache             :: Cache GE }
 
 instance Default History where
     def = History def def def def def def (intInstrId 0) (return ()) def def
@@ -74,13 +78,13 @@ instance Default History where
 data Msg = Msg
 data MidiAssign = MidiAssign MidiType Channel InstrId
             
-renderMidiAssign :: MidiAssign -> Dep ()
+renderMidiAssign :: Monad m => MidiAssign -> DepT m ()
 renderMidiAssign (MidiAssign ty chn instrId) = case ty of
     Massign         -> massign chn instrId
     Pgmassign mn    -> pgmassign chn instrId mn
     where
-        massign n instr = dep_ $ opcs "massign" [(Xr, [Ir,Ir])] [int n, prim $ PrimInstrId instr]
-        pgmassign pgm instr mchn = dep_ $ opcs "pgmassign" [(Xr, [Ir,Ir,Ir])] ([int pgm, prim $ PrimInstrId instr] ++ maybe [] (return . int) mchn)
+        massign n instr = depT_ $ return $ opcs "massign" [(Xr, [Ir,Ir])] [int n, prim $ PrimInstrId instr]
+        pgmassign pgm instr mchn = depT_ $ return $ opcs "pgmassign" [(Xr, [Ir,Ir,Ir])] ([int pgm, prim $ PrimInstrId instr] ++ maybe [] (return . int) mchn)
 
 data TotalDur = NumDur Double | InfiniteDur
     deriving (Eq, Ord)
@@ -121,14 +125,14 @@ saveMidi :: MidiAssign -> GE ()
 saveMidi ma = onMidis $ modify (ma: )
     where onMidis = onHistory midis (\a h -> h { midis = a })
 
-saveUserInstr0 :: InstrBody -> GE ()
+saveUserInstr0 :: InstrBody GE -> GE ()
 saveUserInstr0 expr = onUserInstr0 $ modify ( >> expr)
     where onUserInstr0 = onHistory userInstr0 (\a h -> h { userInstr0 = a })
 
-getSysExpr :: GE (Dep ())
+getSysExpr :: GE (DepT GE ())
 getSysExpr = fmap sequence_ $ sequence [ onGlobals $ clearGlobals ]    
     where
-        clearGlobals :: State Globals (Dep ())
+        clearGlobals :: State (Globals GE) (DepT GE ())
         clearGlobals = gets $ mapM_ (flip writeVar 0) . globalsClearable 
 
 setMasterInstrId :: InstrId -> GE ()
@@ -159,10 +163,10 @@ onHistory getter setter st = GE $ ReaderT $ \_ -> StateT $ \history ->
 
 type UpdField a b = State a b -> GE b
 
-onInstr :: UpdField Instrs a
+onInstr :: UpdField (Instrs GE) a
 onInstr = onHistory instrs (\a h -> h { instrs = a })
 
-onGlobals :: UpdField Globals a
+onGlobals :: UpdField (Globals GE) a
 onGlobals = onHistory globals (\a h -> h { globals = a })
 
 ----------------------------------------------------------------------
@@ -170,12 +174,12 @@ onGlobals = onHistory globals (\a h -> h { globals = a })
 
 -- midi functions
 
-type GetCache a b = a -> Cache -> Maybe b
+type GetCache a b = a -> Cache GE -> Maybe b
 
 fromCache :: GetCache a b -> a -> GE (Maybe b)
 fromCache f key = withHistory $ f key . cache
 
-type SetCache a b = a -> b -> Cache -> Cache
+type SetCache a b = a -> b -> Cache GE -> Cache GE
 
 toCache :: SetCache a b -> a -> b -> GE () 
 toCache f key val = modifyHistory $ \h -> h { cache = f key val (cache h) }

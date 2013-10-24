@@ -37,16 +37,16 @@ rescaleCsdEventM (start, dur, evt) = (start, dur, phi evt)
                     Snd _ evts   -> csdEventListDur evts
                     Eff _ evts _ -> csdEventListDur evts
 
-renderMixSco :: Int -> CsdEventList M -> Dep [E]
+renderMixSco :: Monad m => Int -> CsdEventList M -> DepT m [E]
 renderMixSco arity evts = do
     chnId <- chnRefAlloc arity
     go chnId evts
     readChn chnId
     where 
-        go :: ChnRef -> CsdEventList M -> Dep ()
+        go :: Monad m => ChnRef -> CsdEventList M -> DepT m ()
         go outId xs = mapM_ (onEvent outId) $ csdEventListNotes xs
 
-        onEvent ::  ChnRef -> CsdEvent M -> Dep ()
+        onEvent :: Monad m => ChnRef -> CsdEvent M -> DepT m ()
         onEvent outId (start, dur, x) = case x of
             Snd instrId es          -> onSnd instrId outId es
             Eff instrId es arityIn  -> onEff instrId start dur outId es arityIn
@@ -59,10 +59,10 @@ renderMixSco arity evts = do
             event_i $ Event instrId (double start) (double dur) [chnRefId inId, chnRefId outId]
             go inId es
 
-renderMixSco_ :: CsdEventList M -> Dep ()
+renderMixSco_ :: Monad m => CsdEventList M -> DepT m ()
 renderMixSco_ evts = mapM_ onEvent $ csdEventListNotes evts
     where
-        onEvent :: CsdEvent M -> Dep ()
+        onEvent :: Monad m => CsdEvent M -> DepT m ()
         onEvent (start, dur, x) = case x of
             Snd instrId es      -> onSnd instrId es
             Eff instrId es _    -> onEff instrId start dur es

@@ -4,7 +4,7 @@ module Csound.Typed.Render(
     renderOut_, renderOutBy_, 
     -- * Options
     module Csound.Typed.GlobalState.Options,
-    module Csound.Dynamic.Flags
+    module Csound.Dynamic.Types.Flags
 ) where
 
 import qualified Data.Map as M
@@ -14,28 +14,29 @@ import Data.Tuple
 
 import Csound.Dynamic hiding (csdFlags)
 import Csound.Dynamic.Control
-import Csound.Dynamic.Flags
 import Csound.Typed.Types
 import Csound.Typed.GlobalState
 import Csound.Typed.GlobalState.Options
 import Csound.Typed.Control.Instr
 import Csound.Typed.Control(getIns)
+import Csound.Dynamic.Types.Flags
 
-toCsd :: Tuple a => Options -> SE a -> IO Csd
-toCsd options sigs = fmap (renderHistory (outArity sigs) options) 
-    $ execGE options (saveMasterInstr (constArity sigs) (masterExp sigs))
+toCsd :: Tuple a => Options -> SE a -> GE (Csd GE)
+toCsd options sigs = do   
+    saveMasterInstr (constArity sigs) (masterExp sigs)
+    withHistory $ renderHistory (outArity sigs) options
 
 renderOut_ :: SE () -> IO String
 renderOut_ = renderOutBy_ def 
 
 renderOutBy_ :: Options -> SE () -> IO String
-renderOutBy_ options = fmap renderCsd . (toCsd options) . fmap (const unit)
+renderOutBy_ options sigs = evalGE options $ renderCsd =<< toCsd options (fmap (const unit) sigs)
 
 renderOut :: Sigs a => SE a -> IO String
 renderOut = renderOutBy def
 
 renderOutBy :: Sigs a => Options -> SE a -> IO String
-renderOutBy options = fmap renderCsd . (toCsd options)
+renderOutBy options sigs = evalGE options $ renderCsd =<< toCsd options sigs
 
 renderEff :: (Sigs a, Sigs b) => (a -> SE b) -> IO String
 renderEff = renderEffBy def
@@ -43,7 +44,7 @@ renderEff = renderEffBy def
 renderEffBy :: (Sigs a, Sigs b) => Options -> (a -> SE b) -> IO String
 renderEffBy options eff = renderOutBy options $ eff =<< getIns
 
-renderHistory :: Int -> Options -> History -> Csd
+renderHistory :: Int -> Options -> History -> Csd GE
 renderHistory nchnls opt hist = Csd flags orc sco
     where
         flags   = reactOnMidi hist $ csdFlags opt
@@ -52,7 +53,7 @@ renderHistory nchnls opt hist = Csd flags orc sco
 
         renderGens = fmap swap . M.toList . idMapContent        
 
-getInstr0 :: Int -> Options -> History -> InstrBody
+getInstr0 :: Int -> Options -> History -> InstrBody GE
 getInstr0 nchnls opt hist = do
     globalConstants
     midiAssigns

@@ -69,7 +69,7 @@ fromPm (Pm a) = res
 fromDm :: Tuple a => Dm -> SE a
 fromDm (Dm a) = res
     where 
-        res = fmap toTuple $ fromDep $ fmap ( $ (tupleArity $ proxy res)) a
+        res = fmap toTuple $ fromDep $ hideGEinDep $ fmap ( $ (tupleArity $ proxy res)) a
 
         proxy :: SE a -> a
         proxy = const undefined
@@ -116,7 +116,7 @@ instance (PureSingle b) => PureSingle (Msg -> b)    where   pureSingleGE f = con
 -- dirty single
 
 instance DirtySingle (SE (GE E)) where
-    dirtySingleGE = fromDep . fmap ($ [])
+    dirtySingleGE = fromDep . hideGEinDep . fmap ($ [])
     
 instance DirtySingle b => DirtySingle (GE E -> b) where
     dirtySingleGE mf = \ma -> dirtySingleGE $ (\f a as -> f (a:as)) <$> mf <*> ma
@@ -155,7 +155,7 @@ instance (DirtySingle b) => DirtySingle (Msg -> b)    where   dirtySingleGE f = 
 -- procedure
 
 instance Procedure (SE ()) where
-    procedureGE = fromDep_ . fmap ($ [])
+    procedureGE = fromDep_ . hideGEinDep . fmap ($ [])
 
 instance Procedure b => Procedure (GE E -> b) where
     procedureGE mf = \ma -> procedureGE $ (\f a as -> f (a:as)) <$> mf <*> ma

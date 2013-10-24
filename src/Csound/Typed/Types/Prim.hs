@@ -27,6 +27,7 @@ module Csound.Typed.Types.Prim(
 
 import Control.Applicative hiding ((<*))
 import Control.Monad
+import Control.Monad.Trans.Class
 import Data.Monoid
 import qualified Data.IntMap as IM
 
@@ -390,16 +391,16 @@ whens bodies el = case bodies of
     where elseIfs = mapM_ (\(p, body) -> elseIfBegin p >> body)
 
 ifBegin :: BoolSig -> SE ()
-ifBegin a = fromDep_ $ fmap D.ifBegin $ toGE a
+ifBegin a = fromDep_ $ D.ifBegin =<< lift (toGE a)
 
 ifEnd :: SE ()
-ifEnd = fromDep_ $ return $ D.ifEnd
+ifEnd = fromDep_ D.ifEnd
 
 elseBegin :: SE ()
-elseBegin = fromDep_ $ return D.elseBegin
+elseBegin = fromDep_ D.elseBegin
 
 elseIfBegin :: BoolSig -> SE ()
-elseIfBegin a = fromDep_ $ fmap D.elseIfBegin $ toGE a
+elseIfBegin a = fromDep_ $ D.elseIfBegin =<< lift (toGE a)
 
 -- | Creates a constant boolean signal.
 boolSig :: BoolD -> BoolSig

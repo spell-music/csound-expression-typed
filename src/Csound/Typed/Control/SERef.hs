@@ -1,7 +1,8 @@
 module Csound.Typed.Control.SERef where
 
 import Control.Monad
-import Csound.Dynamic
+import Control.Monad.Trans.Class
+import Csound.Dynamic hiding (newLocalVars)
 
 import Csound.Typed.Types.Tuple
 import Csound.Typed.GlobalState
@@ -16,8 +17,8 @@ data SERef a = SERef
 newSERef :: Tuple a => a -> SE (SERef a)
 newSERef t = do
     vars <- newLocalVars (tupleRates t) (fromTuple t)
-    let wr a = fromDep_ $ fmap (zipWithM_ writeVar vars) (fromTuple a)
-        re   = fmap toTuple $ fromDep  $ return $ mapM readVar vars
+    let wr a = fromDep_ $ (zipWithM_ writeVar vars) =<< lift (fromTuple a)
+        re   = fmap toTuple $ fromDep $ mapM readVar vars
     return (SERef wr re)
 
 -- | An alias for the function @newSERef@. It returns not the reference

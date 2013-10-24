@@ -45,7 +45,6 @@ Library
     Csound.Typed.GlobalState.Options
     Csound.Typed.GlobalState.GE
     Csound.Typed.GlobalState.SE
-    Csound.Typed.GlobalState.Converters
     Csound.Typed.GlobalState.Instr
     Csound.Typed.GlobalState.Cache
 

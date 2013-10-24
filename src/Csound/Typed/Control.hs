@@ -32,7 +32,7 @@ import Csound.Typed.GlobalState
 instr0 :: Tuple a => SE a -> SE a
 instr0 a = return $ toTuple $ saveIns0 ins0Arity (tupleRates $ proxy a) ins0Exp
     where
-        ins0Exp = fmap fromTuple a
+        ins0Exp = execGEinSE $ fmap fromTuple a
 
         ins0Arity = tupleArity $ proxy a
 
@@ -42,7 +42,7 @@ instr0 a = return $ toTuple $ saveIns0 ins0Arity (tupleRates $ proxy a) ins0Exp
 getIns :: Sigs a => SE a
 getIns = res
     where 
-        res = fmap toTuple $ fromDep $ return $ C.getIn (tupleArity $ proxy res) 
+        res = fmap toTuple $ fromDep $ C.getIn (tupleArity $ proxy res) 
 
         proxy :: SE a -> a
         proxy = const undefined
