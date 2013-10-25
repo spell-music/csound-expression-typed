@@ -11,6 +11,7 @@ import qualified Data.Map as M
 import Data.Default
 import Data.Maybe
 import Data.Tuple
+import Control.Monad
 
 import Csound.Dynamic hiding (csdFlags)
 import Csound.Dynamic.Control
@@ -21,22 +22,22 @@ import Csound.Typed.Control.Instr
 import Csound.Typed.Control(getIns)
 import Csound.Dynamic.Types.Flags
 
-toCsd :: Tuple a => Options -> SE a -> GE (Csd GE)
+toCsd :: Tuple a => Options -> SE a -> GE Csd
 toCsd options sigs = do   
     saveMasterInstr (constArity sigs) (masterExp sigs)
-    withHistory $ renderHistory (outArity sigs) options
+    join $ withHistory $ renderHistory (outArity sigs) options
 
 renderOut_ :: SE () -> IO String
 renderOut_ = renderOutBy_ def 
 
 renderOutBy_ :: Options -> SE () -> IO String
-renderOutBy_ options sigs = evalGE options $ renderCsd =<< toCsd options (fmap (const unit) sigs)
+renderOutBy_ options sigs = evalGE options $ fmap renderCsd $ toCsd options (fmap (const unit) sigs)
 
 renderOut :: Sigs a => SE a -> IO String
 renderOut = renderOutBy def
 
 renderOutBy :: Sigs a => Options -> SE a -> IO String
-renderOutBy options sigs = evalGE options $ renderCsd =<< toCsd options sigs
+renderOutBy options sigs = evalGE options $ fmap renderCsd $ toCsd options sigs
 
 renderEff :: (Sigs a, Sigs b) => (a -> SE b) -> IO String
 renderEff = renderEffBy def
@@ -44,16 +45,20 @@ renderEff = renderEffBy def
 renderEffBy :: (Sigs a, Sigs b) => Options -> (a -> SE b) -> IO String
 renderEffBy options eff = renderOutBy options $ eff =<< getIns
 
-renderHistory :: Int -> Options -> History -> Csd GE
-renderHistory nchnls opt hist = Csd flags orc sco
+renderHistory :: Int -> Options -> History -> GE Csd
+renderHistory nchnls opt hist = do
+    instr0 <- execDepT $ getInstr0 nchnls opt hist
+    let orc = Orc instr0 (fmap (uncurry Instr) $ instrsContent $ instrs hist)   
+    return $ Csd flags orc sco
     where
         flags   = reactOnMidi hist $ csdFlags opt
-        orc     = Orc (getInstr0 nchnls opt hist) (fmap (uncurry Instr) $ instrsContent $ instrs hist)
-        sco     = Sco (Just $ getTotalDur opt $ totalDur hist) (renderGens $ genMap hist) [alwaysOn $ masterInstrId hist]
+        sco     = Sco (Just $ getTotalDur opt $ totalDur hist) 
+                      (renderGens $ genMap hist) $
+                      (fmap alwaysOn $ alwaysOnInstrs hist)
 
         renderGens = fmap swap . M.toList . idMapContent        
 
-getInstr0 :: Int -> Options -> History -> InstrBody GE
+getInstr0 :: Int -> Options -> History -> Dep ()
 getInstr0 nchnls opt hist = do
     globalConstants
     midiAssigns
@@ -70,7 +75,7 @@ getInstr0 nchnls opt hist = do
 
         midiAssigns = mapM_ renderMidiAssign $ midis hist
 
-        initGlobals = varsInits $ globalsVars $ globals $ hist
+        initGlobals = fst $ renderGlobals $ globals $ hist
 
 reactOnMidi :: History -> Flags -> Flags
 reactOnMidi h flags

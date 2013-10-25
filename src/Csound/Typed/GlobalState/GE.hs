@@ -5,7 +5,7 @@ module Csound.Typed.GlobalState.GE(
     -- * Midi
     MidiAssign(..), Msg(..), renderMidiAssign, saveMidi,  
     -- * Instruments
-    setMasterInstrId, onInstr, saveUserInstr0, getSysExpr,
+    saveAlwaysOnInstr, onInstr, saveUserInstr0, getSysExpr,
     -- * Total duration
     TotalDur(..), getTotalDur, setDuration, setDurationToInfinite,
     -- * GEN routines
@@ -63,17 +63,17 @@ instance MonadIO GE where
 data History = History
     { genMap            :: GenMap
     , stringMap         :: StringMap
-    , globals           :: Globals GE
-    , instrs            :: Instrs GE
+    , globals           :: Globals
+    , instrs            :: Instrs
     , midis             :: [MidiAssign]
     , totalDur          :: Maybe TotalDur
-    , masterInstrId     :: InstrId
-    , userInstr0        :: InstrBody GE
+    , alwaysOnInstrs    :: [InstrId]
+    , userInstr0        :: Dep ()
     , bandLimitedMap    :: BandLimitedMap
     , cache             :: Cache GE }
 
 instance Default History where
-    def = History def def def def def def (intInstrId 0) (return ()) def def
+    def = History def def def def def def def (return ()) def def
 
 data Msg = Msg
 data MidiAssign = MidiAssign MidiType Channel InstrId
@@ -125,20 +125,23 @@ saveMidi :: MidiAssign -> GE ()
 saveMidi ma = onMidis $ modify (ma: )
     where onMidis = onHistory midis (\a h -> h { midis = a })
 
-saveUserInstr0 :: InstrBody GE -> GE ()
+saveUserInstr0 :: Dep () -> GE ()
 saveUserInstr0 expr = onUserInstr0 $ modify ( >> expr)
     where onUserInstr0 = onHistory userInstr0 (\a h -> h { userInstr0 = a })
 
-getSysExpr :: GE (DepT GE ())
-getSysExpr = fmap sequence_ $ sequence [ onGlobals $ clearGlobals ]    
-    where
-        clearGlobals :: State (Globals GE) (DepT GE ())
-        clearGlobals = gets $ mapM_ (flip writeVar 0) . globalsClearable 
+getSysExpr :: GE (Dep ())
+getSysExpr = withHistory $ clearGlobals . globals
+    where clearGlobals = snd . renderGlobals
 
+saveAlwaysOnInstr :: InstrId -> GE ()
+saveAlwaysOnInstr instrId = onAlwaysOnInstrs $ modify (instrId : )
+    where onAlwaysOnInstrs = onHistory alwaysOnInstrs (\a h -> h { alwaysOnInstrs = a })
+
+{-
 setMasterInstrId :: InstrId -> GE ()
 setMasterInstrId masterId = onMasterInstrId $ put masterId
     where onMasterInstrId = onHistory masterInstrId (\a h -> h { masterInstrId = a })
-
+-}
 ----------------------------------------------------------------------
 -- state modifiers
 
@@ -163,10 +166,10 @@ onHistory getter setter st = GE $ ReaderT $ \_ -> StateT $ \history ->
 
 type UpdField a b = State a b -> GE b
 
-onInstr :: UpdField (Instrs GE) a
+onInstr :: UpdField Instrs a
 onInstr = onHistory instrs (\a h -> h { instrs = a })
 
-onGlobals :: UpdField (Globals GE) a
+onGlobals :: UpdField Globals a
 onGlobals = onHistory globals (\a h -> h { globals = a })
 
 ----------------------------------------------------------------------

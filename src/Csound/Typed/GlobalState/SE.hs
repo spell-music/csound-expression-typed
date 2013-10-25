@@ -31,8 +31,8 @@ instance Monad SE where
 runSE :: SE a -> GE (a, LocalHistory)
 runSE = runDepT . unSE
 
-execSE :: SE a -> Dep () 
-execSE a = depT_ =<< (lift $ execDepT $ unSE a)
+execSE :: SE () -> GE InstrBody
+execSE a = execDepT $ unSE a
 
 execGEinSE :: SE (GE a) -> SE a
 execGEinSE (SE sa) = SE $ do

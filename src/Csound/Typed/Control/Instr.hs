@@ -36,7 +36,7 @@ midiExp :: (Tuple a) => (Msg -> SE a) -> InsExp
 midiExp instr = execGEinSE $ fmap fromTuple $ instr Msg
 
 unitExp :: SE Unit -> UnitExp
-unitExp = execSE . execGEinSE . fmap unUnit
+unitExp = execGEinSE . fmap unUnit
 
 apInstr :: (Arg a, Sigs b) => GE InstrId -> a -> b
 apInstr instrIdGE args = res

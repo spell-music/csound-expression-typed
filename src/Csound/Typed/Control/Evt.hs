@@ -42,10 +42,10 @@ trigBy instr evts args = flip apInstr args $ do
         saveEvtInstr (arityOuts $ funArity instr) instrId (evts toArg)  
 
 saveEvtInstr :: Arg a => Int -> C.InstrId -> Evt (D, D, a) -> GE C.InstrId
-saveEvtInstr arity instrId evts = onInstr . C.saveInstr $ evtMixInstr
+saveEvtInstr arity instrId evts = saveInstr evtMixInstr
     where
-        evtMixInstr :: Dep ()
-        evtMixInstr = execSE $ do
+        evtMixInstr :: SE ()
+        evtMixInstr = do
             chnId <- fromDep $ C.chnRefAlloc arity
             go chnId evts
             fromDep_ $ hideGEinDep $ fmap (\chn -> C.sendOut arity =<< C.readChn chn) chnId 
@@ -129,7 +129,7 @@ sched_ instr evts = fromDep_ $ hideGEinDep $ do
     where phi (a, b) = (0, a, b)
 
 saveEvtInstr_ :: Arg a => C.InstrId -> Evt (D, D, a) -> Dep ()
-saveEvtInstr_ instrId evts = execSE $ runEvt evts $ \(start, dur, args) -> fromDep_ $ hideGEinDep$ 
+saveEvtInstr_ instrId evts = unSE $ runEvt evts $ \(start, dur, args) -> fromDep_ $ hideGEinDep$ 
     fmap C.event $ C.Event instrId <$> toGE start <*> toGE dur <*> toNote args
 
 -------------------------------------------------------------------
