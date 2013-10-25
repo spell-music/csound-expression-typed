@@ -83,8 +83,8 @@ renderMidiAssign (MidiAssign ty chn instrId) = case ty of
     Massign         -> massign chn instrId
     Pgmassign mn    -> pgmassign chn instrId mn
     where
-        massign n instr = depT_ $ return $ opcs "massign" [(Xr, [Ir,Ir])] [int n, prim $ PrimInstrId instr]
-        pgmassign pgm instr mchn = depT_ $ return $ opcs "pgmassign" [(Xr, [Ir,Ir,Ir])] ([int pgm, prim $ PrimInstrId instr] ++ maybe [] (return . int) mchn)
+        massign n instr = depT_ $ opcs "massign" [(Xr, [Ir,Ir])] [int n, prim $ PrimInstrId instr]
+        pgmassign pgm instr mchn = depT_ $ opcs "pgmassign" [(Xr, [Ir,Ir,Ir])] ([int pgm, prim $ PrimInstrId instr] ++ maybe [] (return . int) mchn)
 
 data TotalDur = NumDur Double | InfiniteDur
     deriving (Eq, Ord)
