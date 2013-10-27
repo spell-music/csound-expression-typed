@@ -74,22 +74,25 @@ eff ef sigs = wrapSco sigs $ \events -> do
 mix :: (Sigs a, CsdSco f) => f (Mix a) -> a
 mix a = flip apInstr unit $ do
     key <- mixKey a
-    withCache getMixKey saveMixKey key $ 
-        saveMixInstr (mixArity a) =<< toEventList a
+    withCache (NumDur $ csdEventListDur a') getMixKey saveMixKey key $ 
+        saveMixInstr (mixArity a) =<< toEventList a'
+    where a' = toCsdEventList a
 
 -- | Imitates a closure for a bunch of notes to be played within another instrument. 
 mixBy :: (Arg a, Sigs b, CsdSco f) => (a -> f (Mix b)) -> (a -> b)
 mixBy evts args = flip apInstr args $ do
     key <- mixKey evts
-    withCache getMixKey saveMixKey key $ 
-        saveMixInstr (mixArityFun evts) =<< (toEventList $ evts toArg)
+    withCache (NumDur $ csdEventListDur evts') getMixKey saveMixKey key $ 
+        saveMixInstr (mixArityFun evts) =<< (toEventList evts')
+    where evts' = toCsdEventList $ evts toArg
 
 -- | Converts a bunch of procedures scheduled with scores to a single procedure.
 mix_ :: (CsdSco f) => f (Mix Unit) -> SE ()
 mix_ a = fromDep_ $ hideGEinDep $ do
     key <- mixKey a
-    withCache getMixProcKey saveMixProcKey key $
-        saveMixInstr_ =<< toEventList a
+    withCache (NumDur $ csdEventListDur a') getMixProcKey saveMixProcKey key $
+        saveMixInstr_ =<< toEventList a'
+    where a' = toCsdEventList a
 
 -- | Imitates a closure for a bunch of procedures to be played within another instrument. 
 mixBy_ :: (Arg a, CsdSco f) => (a -> f (Mix Unit)) -> (a -> SE ())

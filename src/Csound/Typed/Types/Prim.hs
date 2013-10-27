@@ -1,6 +1,7 @@
 {-# Language TypeFamilies #-}
 module Csound.Typed.Types.Prim(
-    Sig, D, Tab, Str, Spec, Wspec, BoolSig, BoolD, Unit(..), unit, Val(..), hideGE, SigOrD,
+    Sig(..), D(..), Tab(..), unTab, Str(..), Spec(..), Wspec(..), 
+    BoolSig(..), BoolD(..), Unit(..), unit, Val(..), hideGE, SigOrD,
 
     -- ** Tables
     preTab, TabSize(..), TabArgs(..), updateTabSize,
@@ -85,7 +86,7 @@ instance Monoid Unit where
 
 -- | Tables (or arrays)
 data Tab  
-    = TabExp (GE E)
+    = Tab (GE E)
     | TabPre PreTab
 
 preTab :: TabSize -> Int -> TabArgs -> Tab
@@ -189,14 +190,14 @@ defineTabArgs size args = case args of
 -- | Skips normalization (sets table size to negative value)
 skipNorm :: Tab -> Tab
 skipNorm x = case x of
-    TabExp _ -> error "you can skip normalization only for primitive tables (made with gen-routines)"
+    Tab _ -> error "you can skip normalization only for primitive tables (made with gen-routines)"
     TabPre a -> TabPre $ a{ preTabGen = negate $ abs $ preTabGen a }
 
 -- | Force normalization (sets table size to positive value).
 -- Might be useful to restore normalization for table 'Csound.Tab.doubles'.
 forceNorm :: Tab -> Tab
 forceNorm x = case x of
-    TabExp _ -> error "you can force normalization only for primitive tables (made with gen-routines)"
+    Tab _ -> error "you can force normalization only for primitive tables (made with gen-routines)"
     TabPre a -> TabPre $ a{ preTabGen = abs $ preTabGen a }
 
 ----------------------------------------------------------------------------
@@ -204,7 +205,7 @@ forceNorm x = case x of
 
 updateTabSize :: (TabSize -> TabSize) -> Tab -> Tab
 updateTabSize phi x = case x of
-    TabExp _ -> error "you can change size only for primitive tables (made with gen-routines)"
+    Tab _ -> error "you can change size only for primitive tables (made with gen-routines)"
     TabPre a -> TabPre $ a{ preTabSize = phi $ preTabSize a }
 
 -------------------------------------------------------------------------------
@@ -281,9 +282,12 @@ instance Val Spec   where { fromGE = Spec   ; toGE = unSpec }
 instance Val Wspec  where { fromGE = Wspec  ; toGE = unWspec}
 
 instance Val Tab where 
-    fromGE = TabExp 
-    toGE x = case x of
-        TabExp a -> a
+    fromGE = Tab 
+    toGE = unTab
+
+unTab :: Tab -> GE E
+unTab x = case x of
+        Tab a -> a
         TabPre a -> renderTab a
 
 instance Val BoolSig where { fromGE = BoolSig ; toGE = unBoolSig }

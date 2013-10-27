@@ -29,7 +29,7 @@ pgmidi mchn n f = genMidi (Pgmassign mchn) n f
 genMidi :: (Sigs a) => MidiType -> Channel -> (Msg -> SE a) -> a
 genMidi midiType chn instr = toTuple $ do    
     key <- midiKey midiType chn instr
-    withCache getMidiKey saveMidiKey key $
+    withCache InfiniteDur getMidiKey saveMidiKey key $
         saveMidiInstr midiType chn (constArity $ instr Msg) (midiExp instr)
 
 -----------------------------------------------------------------
@@ -50,7 +50,7 @@ pgmidi_ mchn = genMidi_ (Pgmassign mchn)
 genMidi_ :: MidiType -> Channel -> (Msg -> SE ()) -> SE ()
 genMidi_ midiType chn instr = fromDep_ $ hideGEinDep $ do
     key <- midiKey midiType chn instr
-    withCache getMidiProcKey saveMidiProcKey key $ 
+    withCache InfiniteDur getMidiProcKey saveMidiProcKey key $ 
         saveMidiInstr_ midiType chn (unitExp $ fmap (const unit) $ instr Msg)
 
 -----------------------------------------------------------------

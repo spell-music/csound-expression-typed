@@ -119,7 +119,7 @@ setDuration :: Double -> GE ()
 setDuration = setTotalDur . NumDur
 
 setTotalDur :: TotalDur -> GE ()
-setTotalDur = onTotalDur . modify . max . Just
+setTotalDur = onTotalDur . modify . const . Just
     where onTotalDur = onHistory totalDur (\a h -> h { totalDur = a })
 
 saveMidi :: MidiAssign -> GE ()
@@ -188,13 +188,16 @@ type SetCache a b = a -> b -> Cache GE -> Cache GE
 toCache :: SetCache a b -> a -> b -> GE () 
 toCache f key val = modifyHistory $ \h -> h { cache = f key val (cache h) }
 
-withCache :: GetCache key val -> SetCache key val -> key -> GE val -> GE val
-withCache lookupResult saveResult key getResult = do    
+withCache :: TotalDur -> GetCache key val -> SetCache key val -> key -> GE val -> GE val
+withCache dur lookupResult saveResult key getResult = do    
     ma <- fromCache lookupResult key
-    case ma of
+    res <- case ma of
         Just a      -> return a
         Nothing     -> do
-            res <- getResult
-            toCache saveResult key res
-            return res          
+            r <- getResult
+            toCache saveResult key r
+            return r
+    setTotalDur dur
+    return res
+
 

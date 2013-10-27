@@ -27,7 +27,7 @@ import Csound.Typed.Control.Instr
 trig :: (Arg a, Sigs b) => (a -> SE b) -> Evt (D, D, a) -> b
 trig instr evts = apInstr0 $ do
     key <- evtKey evts instr
-    withCache getEvtKey saveEvtKey key $ do
+    withCache InfiniteDur getEvtKey saveEvtKey key $ do
         cacheName <- liftIO $ C.makeCacheName instr
         instrId <- saveSourceInstrCached cacheName (funArity instr) (insExp instr)
         saveEvtInstr (arityOuts $ funArity instr) instrId evts
@@ -36,7 +36,7 @@ trig instr evts = apInstr0 $ do
 trigBy :: (Arg a, Sigs b, Arg c) => (a -> SE b) -> (c -> Evt (D, D, a)) -> (c -> b)
 trigBy instr evts args = flip apInstr args $ do
     key <- evtKey evts instr
-    withCache getEvtKey saveEvtKey key $ do        
+    withCache InfiniteDur getEvtKey saveEvtKey key $ do        
         cacheName <- liftIO $ C.makeCacheName instr
         instrId <- saveSourceInstrCached cacheName (funArity instr) (insExp instr)
         saveEvtInstr (arityOuts $ funArity instr) instrId (evts toArg)  
@@ -61,7 +61,7 @@ saveEvtInstr arity instrId evts = saveInstr evtMixInstr
 sched :: (Arg a, Sigs b) => (a -> SE b) -> Evt (D, a) -> b
 sched instr evts = apInstr0 $ do
     key <- evtKey evts instr
-    withCache getEvtKey saveEvtKey key $ do
+    withCache InfiniteDur getEvtKey saveEvtKey key $ do
         cacheName <- liftIO $ C.makeCacheName instr
         instrId <- saveSourceInstrCached cacheName (funArity instr) (insExp instr)
         saveEvtInstr (arityOuts $ funArity instr) instrId (fmap phi evts)  
@@ -71,7 +71,7 @@ sched instr evts = apInstr0 $ do
 schedBy :: (Arg a, Sigs b, Arg c) => (a -> SE b) -> (c -> Evt (D, a)) -> (c -> b)
 schedBy instr evts args = flip apInstr args $ do
     key <- evtKey evts instr
-    withCache getEvtKey saveEvtKey key $ do
+    withCache InfiniteDur getEvtKey saveEvtKey key $ do
         cacheName <- liftIO $ C.makeCacheName instr
         instrId <- saveSourceInstrCached cacheName (funArity instr) (insExp instr)
         saveEvtInstr (arityOuts $ funArity instr) instrId (fmap phi $ evts toArg)  
@@ -84,7 +84,7 @@ schedBy instr evts args = flip apInstr args $ do
 schedHarp :: (Arg a, Sigs b) => D -> (a -> SE b) -> Evt a -> b
 schedHarp turnOffTime instr evts = apInstr0 $ do
     key <- evtKey evts instr
-    withCache getEvtKey saveEvtKey key $ do
+    withCache InfiniteDur getEvtKey saveEvtKey key $ do
         cacheName <- liftIO $ C.makeCacheName instr
         instrId <- saveSourceInstrCached cacheName (funArity instr) (insExp $ (autoOff turnOffTime =<< ) . instr)
         saveEvtInstr (arityOuts $ funArity instr) instrId (fmap phi evts)
@@ -94,7 +94,7 @@ schedHarp turnOffTime instr evts = apInstr0 $ do
 schedHarpBy :: (Arg a, Sigs b, Arg c) => D -> (a -> SE b) -> (c -> Evt a) -> (c -> b)
 schedHarpBy turnOffTime instr evts args = flip apInstr args $ do
     key <- evtKey evts instr
-    withCache getEvtKey saveEvtKey key $ do
+    withCache InfiniteDur getEvtKey saveEvtKey key $ do
         cacheName <- liftIO $ C.makeCacheName instr
         instrId <- saveSourceInstrCached cacheName (funArity instr) (insExp $ (autoOff turnOffTime =<< ) . instr)
         saveEvtInstr (arityOuts $ funArity instr) instrId (fmap phi $ evts toArg)
@@ -113,7 +113,7 @@ autoOff dt sigs = fmap toTuple $ fromDep $ hideGEinDep $ phi =<< fromTuple sigs
 trig_ :: (Arg a) => (a -> SE ()) -> Evt (D, D, a) -> SE ()
 trig_ instr evts = fromDep_ $ hideGEinDep $ do
     key <- evtKey evts instr
-    withCache getEvtProcKey saveEvtProcKey key $ do
+    withCache InfiniteDur getEvtProcKey saveEvtProcKey key $ do
         cacheName <- liftIO $ C.makeCacheName instr
         instrId <- saveSourceInstrCached_ cacheName (unitExp $ fmap (const unit) $ instr toArg)
         return $ saveEvtInstr_ instrId evts
@@ -122,7 +122,7 @@ trig_ instr evts = fromDep_ $ hideGEinDep $ do
 sched_ :: (Arg a) => (a -> SE ()) -> Evt (D, a) -> SE ()
 sched_ instr evts = fromDep_ $ hideGEinDep $ do
     key <- evtKey evts instr
-    withCache getEvtProcKey saveEvtProcKey key $ do
+    withCache InfiniteDur getEvtProcKey saveEvtProcKey key $ do
         cacheName <- liftIO $ C.makeCacheName instr
         instrId <- saveSourceInstrCached_ cacheName (unitExp $ fmap (const unit) $ instr toArg)
         return $ saveEvtInstr_ instrId $ fmap phi evts

@@ -20,12 +20,17 @@ module Csound.Typed.Types.Tuple(
 
     -- ** Logic functions
     ifTuple, guardedTuple, caseTuple,
-    ifArg, guardedArg, caseArg
+    ifArg, guardedArg, caseArg,
+
+    -- ** Constructors
+    pureTuple, dirtyTuple
 ) where
+
 
 import Control.Arrow
 import Control.Applicative
 import Control.Monad
+import Control.Monad.Trans.Class
 import Data.Default
 import Data.Boolean
 
@@ -254,4 +259,20 @@ guardedArg bs b = fromBoolArg $ guardedB undefined (fmap (second toBoolArg) bs) 
 caseArg :: (Tuple b, Arg b) => a -> [(a -> BoolD, b)] -> b -> b
 caseArg a bs other = fromBoolArg $ caseB a (fmap (second toBoolArg) bs) (toBoolArg other)
 
+-----------------------------------------------------------
+-- tuple constructors
+
+pureTuple :: Tuple a => GE (MultiOut [E]) -> a
+pureTuple a = res
+    where res = toTuple $ fmap ($ tupleArity res) a
+
+dirtyTuple :: Tuple a => GE (MultiOut [E]) -> SE a
+dirtyTuple a = res
+    where 
+        res = fmap (toTuple . return) $ SE 
+                $ mapM depT =<< (lift $ fmap ($ (tupleArity $ proxy res)) a)
+
+        proxy :: SE a -> a
+        proxy = const undefined
+        
 
