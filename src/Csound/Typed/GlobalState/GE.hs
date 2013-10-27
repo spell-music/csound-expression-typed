@@ -28,9 +28,10 @@ import Control.Monad.Trans.State.Strict
 import Control.Monad.Trans.Reader
 
 import Csound.Dynamic 
-import Csound.Dynamic.Control
+
 import Csound.Typed.GlobalState.Options
 import Csound.Typed.GlobalState.Cache
+import Csound.Typed.GlobalState.Elements
 
 type Dep a = DepT GE a
 

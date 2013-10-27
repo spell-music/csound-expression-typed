@@ -11,7 +11,7 @@ import Data.Traversable
 import System.Mem.StableName
 
 import Csound.Dynamic hiding (Instr)
-import qualified Csound.Dynamic.Control as C
+import qualified Csound.Typed.GlobalState.Elements as C
 
 import Csound.Typed.Types
 import Csound.Typed.Types.MixSco

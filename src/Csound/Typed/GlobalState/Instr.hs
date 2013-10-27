@@ -3,7 +3,7 @@ module Csound.Typed.GlobalState.Instr where
 import Control.Monad
 
 import Csound.Dynamic
-import qualified Csound.Dynamic.Control as C
+import qualified Csound.Typed.GlobalState.Elements as C
 
 import Csound.Typed.Types.MixSco
 import Csound.Typed.GlobalState.GE

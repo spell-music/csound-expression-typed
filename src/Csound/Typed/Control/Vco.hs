@@ -3,8 +3,6 @@ module Csound.Typed.Control.Vco(
     saw, isaw, pulse, tri, sqr, blosc        
 ) where
 
-import Csound.Dynamic.Control
-
 import Csound.Typed.GlobalState
 import Csound.Typed.Types
 

@@ -11,7 +11,7 @@ import Control.Applicative
 import Control.Monad.IO.Class
 
 import qualified Csound.Dynamic as C
-import qualified Csound.Dynamic.Control as C
+import qualified Csound.Typed.GlobalState.Elements as C
 
 import Csound.Typed.Types
 import Csound.Typed.GlobalState

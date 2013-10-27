@@ -5,7 +5,7 @@ module Csound.Typed.Types.MixSco(
 import Control.Monad
 
 import Csound.Dynamic
-import Csound.Dynamic.Control
+import Csound.Typed.GlobalState.Elements
 
 data M 
     = Snd InstrId (CsdEventList [E])

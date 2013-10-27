@@ -15,8 +15,6 @@ module Csound.Typed.Control (
     module Csound.Typed.Control.Vco
 ) where
 
-import qualified Csound.Dynamic.Control as C
-
 import Csound.Typed.GlobalState.SE
 
 import Csound.Typed.Control.SERef
@@ -42,7 +40,7 @@ instr0 a = return $ toTuple $ saveIns0 ins0Arity (tupleRates $ proxy a) ins0Exp
 getIns :: Sigs a => SE a
 getIns = res
     where 
-        res = fmap toTuple $ fromDep $ C.getIn (tupleArity $ proxy res) 
+        res = fmap toTuple $ fromDep $ getIn (tupleArity $ proxy res) 
 
         proxy :: SE a -> a
         proxy = const undefined

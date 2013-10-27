@@ -14,7 +14,6 @@ import Data.Tuple
 import Control.Monad
 
 import Csound.Dynamic hiding (csdFlags)
-import Csound.Dynamic.Control
 import Csound.Typed.Types
 import Csound.Typed.GlobalState
 import Csound.Typed.GlobalState.Options

@@ -7,7 +7,7 @@ module Csound.Typed.Control.Instr(
 ) where
 
 import Csound.Dynamic(InstrId)
-import qualified Csound.Dynamic.Control as C
+import qualified Csound.Typed.GlobalState.Elements as C
 
 import Csound.Typed.Types
 import Csound.Typed.GlobalState
