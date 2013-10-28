@@ -241,7 +241,11 @@ getIn arity
 sendOut :: Monad m => Int -> [E] -> DepT m ()
 sendOut arity sigs 
     | arity == 0    = return ()
-    | otherwise     = depT_ $ opcs name [(Xr, replicate arity Ar)] sigs
+    | otherwise     = do
+        vars <- newLocalVars (replicate arity Ar) (return $ replicate arity 0)
+        zipWithM_ writeVar vars sigs
+        vals <- mapM readVar vars
+        depT_ $ opcsNoInlineArgs name [(Xr, replicate arity Ar)] vals
     where
         name            
             | arity == 1 = "out"

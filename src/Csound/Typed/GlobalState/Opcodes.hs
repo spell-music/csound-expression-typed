@@ -52,7 +52,11 @@ sprintf :: E -> [E] -> E
 sprintf a as = opcs "sprintf" [(Sr, Sr:repeat Ir)] (a:as)
 
 chnmix :: Monad m => E -> E -> DepT m ()
-chnmix asig name = depT_ $ opcs "chnmix" [(Xr, [Ar, Sr])] [asig, name]
+chnmix asig name = do
+    var <- newLocalVar Ar (return 0)
+    writeVar var asig
+    val <- readVar var
+    depT_ $ opcsNoInlineArgs "chnmix" [(Xr, [Ar, Sr])] [val, name]
 
 chnget :: Monad m => E -> DepT m E
 chnget name = depT $ opcs "chnget" [(Ar, [Sr])] [name]
@@ -109,10 +113,10 @@ subinstr_ instrId args = depT_ $ head $ ($ 1) $  mopcs "subinstr"
 -- output
 
 out :: Monad m => E -> DepT m ()
-out a = depT_ $ opcs "out" [(Xr, [Ar])] [a]
+out a = depT_ $ opcsNoInlineArgs "out" [(Xr, [Ar])] [a]
 
 outs :: Monad m => [E] -> DepT m ()
-outs as = depT_ $ opcs "outs" [(Xr, repeat Ar)] as
+outs as = depT_ $ opcsNoInlineArgs "outs" [(Xr, repeat Ar)] as
 
 -- safe out
 
