@@ -1,7 +1,7 @@
 module Csound.Typed.GlobalState.SE(
     SE(..), LocalHistory(..), 
     runSE, execSE, evalSE, execGEinSE, hideGEinDep, 
-    fromDep, fromDep_, 
+    fromDep, fromDep_, geToSe,
     newLocalVar, newLocalVars        
 ) where
 
@@ -51,6 +51,9 @@ fromDep_ = SE
             
 evalSE :: SE a -> GE a
 evalSE = fmap fst . runSE
+
+geToSe :: GE a -> SE a
+geToSe = SE . lift
 
 ----------------------------------------------------------------------
 -- allocation of the local vars

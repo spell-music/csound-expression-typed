@@ -15,7 +15,11 @@ module Csound.Typed.GlobalState.GE(
     -- * Strings
     saveStr,
     -- * Cache
-    GetCache, SetCache, withCache
+    GetCache, SetCache, withCache,
+    -- * Guis
+    newGuiHandle, saveGuiRoot, appendToGui, 
+    newGuiVar, getPanels, guiHandleToVar,
+    guiInstrExp
 ) where
 
 import Control.Applicative
@@ -32,6 +36,8 @@ import Csound.Dynamic
 import Csound.Typed.GlobalState.Options
 import Csound.Typed.GlobalState.Cache
 import Csound.Typed.GlobalState.Elements
+
+import Csound.Typed.Gui.Gui(Panel, GuiNode, GuiHandle(..), restoreTree, guiMap, mapGuiOnPanel)
 
 type Dep a = DepT GE a
 
@@ -71,10 +77,11 @@ data History = History
     , alwaysOnInstrs    :: [InstrId]
     , userInstr0        :: Dep ()
     , bandLimitedMap    :: BandLimitedMap
-    , cache             :: Cache GE }
+    , cache             :: Cache GE
+    , guis              :: Guis }
 
 instance Default History where
-    def = History def def def def def def def (return ()) def def
+    def = History def def def def def def def (return ()) def def def
 
 data Msg = Msg
 data MidiAssign = MidiAssign MidiType Channel InstrId
@@ -158,6 +165,9 @@ withHistory f = GE $ lift $ fmap f get
 modifyHistory :: (History -> History) -> GE ()
 modifyHistory = GE . lift . modify
 
+modifyWithHistory :: (History -> (a, History)) -> GE a
+modifyWithHistory f = GE $ lift $ state f
+
 -- update fields
 
 onHistory :: (History -> a) -> (a -> History -> History) -> State a b -> GE b
@@ -199,5 +209,51 @@ withCache dur lookupResult saveResult key getResult = do
             return r
     setTotalDur dur
     return res
+
+--------------------------------------------------------
+-- guis
+
+data Guis = Guis
+    { guiStateNewId     :: Int
+    , guiStateInstr     :: DepT GE ()
+    , guiStateToDraw    :: [GuiNode] 
+    , guiStateRoots     :: [Panel] }
+
+instance Default Guis where 
+    def = Guis 0 (return ()) [] []
+
+newGuiHandle :: GE GuiHandle 
+newGuiHandle = modifyWithHistory $ \h -> 
+    let (n, g') = bumpGuiStateId $ guis h
+    in  (GuiHandle n, h{ guis = g' })
+
+guiHandleToVar :: GuiHandle -> Var
+guiHandleToVar (GuiHandle n) = Var GlobalVar Ir ('h' : show n)
+
+newGuiVar :: GE (Var, GuiHandle)
+newGuiVar = liftA2 (,) (onGlobals $ newPersistentGlobalVar Kr 0) newGuiHandle
+
+modifyGuis :: (Guis -> Guis) -> GE ()
+modifyGuis f = modifyHistory $ \h -> h{ guis = f $ guis h }
+
+appendToGui :: GuiNode -> DepT GE () -> GE ()
+appendToGui gui act = modifyGuis $ \st -> st
+    { guiStateToDraw = gui : guiStateToDraw st
+    , guiStateInstr  = guiStateInstr st >> act }
+
+saveGuiRoot :: Panel -> GE ()
+saveGuiRoot g = modifyGuis $ \st -> 
+    st { guiStateRoots = g : guiStateRoots st }
+
+bumpGuiStateId :: Guis -> (Int, Guis)
+bumpGuiStateId s = (guiStateNewId s, s{ guiStateNewId = succ $ guiStateNewId s })
+
+getPanels :: History -> [Panel]
+getPanels h = fmap (mapGuiOnPanel (restoreTree m)) $ guiStateRoots $ guis h 
+    where m = guiMap $ guiStateToDraw $ guis h
+
+-- have to be executed after all instruments
+guiInstrExp :: GE (DepT GE ())
+guiInstrExp = withHistory (guiStateInstr . guis) 
 
 

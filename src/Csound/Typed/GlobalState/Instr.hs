@@ -55,6 +55,8 @@ saveMasterInstr arity sigs = do
         (saveInstr $ (SE . C.sendOut (arityOuts arity) . C.safeOut gainLevel) =<< sigs)
     expr2 <- getSysExpr 
     saveAlwaysOnInstr =<< saveInstr (SE expr2)
+    expr3 <- guiInstrExp 
+    saveAlwaysOnInstr =<< saveInstr (SE expr3)
 
 saveMidiInstr :: MidiType -> Channel -> Arity -> InsExp -> GE [E]
 saveMidiInstr midiType channel arity instr = do

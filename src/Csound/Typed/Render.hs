@@ -21,6 +21,8 @@ import Csound.Typed.Control.Instr
 import Csound.Typed.Control(getIns)
 import Csound.Dynamic.Types.Flags
 
+import Csound.Typed.Gui.Gui(guiStmt)
+
 toCsd :: Tuple a => Options -> SE a -> GE Csd
 toCsd options sigs = do   
     saveMasterInstr (constArity sigs) (masterExp sigs)
@@ -65,6 +67,7 @@ getInstr0 nchnls opt hist = do
     renderBandLimited (genMap hist) (bandLimitedMap hist)
     userInstr0 hist
     chnUpdateUdo 
+    guiStmt $ getPanels hist
     where
         globalConstants = do
             setSr       $ defSampleRate opt
@@ -75,6 +78,7 @@ getInstr0 nchnls opt hist = do
         midiAssigns = mapM_ renderMidiAssign $ midis hist
 
         initGlobals = fst $ renderGlobals $ globals $ hist
+
 
 reactOnMidi :: History -> Flags -> Flags
 reactOnMidi h flags
