@@ -20,6 +20,7 @@ module Csound.Typed.Gui.Gui (
 
     -- * Widgets
     ValDiap(..), ValStep, ValScaleType(..), ValSpan(..),
+    linSpan, expSpan, uspan, bspan, uspanExp,
     KnobType(..), setKnobType,
     SliderType(..), setSliderType,
     TextType(..), setTextType,
@@ -66,6 +67,40 @@ data Orient = Hor | Ver
 data ValSpan = ValSpan 
     { valSpanDiap  :: ValDiap
     , valSpanScale :: ValScaleType }
+
+-- | Makes a linear @ValSpan@ with specified boundaries.
+--
+-- > linSpan minVal maxVal
+linSpan :: Double -> Double -> ValSpan
+linSpan a b = ValSpan (ValDiap a b) Linear
+
+-- | Makes an exponential @ValSpan@ with specified boundaries.
+--
+-- > expSpan minVal maxVal
+expSpan :: Double -> Double -> ValSpan 
+expSpan a b = ValSpan (ValDiap (checkBound a) b) Exponential
+    where
+        checkBound x
+            | x <= 0    = 0.00001
+            | otherwise = x
+
+-- | Unit span. A special case:
+--
+-- > uspan = linSpan 0 1
+uspan :: ValSpan
+uspan = linSpan 0 1
+
+-- | Bipolar unit span. A special case:
+--
+-- > uspan = linSpan (-1) 1
+bspan :: ValSpan
+bspan = linSpan (-1) 1
+
+-- | An exponential unit span. A special case:
+--
+-- > uspan = expSpan 0 1
+uspanExp :: ValSpan
+uspanExp = linSpan 0 1
 
 -- | The diapason of the continuous value.
 data ValDiap = ValDiap 

@@ -8,12 +8,14 @@ module Csound.Typed.Gui.Widget(
     Widget, widget, Source, source, Sink, sink, Display, display,
 
     -- * Widgets
-    count, countSig, joy, knob, roller, slider, numeric, meter, box,
+    count, countSig, joy, knob, roller, slider, sliderBank, numeric, meter, box,
     button, buttonSig, butBank, butBankSig, toggle, toggleSig,
     value    
 ) where
 
 import Control.Applicative
+import Control.Arrow
+import Control.Monad
 import Control.Monad.Trans.Class
 
 import Csound.Dynamic
@@ -21,40 +23,33 @@ import Csound.Dynamic
 import Csound.Typed.Gui.Gui
 import Csound.Typed.GlobalState
 import Csound.Typed.Types
-{-
-import Csound.Exp.Gui
-import Csound.Exp.Wrapper
-import Csound.Exp.SE
-import Csound.Exp.GE(GE, saveGuiRoot, appendToGui, newGuiVar, newGuiHandle, guiHandleToVar)
-import Csound.Exp.Event
--}
 
 -- | Renders a list of panels.
-panels :: [Gui] -> GE ()
+panels :: [Gui] -> SE ()
 panels = mapM_ panel
 
 -- | Renders the GUI elements on the window. Rectangle is calculated
 -- automatically.
-panel :: Gui -> GE ()
-panel = saveGuiRoot . Single . Win "" Nothing 
+panel :: Gui -> SE ()
+panel = geToSe . saveGuiRoot . Single . Win "" Nothing 
 
 -- | Renders the GUI elements with tabs. Rectangles are calculated
 -- automatically.
-tabs :: [(String, Gui)] -> GE ()
-tabs = saveGuiRoot . Tabs "" Nothing . fmap (\(title, gui) -> Win title Nothing gui)
+tabs :: [(String, Gui)] -> SE ()
+tabs = geToSe . saveGuiRoot . Tabs "" Nothing . fmap (\(title, gui) -> Win title Nothing gui)
 
 -- | Renders the GUI elements on the window. We can specify the window title
 -- and rectangle of the window.
-panelBy :: String -> Maybe Rect -> Gui -> GE ()
-panelBy title mrect gui = saveGuiRoot $ Single $ Win title mrect gui
+panelBy :: String -> Maybe Rect -> Gui -> SE ()
+panelBy title mrect gui = geToSe $ saveGuiRoot $ Single $ Win title mrect gui
 
 -- | Renders the GUI elements with tabs. We can specify the window title and
 -- rectangles for all tabs and for the main window.
-tabsBy :: String -> Maybe Rect -> [(String, Maybe Rect, Gui)] -> GE ()
-tabsBy title mrect gui = saveGuiRoot $ Tabs title mrect $ fmap (\(a, b, c) -> Win a b c) gui
+tabsBy :: String -> Maybe Rect -> [(String, Maybe Rect, Gui)] -> SE ()
+tabsBy title mrect gui = geToSe $ saveGuiRoot $ Tabs title mrect $ fmap (\(a, b, c) -> Win a b c) gui
 
 -- | Widgets that produce something has inputs.
-type Input  a = SE a
+type Input  a = a
 
 -- | Widgets that consume something has outputs.
 type Output a = a -> SE ()
@@ -68,7 +63,7 @@ noOutput = return
 
 -- | A value for widgets that produce nothing.
 noInput :: Input ()
-noInput  = return ()
+noInput  = ()
 
 -- | A value for stateless widgets.
 noInner :: Inner
@@ -89,32 +84,47 @@ type Display  = SE Gui
 
 -- | A handy function for transforming the value of producers.
 mapSource :: (a -> b) -> Source a -> Source b
-mapSource f = fmap $ \(gui, ins) -> (gui, fmap f ins) 
+mapSource f = fmap $ \(gui, ins) -> (gui, f ins) 
 
 -- | A widget constructor.
-widget :: Gui -> Output a -> Input b -> Inner -> Widget a b
-widget gui outs ins inner = geToSe $ do     
-    handle <- newGuiHandle
-    appendToGui (GuiNode gui handle) (unSE inner)
-    return (fromGuiHandle handle, outs, ins, inner)
+widget :: SE (Gui, Output a, Input b, Inner) -> Widget a b
+widget x = go =<< x
+    where
+        go :: (Gui, Output a, Input b, Inner) -> Widget a b
+        go (gui, outs, ins, inner) = geToSe $ do     
+            handle <- newGuiHandle
+            appendToGui (GuiNode gui handle) (unSE inner)
+            return (fromGuiHandle handle, outs, ins, inner)
 
 -- | A producer constructor.
-source :: Gui -> Input a -> Source a
-source gui ins = fmap select $ widget gui noOutput ins noInner
-    where select (g, _, i, _) = (g, i)
+source :: SE (Gui, Input a) -> Source a
+source x = fmap select $ widget $ fmap append x
+    where 
+        select (g, _, i, _) = (g, i)
+        append (g, i) = (g, noOutput, i, noInner)
 
 -- | A consumer constructor.
-sink :: Gui -> Output a -> Sink a
-sink gui outs = fmap select $ widget gui outs noInput noInner
-    where select (g, o, _, _) = (g, o)
+sink :: SE (Gui, Output a) -> Sink a
+sink x = fmap select $ widget $ fmap append x
+    where 
+        select (g, o, _, _) = (g, o)
+        append (g, o) = (g, o, noInput, noInner)
 
 -- | A display constructor.
-display :: Gui -> Display 
-display gui = fmap select $ widget gui noOutput noInput noInner
-    where select (g, _, _, _) = g
+display :: SE Gui -> Display 
+display x = fmap select $ widget $ fmap append x
+    where 
+        select (g, _, _, _) = g
+        append g = (g, noOutput, noInput, noInner)        
 
 -----------------------------------------------------------------------------  
 -- primitive elements
+
+setLabelSource :: String -> Source a -> Source a
+setLabelSource a = fmap (first $ setLabel a)
+
+setLabelSink :: String -> Sink a -> Sink a
+setLabelSink a = fmap (first $ setLabel a)
 
 singleOut :: Maybe Double -> Elem -> Source Sig 
 singleOut v0 el = geToSe $ do
@@ -165,40 +175,47 @@ joy sp1 sp2 (x, y) = geToSe $ do
         inits = [InitMe handleVar1 x, InitMe handleVar2 y]
         gui   = fromElem outs inits (Joy sp1 sp2)
     appendToGui (GuiNode gui handle1) (unSE noInner)
-    return ( fromGuiHandle handle1, liftA2 (,) (readSig var1) (readSig var2))
+    return ( fromGuiHandle handle1, (readSig var1, readSig var2))
 
 -- | A FLTK widget opcode that creates a knob.
 --
 -- > knob valueSpan initValue
 --
 -- doc: <http://www.csounds.com/manual/html/FLknob.html>
-knob :: ValSpan -> Double -> Source Sig
-knob sp v0 = singleOut (Just v0) $ Knob sp
+knob :: String -> ValSpan -> Double -> Source Sig
+knob name sp v0 = setLabelSource name $ singleOut (Just v0) $ Knob sp
 
 -- | FLroller is a sort of knob, but put transversally. 
 --
 -- > roller valueSpan step initVal
 --
 -- doc: <http://www.csounds.com/manual/html/FLroller.html>
-roller :: ValSpan -> ValStep -> Double -> Source Sig
-roller sp step v0 = singleOut (Just v0) $ Roller sp step
+roller :: String -> ValSpan -> ValStep -> Double -> Source Sig
+roller name sp step v0 = setLabelSource name $ singleOut (Just v0) $ Roller sp step
 
 -- | FLslider puts a slider into the corresponding container.
 --
 -- > slider valueSpan initVal 
 --
 -- doc: <http://www.csounds.com/manual/html/FLslider.html>
-slider :: ValSpan -> Double -> Source Sig
-slider sp v0 = singleOut (Just v0) $ Slider sp
+slider :: String -> ValSpan -> Double -> Source Sig
+slider name sp v0 = setLabelSource name $ singleOut (Just v0) $ Slider sp
 
--- | FLtext allows the user to modify a parameter value by directly typing 
--- it into a text field.
+-- | Constructs a list of linear unit sliders (ranges in [0, 1]). It takes a list
+-- of init values.
+sliderBank :: [Double] -> Source [Sig]
+sliderBank ds = source $ do
+    (gs, vs) <- fmap unzip $ zipWithM (\n d -> slider (show n) uspan d) [(1::Int) ..] ds 
+    return (hor gs, vs)
+
+-- | numeric (originally FLtext in the Csound) allows the user to modify 
+-- a parameter value by directly typing it into a text field.
 --
--- > text diapason step initValue 
+-- > numeric diapason step initValue 
 --
 -- doc: <http://www.csounds.com/manual/html/FLtext.html>
-numeric :: ValDiap -> ValStep -> Double -> Source Sig
-numeric diap step v0 = singleOut (Just v0) $ Text diap step 
+numeric :: String -> ValDiap -> ValStep -> Double -> Source Sig
+numeric name diap step v0 = setLabelSource name $ singleOut (Just v0) $ Text diap step 
 
 -- | A FLTK widget that displays text inside of a box.
 --
@@ -217,26 +234,26 @@ box label = geToSe $ do
 -- > button text
 -- 
 -- doc: <http://www.csounds.com/manual/html/FLbutton.html>
-button :: Source (Evt ())
-button = mapSource sigToEvt buttonSig
+button :: String -> Source (Evt ())
+button name = mapSource sigToEvt $ buttonSig name
 
 -- | A variance on the function 'Csound.Gui.Widget.button', but it produces 
 -- a signal of piecewise constant function. 
-buttonSig :: Source Sig
-buttonSig = singleOut Nothing Button
+buttonSig :: String -> Source Sig
+buttonSig name = setLabelSource name $ singleOut Nothing Button
 
 -- | A FLTK widget opcode that creates a toggle button.
 --
 -- > button text
 -- 
 -- doc: <http://www.csounds.com/manual/html/FLbutton.html>
-toggle :: Source (Evt D)
-toggle = mapSource snaps toggleSig
+toggle :: String -> Source (Evt D)
+toggle name = mapSource snaps $ toggleSig name
 
 -- | A variance on the function 'Csound.Gui.Widget.toggle', but it produces 
 -- a signal of piecewise constant function. 
-toggleSig :: Source Sig
-toggleSig = singleOut Nothing Toggle
+toggleSig :: String -> Source Sig
+toggleSig name = setLabelSource name $ singleOut Nothing Toggle
 
 -- | A FLTK widget opcode that creates a bank of buttons.
 -- 
@@ -256,22 +273,22 @@ butBankSig xn yn = singleOut Nothing $ ButBank xn yn
 -- > value initVal
 --
 -- doc: <http://www.csounds.com/manual/html/FLvalue.html>
-value :: Double -> Sink Sig 
-value v = singleIn printk2 (Just v) Value
+value :: String -> Double -> Sink Sig 
+value name v = setLabelSink name $ singleIn printk2 (Just v) Value
 
 -- | A slider that serves as indicator. It consumes values instead of producing.
 --
 -- > meter valueSpan initValue
-meter :: ValSpan -> Double -> Sink Sig
-meter sp v = singleIn setVal (Just v) (Slider sp)
+meter :: String -> ValSpan -> Double -> Sink Sig
+meter name sp v = setLabelSink name $ singleIn setVal (Just v) (Slider sp)
 
 -- Outputs
 
 readD :: Var -> SE D
 readD v = fmap (D . return) $ SE $ readVar v 
 
-readSig :: Var -> SE Sig
-readSig v = fmap (Sig . return) $ SE $ readVar v 
+readSig :: Var -> Sig
+readSig v = Sig $ return $ readOnlyVar v 
 
 
 refHandle :: GuiHandle -> SE D
