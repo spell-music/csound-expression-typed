@@ -121,10 +121,14 @@ display x = fmap select $ widget $ fmap append x
 -- primitive elements
 
 setLabelSource :: String -> Source a -> Source a
-setLabelSource a = fmap (first $ setLabel a)
+setLabelSource a 
+    | null a    = id
+    | otherwise = fmap (first $ setLabel a)
 
 setLabelSink :: String -> Sink a -> Sink a
-setLabelSink a = fmap (first $ setLabel a)
+setLabelSink a 
+    | null a    = id
+    | otherwise = fmap (first $ setLabel a)
 
 singleOut :: Maybe Double -> Elem -> Source Sig 
 singleOut v0 el = geToSe $ do
@@ -203,10 +207,15 @@ slider name sp v0 = setLabelSource name $ singleOut (Just v0) $ Slider sp
 
 -- | Constructs a list of linear unit sliders (ranges in [0, 1]). It takes a list
 -- of init values.
-sliderBank :: [Double] -> Source [Sig]
-sliderBank ds = source $ do
+sliderBank :: String -> [Double] -> Source [Sig]
+sliderBank name ds = source $ do
     (gs, vs) <- fmap unzip $ zipWithM (\n d -> slider (show n) uspan d) [(1::Int) ..] ds 
-    return (hor gs, vs)
+    gui <- if null name
+        then return (hor gs)
+        else do
+            gTitle <- box name
+            return $ ver [sca 0.05 gTitle, hor gs ]
+    return (gui, vs)
 
 -- | numeric (originally FLtext in the Csound) allows the user to modify 
 -- a parameter value by directly typing it into a text field.
