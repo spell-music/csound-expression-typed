@@ -9,7 +9,7 @@ module Csound.Typed.Gui.Widget(
 
     -- * Widgets
     count, countSig, joy, knob, roller, slider, sliderBank, numeric, meter, box,
-    button, buttonSig, butBank, butBankSig, toggle, toggleSig,
+    button, buttonSig, butBank, butBankSig, butBank1, butBankSig1, toggle, toggleSig,
     value    
 ) where
 
@@ -18,7 +18,7 @@ import Control.Arrow
 import Control.Monad
 import Control.Monad.Trans.Class
 
-import Csound.Dynamic
+import Csound.Dynamic hiding (int)
 
 import Csound.Typed.Gui.Gui
 import Csound.Typed.GlobalState
@@ -265,17 +265,38 @@ toggleSig :: String -> Source Sig
 toggleSig name = setLabelSource name $ singleOut Nothing Toggle
 
 -- | A FLTK widget opcode that creates a bank of buttons.
+-- Result is (x, y) coordinate of the triggered button.
 -- 
 -- > butBank xNumOfButtons yNumOfButtons
 -- 
 -- doc: <http://www.csounds.com/manual/html/FLbutBank.html>
-butBank :: Int -> Int -> Source (Evt D)
-butBank xn yn = mapSource snaps $ butBankSig xn yn
+butBank :: Int -> Int -> Source (Evt (D, D))
+butBank xn yn = mapSource (fmap split2 . snaps) $ butBankSig1 xn yn
+    where
+        split2 a = (floor' $ a / y, mod' a x)
+        x = int xn
+        y = int yn
 
 -- | A variance on the function 'Csound.Gui.Widget.butBank', but it produces 
 -- a signal of piecewise constant function. 
-butBankSig :: Int -> Int -> Source Sig 
-butBankSig xn yn = singleOut Nothing $ ButBank xn yn
+-- Result is (x, y) coordinate of the triggered button.
+butBankSig :: Int -> Int -> Source (Sig, Sig)
+butBankSig xn yn = mapSource split2 $ butBankSig1 xn yn
+    where 
+        split2 a = (floor' $ a / y, mod' a x)
+        x = sig $ int xn
+        y = sig $ int yn
+
+-- | A FLTK widget opcode that creates a bank of buttons.
+-- 
+-- > butBank xNumOfButtons yNumOfButtons
+-- 
+-- doc: <http://www.csounds.com/manual/html/FLbutBank.html>
+butBank1 :: Int -> Int -> Source (Evt D)
+butBank1 xn yn = mapSource snaps $ butBankSig1 xn yn
+        
+butBankSig1 :: Int -> Int -> Source Sig 
+butBankSig1 xn yn = singleOut Nothing $ ButBank xn yn
 
 -- | FLvalue shows current the value of a valuator in a text field.
 --

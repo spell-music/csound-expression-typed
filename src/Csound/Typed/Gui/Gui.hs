@@ -561,7 +561,7 @@ drawElemDef ctx rectWithoutLabel el = case elemContent el of
         
         -- FLbutBank
         drawButBank xn yn = fNoLabel "FLbutBank" $ 
-            [getButtonType ctx, int xn, int yn] ++ frameWithoutLabel ++ [noOpc] 
+            [getButtonBankType ctx, int xn, int yn] ++ frameWithoutLabel ++ [noOpc] 
 
         -- FLbutton's
         drawButton = f "FLbutton" $ [int 1, int 0, getButtonType ctx] ++ frameWithoutLabel ++ [noOpc]
@@ -715,6 +715,17 @@ getFontType ctx = int $
        
 getButtonType :: PropCtx -> Doc
 getButtonType ctx = int $ appMaterial ctx 1
+
+getButtonBankType :: PropCtx -> Doc
+getButtonBankType ctx = ($ ctx) $ intProp ctxButtonType $ \x -> 
+    reactOnNoPlasticForRoundBug $ appMaterial ctx $ case x of
+        NormalButton    -> 1
+        LightButton     -> 2
+        CheckButton     -> 3
+        RoundButton     -> 4   
+    where reactOnNoPlasticForRoundBug x = case x of
+            24 -> 4
+            _  -> x
        
 getToggleType :: PropCtx -> Doc
 getToggleType ctx = ($ ctx) $ intProp ctxButtonType $ \x -> 
@@ -851,10 +862,10 @@ bestElemSizes orient x = case x of
     -- valuators
     Count   _ _ _   -> (150, 35)
     Joy     _ _     -> (350, 350)  
-    Knob    _       -> (200, 200)
-    Roller  _ _     -> inVer (300, 35)
-    Slider  _       -> inVer (500, 35)
-    Text    _ _     -> (150, 35)
+    Knob    _       -> (170, 170)
+    Roller  _ _     -> inVer (250, 35)
+    Slider  _       -> inVer (300, 35)
+    Text    _ _     -> (120, 35)
 
     -- other widgets  
     Box     label    -> 
