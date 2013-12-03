@@ -10,7 +10,9 @@ module Csound.Typed.Gui.Widget(
     -- * Widgets
     count, countSig, joy, knob, roller, slider, sliderBank, numeric, meter, box,
     button, buttonSig, butBank, butBankSig, butBank1, butBankSig1, toggle, toggleSig,
-    value    
+    value, 
+    -- * Transformers
+    setTitle
 ) where
 
 import Control.Applicative
@@ -120,6 +122,20 @@ display x = fmap select $ widget $ fmap append x
 -----------------------------------------------------------------------------  
 -- primitive elements
 
+-- | Appends a title to a group of widgets.
+setTitle :: String -> Gui -> SE Gui
+setTitle name g 
+    | null name = return g
+    | otherwise = do
+        gTitle <- box name
+        return $ ver [sca 0.01 gTitle, g]
+
+setSourceTitle :: String -> Source a -> Source a
+setSourceTitle name ma = source $ do
+    (gui, val) <- ma
+    newGui <- setTitle name gui
+    return (newGui, val)
+
 setLabelSource :: String -> Source a -> Source a
 setLabelSource a 
     | null a    = id
@@ -210,11 +226,7 @@ slider name sp v0 = setLabelSource name $ singleOut (Just v0) $ Slider sp
 sliderBank :: String -> [Double] -> Source [Sig]
 sliderBank name ds = source $ do
     (gs, vs) <- fmap unzip $ zipWithM (\n d -> slider (show n) uspan d) [(1::Int) ..] ds 
-    gui <- if null name
-        then return (hor gs)
-        else do
-            gTitle <- box name
-            return $ ver [sca 0.05 gTitle, hor gs ]
+    gui <- setTitle name  $ hor gs
     return (gui, vs)
 
 -- | numeric (originally FLtext in the Csound) allows the user to modify 
@@ -227,12 +239,25 @@ numeric :: String -> ValDiap -> ValStep -> Double -> Source Sig
 numeric name diap step v0 = setLabelSource name $ singleOut (Just v0) $ Text diap step 
 
 -- | A FLTK widget that displays text inside of a box.
+-- If the text is longer than 255 characters the text
+-- is split on several parts (Csound limitations).
 --
 -- > box text
 --
 -- doc: <http://www.csounds.com/manual/html/FLbox.html>
 box :: String -> Display
-box label = geToSe $ do
+box label 
+    | length label < lim = rawBox label
+    | otherwise          = fmap (padding 0 . ver) $ mapM rawBox $ parts lim label
+    where 
+        parts n xs 
+            | length xs < n = [xs]
+            | otherwise     = a : parts n b
+            where (a, b) = splitAt n xs
+        lim = 255
+
+rawBox :: String -> Display
+rawBox label = geToSe $ do
     (_, handle) <- newGuiVar
     let gui = fromElem [guiHandleToVar handle] [] (Box label)
     appendToGui (GuiNode gui handle) (unSE noInner)
@@ -270,8 +295,8 @@ toggleSig name = setLabelSource name $ singleOut Nothing Toggle
 -- > butBank xNumOfButtons yNumOfButtons
 -- 
 -- doc: <http://www.csounds.com/manual/html/FLbutBank.html>
-butBank :: Int -> Int -> Source (Evt (D, D))
-butBank xn yn = mapSource (fmap split2 . snaps) $ butBankSig1 xn yn
+butBank :: String -> Int -> Int -> Source (Evt (D, D))
+butBank name xn yn = mapSource (fmap split2 . snaps) $ butBankSig1 name xn yn
     where
         split2 a = (floor' $ a / y, mod' a x)
         x = int xn
@@ -280,8 +305,8 @@ butBank xn yn = mapSource (fmap split2 . snaps) $ butBankSig1 xn yn
 -- | A variance on the function 'Csound.Gui.Widget.butBank', but it produces 
 -- a signal of piecewise constant function. 
 -- Result is (x, y) coordinate of the triggered button.
-butBankSig :: Int -> Int -> Source (Sig, Sig)
-butBankSig xn yn = mapSource split2 $ butBankSig1 xn yn
+butBankSig :: String -> Int -> Int -> Source (Sig, Sig)
+butBankSig name xn yn = mapSource split2 $ butBankSig1 name xn yn
     where 
         split2 a = (floor' $ a / y, mod' a x)
         x = sig $ int xn
@@ -292,11 +317,11 @@ butBankSig xn yn = mapSource split2 $ butBankSig1 xn yn
 -- > butBank xNumOfButtons yNumOfButtons
 -- 
 -- doc: <http://www.csounds.com/manual/html/FLbutBank.html>
-butBank1 :: Int -> Int -> Source (Evt D)
-butBank1 xn yn = mapSource snaps $ butBankSig1 xn yn
+butBank1 :: String -> Int -> Int -> Source (Evt D)
+butBank1 name xn yn = mapSource snaps $ butBankSig1 name xn yn
         
-butBankSig1 :: Int -> Int -> Source Sig 
-butBankSig1 xn yn = singleOut Nothing $ ButBank xn yn
+butBankSig1 :: String -> Int -> Int -> Source Sig 
+butBankSig1 name xn yn = setSourceTitle name $ singleOut Nothing $ ButBank xn yn
 
 -- | FLvalue shows current the value of a valuator in a text field.
 --
@@ -350,4 +375,6 @@ flPrintk2 val handle = SE $ (depT_ =<<) $ lift $ f <$> unSig val <*> unD handle
 changed :: [Sig] -> Sig
 changed = Sig . fmap f . mapM unSig
     where f = opcs "changed" [(Kr, repeat Kr)]
+
+
 
