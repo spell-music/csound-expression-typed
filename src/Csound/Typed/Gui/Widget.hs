@@ -295,8 +295,8 @@ toggleSig name = setLabelSource name $ singleOut Nothing Toggle
 -- > butBank xNumOfButtons yNumOfButtons
 -- 
 -- doc: <http://www.csounds.com/manual/html/FLbutBank.html>
-butBank :: String -> Int -> Int -> Source (Evt (D, D))
-butBank name xn yn = mapSource (fmap split2 . snaps) $ butBankSig1 name xn yn
+butBank :: String -> Int -> Int -> (Int, Int) -> Source (Evt (D, D))
+butBank name xn yn inits = mapSource (fmap split2 . snaps) $ butBankSig1 name xn yn inits
     where
         split2 a = (floor' $ a / y, mod' a x)
         x = int xn
@@ -305,8 +305,8 @@ butBank name xn yn = mapSource (fmap split2 . snaps) $ butBankSig1 name xn yn
 -- | A variance on the function 'Csound.Gui.Widget.butBank', but it produces 
 -- a signal of piecewise constant function. 
 -- Result is (x, y) coordinate of the triggered button.
-butBankSig :: String -> Int -> Int -> Source (Sig, Sig)
-butBankSig name xn yn = mapSource split2 $ butBankSig1 name xn yn
+butBankSig :: String -> Int -> Int -> (Int, Int) -> Source (Sig, Sig)
+butBankSig name xn yn inits = mapSource split2 $ butBankSig1 name xn yn inits
     where 
         split2 a = (floor' $ a / y, mod' a x)
         x = sig $ int xn
@@ -317,11 +317,12 @@ butBankSig name xn yn = mapSource split2 $ butBankSig1 name xn yn
 -- > butBank xNumOfButtons yNumOfButtons
 -- 
 -- doc: <http://www.csounds.com/manual/html/FLbutBank.html>
-butBank1 :: String -> Int -> Int -> Source (Evt D)
-butBank1 name xn yn = mapSource snaps $ butBankSig1 name xn yn
+butBank1 :: String -> Int -> Int -> (Int, Int) -> Source (Evt D)
+butBank1 name xn yn inits = mapSource snaps $ butBankSig1 name xn yn inits
         
-butBankSig1 :: String -> Int -> Int -> Source Sig 
-butBankSig1 name xn yn = setSourceTitle name $ singleOut Nothing $ ButBank xn yn
+butBankSig1 :: String -> Int -> Int -> (Int, Int) -> Source Sig 
+butBankSig1 name xn yn (x0, y0) = setSourceTitle name $ singleOut (Just n) $ ButBank xn yn
+    where n = fromIntegral $ y0 + x0 * yn
 
 -- | FLvalue shows current the value of a valuator in a text field.
 --
