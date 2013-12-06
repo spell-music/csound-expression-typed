@@ -6,7 +6,7 @@ module Csound.Typed.GlobalState.Opcodes(
     -- * trigger an instrument
     Event(..), event, event_i, appendChn, subinstr, subinstr_,
     -- * output
-    out, outs, safeOut, autoOff,
+    out, outs, safeOut, autoOff, turnoff,
     -- * vco2
     oscili, oscilikt, vco2ft, vco2ift, vco2init, ftgen
 ) where

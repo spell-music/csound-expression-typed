@@ -9,7 +9,7 @@ module Csound.Typed.Gui.Widget(
 
     -- * Widgets
     count, countSig, joy, knob, roller, slider, sliderBank, numeric, meter, box,
-    button, buttonSig, butBank, butBankSig, butBank1, butBankSig1, toggle, toggleSig,
+    button, butBank, butBankSig, butBank1, butBankSig1, toggle, toggleSig,
     value, 
     -- * Transformers
     setTitle
@@ -20,11 +20,14 @@ import Control.Arrow
 import Control.Monad
 import Control.Monad.Trans.Class
 
+import Data.Boolean
+
 import Csound.Dynamic hiding (int)
+import qualified Csound.Typed.GlobalState.Elements as C
 
 import Csound.Typed.Gui.Gui
 import Csound.Typed.GlobalState
-import Csound.Typed.Types
+import Csound.Typed.Types hiding (whens)
 
 -- | Renders a list of panels.
 panels :: [Gui] -> SE ()
@@ -269,13 +272,21 @@ rawBox label = geToSe $ do
 -- 
 -- doc: <http://www.csounds.com/manual/html/FLbutton.html>
 button :: String -> Source (Evt ())
-button name = mapSource sigToEvt $ buttonSig name
-
--- | A variance on the function 'Csound.Gui.Widget.button', but it produces 
--- a signal of piecewise constant function. 
-buttonSig :: String -> Source Sig
-buttonSig name = setLabelSource name $ singleOut Nothing Button
-
+button name = setLabelSource name $ source $ do
+    flag <- geToSe $ onGlobals $ C.newPersistentGlobalVar Kr 0
+    instrId <- geToSe $ saveInstr $ instr flag
+    (g, _) <- singleOut Nothing (Button instrId)
+    val <- fmap fromGE $ fromDep $ readVar flag
+    return (g, sigToEvt $ changed [val])
+    where
+        instr ref = SE $ do
+            val <- readVar ref
+            whens 
+                [ (val ==* 0, writeVar ref 1)
+                ] (writeVar ref 0)
+            turnoff
+        
+            
 -- | A FLTK widget opcode that creates a toggle button.
 --
 -- > button text

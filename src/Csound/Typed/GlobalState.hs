@@ -7,7 +7,7 @@ module Csound.Typed.GlobalState (
     -- * Reexports dynamic
     BandLimited(..), readBandLimited, renderBandLimited,
     Instrs(..), IdMap(..),
-    getIn, chnUpdateUdo, renderGlobals
+    getIn, chnUpdateUdo, renderGlobals, turnoff
 ) where
 
 import Csound.Typed.GlobalState.Options
@@ -16,3 +16,4 @@ import Csound.Typed.GlobalState.SE
 import Csound.Typed.GlobalState.Instr
 import Csound.Typed.GlobalState.Cache
 import Csound.Typed.GlobalState.Elements
+import Csound.Typed.GlobalState.Opcodes

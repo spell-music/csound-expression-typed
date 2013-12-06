@@ -45,7 +45,7 @@ import Text.PrettyPrint.Leijen(Doc, int, double, vcat, hcat, hsep, punctuate, co
 
 -- import Csound.Render.Pretty(Doc, int, double, vcat, hcat, punctuate, comma)
 
-import Csound.Dynamic(DepT, depT_, Var(..), VarType(..), Rate(..), noRate, MainExp(..))
+import Csound.Dynamic(DepT, depT_, Var(..), VarType(..), Rate(..), noRate, MainExp(..), InstrId(..))
 
 import qualified Csound.Typed.Gui.BoxModel as Box
 import Csound.Typed.Gui.BoxModel(Rect(..))
@@ -178,7 +178,7 @@ data Elem
     -- other widgets  
     | Box String
     | ButBank Int Int
-    | Button
+    | Button InstrId
     | Toggle 
     | Value
     | Vkeybd
@@ -473,7 +473,7 @@ drawElemDef ctx rectWithoutLabel el = case elemContent el of
     -- other widgets  
     Box label               -> drawBox label
     ButBank xn yn           -> drawButBank xn yn 
-    Button                  -> drawButton 
+    Button instrId          -> drawButton instrId
     Toggle                  -> drawToggle
     Value                   -> drawValue 
     Vkeybd                  -> drawVkeybd 
@@ -495,6 +495,7 @@ drawElemDef ctx rectWithoutLabel el = case elemContent el of
         frameBy x = fmap int [width x, height x, px x, py x]       
         noDisp = int (-1)
         noOpc  = int (-1)
+        onOpc instrId xs = int 0 : int (instrIdCeil instrId) : fmap double xs
         drawSpan (ValSpan diap scale) = [imin diap, imax diap, getScale scale]
    
         imin = double . valDiapMin
@@ -564,7 +565,7 @@ drawElemDef ctx rectWithoutLabel el = case elemContent el of
             [getButtonBankType ctx, int xn, int yn] ++ frameWithoutLabel ++ [noOpc] 
 
         -- FLbutton's
-        drawButton = f "FLbutton" $ [int 1, int 0, getButtonType ctx] ++ frameWithoutLabel ++ [noOpc]
+        drawButton instrId = f "FLbutton" $ [int 1, int 0, getButtonType ctx] ++ frameWithoutLabel ++ (onOpc instrId [0, -1])
         
         drawToggle = f "FLbutton" $ [int 1, int 0, getToggleType ctx] ++ frameWithoutLabel ++ [noOpc]
 
@@ -874,7 +875,7 @@ bestElemSizes orient x = case x of
         in  (xBox 15 symbolsPerLine, yBox 15 numOfLines)            
 
     ButBank xn yn   -> (xn * 80, yn * 35)
-    Button          -> (80, 35) 
+    Button _        -> (80, 35) 
     Toggle          -> (80, 35) 
     Value           -> (100, 35)
     Vkeybd          -> (1280, 240)
