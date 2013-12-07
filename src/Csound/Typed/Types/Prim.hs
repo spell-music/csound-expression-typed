@@ -82,6 +82,9 @@ instance Monoid Unit where
     mempty = Unit (return ())
     mappend a b = Unit $ (unUnit a) >> (unUnit b)
 
+instance Default Unit where
+    def = unit
+
 -- tables
 
 -- | Tables (or arrays)

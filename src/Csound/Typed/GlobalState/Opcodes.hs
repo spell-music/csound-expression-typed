@@ -8,7 +8,9 @@ module Csound.Typed.GlobalState.Opcodes(
     -- * output
     out, outs, safeOut, autoOff, turnoff,
     -- * vco2
-    oscili, oscilikt, vco2ft, vco2ift, vco2init, ftgen
+    oscili, oscilikt, vco2ft, vco2ift, vco2init, ftgen,
+    -- * times
+    times
 ) where
 
 import Control.Monad(zipWithM_)
@@ -186,4 +188,10 @@ ftgen n g = opcs "ftgen" [(Ir, repeat Ir)]
 
 vco2init :: [E] -> E
 vco2init = opcs "vco2init" [(Ir, repeat Ir)]
+
+----------------------
+-- times
+
+times :: Monad m => DepT m E
+times = depT $ opcs "times" [(Ir, []), (Kr, [])] []
 

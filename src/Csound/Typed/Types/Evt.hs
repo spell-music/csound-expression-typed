@@ -1,13 +1,13 @@
 {-# Language TypeFamilies, FlexibleContexts #-}
 module Csound.Typed.Types.Evt(
-    Evt(..), Bam, 
+    Evt(..), Bam, sync, 
     boolToEvt, evtToBool, sigToEvt, stepper,
     filterE, filterSE, accumSE, accumE, filterAccumE, filterAccumSE,
     Snap, snapshot, snaps, readSnap
 ) where
 
 import Data.Monoid
-
+import Data.Default
 import Data.Boolean
 
 import qualified Csound.Dynamic as C
@@ -16,6 +16,8 @@ import Csound.Typed.Types.Prim
 import Csound.Typed.Types.Tuple
 import Csound.Typed.GlobalState
 import Csound.Typed.Control.SERef
+
+import qualified Csound.Typed.GlobalState.Opcodes as C
 
 -- | A stream of events. We can convert a stream of events to
 -- the procedure with the function @runEvt@. It waits for events
@@ -147,4 +149,36 @@ stepper v0 evt = do
     (readSt, writeSt) <- sensorsSE v0
     runEvt evt $ \a -> writeSt a
     readSt 
+
+-------------------------------------------------------------
+-- synchronization
+
+-- | Executes actions synchronized with global tempo (in Hz).
+-- 
+-- > runEvtSync tempoCps evt proc
+sync :: (Default a, Tuple a) => D -> Evt a -> Evt a
+sync dt evt = Evt $ \bam -> do
+    initGlobalTime <- times
+    refCounter <- newSERef $ frac' $ initGlobalTime * dt
+    refVal     <- newSERef def
+    refFire    <- newSERef (0 :: D)
+
+    runEvt evt $ \a -> do
+        writeSERef refVal  a
+        writeSERef refFire 1
+
+    updCounter <- readSERef refCounter
+    writeSERef refCounter (updCounter - 1 / getControlRate)
+
+    counter <- readSERef refCounter
+    fire    <- readSERef refFire
+    when1 (sig counter <=* 0 &&* sig fire ==* 1) $ do
+        val <- readSERef refVal
+        bam val
+        writeSERef refFire 0
+        
+    when1 (sig counter <=* 0) $ do
+        writeSERef refCounter (1 / dt)
+    where        
+        times = fmap D $ fromDep C.times
 
