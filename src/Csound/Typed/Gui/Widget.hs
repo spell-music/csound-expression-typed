@@ -310,7 +310,7 @@ rawBox label = geToSe $ do
 -- > button text
 -- 
 -- doc: <http://www.csounds.com/manual/html/FLbutton.html>
-button :: String -> Source (Evt ())
+button :: String -> Source (Evt Unit)
 button name = setLabelSource name $ source $ do
     flag <- geToSe $ onGlobals $ C.newPersistentGlobalVar Kr 0
     instrId <- geToSe $ saveInstr $ instr flag
@@ -391,7 +391,7 @@ meter name sp v = setLabelSink name $ singleIn setVal (Just v) (Slider sp)
 -------------------------------------------------------------
 -- keyboard
 
-keyIn :: KeyEvt -> Evt ()
+keyIn :: KeyEvt -> Evt Unit
 keyIn evt = boolToEvt $ asig ==* 1    
     where asig = Sig $ fmap readOnlyVar $ listenKeyEvt evt
 

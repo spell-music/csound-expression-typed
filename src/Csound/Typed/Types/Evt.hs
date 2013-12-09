@@ -10,8 +10,6 @@ import Data.Monoid
 import Data.Default
 import Data.Boolean
 
-import qualified Csound.Dynamic as C
-
 import Csound.Typed.Types.Prim
 import Csound.Typed.Types.Tuple
 import Csound.Typed.GlobalState
@@ -35,11 +33,11 @@ instance Monoid (Evt a) where
     mappend a b = Evt $ \bam -> runEvt a bam >> runEvt b bam
     
 -- | Converts booleans to events.
-boolToEvt :: BoolSig -> Evt ()
-boolToEvt b = Evt $ \bam -> when1 b $ bam ()
+boolToEvt :: BoolSig -> Evt Unit
+boolToEvt b = Evt $ \bam -> when1 b $ bam unit
 
 -- | Triggers an event when signal equals to 1.
-sigToEvt :: Sig -> Evt ()
+sigToEvt :: Sig -> Evt Unit
 sigToEvt = boolToEvt . ( ==* 1) . kr
 
 -- | Filters events with predicate.
