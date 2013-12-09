@@ -1,6 +1,7 @@
 module Csound.Typed.Gui.Widget(
     -- * Panels
-    panel, tabs, panels, panelBy, tabsBy,
+    panel, keyPanel, tabs, keyTabs, panels, 
+    keyPanels, panelBy, keyPanelBy, tabsBy, keyTabsBy,
 
     -- * Types
     Input, Output, Inner,
@@ -12,7 +13,9 @@ module Csound.Typed.Gui.Widget(
     button, butBank, butBankSig, butBank1, butBankSig1, toggle, toggleSig,
     value, 
     -- * Transformers
-    setTitle
+    setTitle,
+    -- * Keyboard    
+    KeyEvt(..), Key(..), keyIn
 ) where
 
 import Control.Applicative
@@ -33,25 +36,61 @@ import Csound.Typed.Types hiding (whens)
 panels :: [Gui] -> SE ()
 panels = mapM_ panel
 
+-- | Renders a list of panels. Panels are sensitive to keyboard events.
+keyPanels :: [Gui] -> SE ()
+keyPanels = mapM_ keyPanel
+
 -- | Renders the GUI elements on the window. Rectangle is calculated
--- automatically.
+-- automatically (window doesn't listens for keyboard events).
 panel :: Gui -> SE ()
-panel = geToSe . saveGuiRoot . Single . Win "" Nothing 
+panel = genPanel False
+
+-- | Renders the GUI elements on the window. Rectangle is calculated
+-- automatically (window listens for keyboard events).
+keyPanel :: Gui -> SE ()
+keyPanel = genPanel True
+
+genPanel :: Bool -> Gui -> SE ()
+genPanel isKeybd g = geToSe $ saveGuiRoot $ Single (Win "" Nothing g) isKeybd
 
 -- | Renders the GUI elements with tabs. Rectangles are calculated
 -- automatically.
 tabs :: [(String, Gui)] -> SE ()
-tabs = geToSe . saveGuiRoot . Tabs "" Nothing . fmap (\(title, gui) -> Win title Nothing gui)
+tabs = genTabs False
+
+-- | Renders the GUI elements with tabs. Rectangles are calculated
+-- automatically.
+keyTabs :: [(String, Gui)] -> SE ()
+keyTabs = genTabs True
+
+genTabs :: Bool -> [(String, Gui)] -> SE ()
+genTabs isKey xs = geToSe $ saveGuiRoot $ Tabs "" Nothing (fmap (\(title, gui) -> Win title Nothing gui) xs) isKey
 
 -- | Renders the GUI elements on the window. We can specify the window title
 -- and rectangle of the window.
 panelBy :: String -> Maybe Rect -> Gui -> SE ()
-panelBy title mrect gui = geToSe $ saveGuiRoot $ Single $ Win title mrect gui
+panelBy = genPanelBy False
+
+-- | Renders the GUI elements on the window. We can specify the window title
+-- and rectangle of the window. Panesls are sensitive to keyboard events.
+keyPanelBy :: String -> Maybe Rect -> Gui -> SE ()
+keyPanelBy = genPanelBy False
+
+genPanelBy :: Bool -> String -> Maybe Rect -> Gui -> SE ()
+genPanelBy isKeybd title mrect gui = geToSe $ saveGuiRoot $ Single (Win title mrect gui) isKeybd
 
 -- | Renders the GUI elements with tabs. We can specify the window title and
 -- rectangles for all tabs and for the main window.
 tabsBy :: String -> Maybe Rect -> [(String, Maybe Rect, Gui)] -> SE ()
-tabsBy title mrect gui = geToSe $ saveGuiRoot $ Tabs title mrect $ fmap (\(a, b, c) -> Win a b c) gui
+tabsBy = genTabsBy False
+
+-- | Renders the GUI elements with tabs. We can specify the window title and
+-- rectangles for all tabs and for the main window. Tabs are sensitive to keyboard events.
+keyTabsBy :: String -> Maybe Rect -> [(String, Maybe Rect, Gui)] -> SE ()
+keyTabsBy = genTabsBy True
+
+genTabsBy :: Bool -> String -> Maybe Rect -> [(String, Maybe Rect, Gui)] -> SE ()
+genTabsBy isKeybd title mrect gui = geToSe $ saveGuiRoot $ Tabs title mrect (fmap (\(a, b, c) -> Win a b c) gui) isKeybd
 
 -- | Widgets that produce something has inputs.
 type Input  a = a
@@ -348,6 +387,13 @@ value name v = setLabelSink name $ singleIn printk2 (Just v) Value
 -- > meter valueSpan initValue
 meter :: String -> ValSpan -> Double -> Sink Sig
 meter name sp v = setLabelSink name $ singleIn setVal (Just v) (Slider sp)
+
+-------------------------------------------------------------
+-- keyboard
+
+keyIn :: KeyEvt -> Evt ()
+keyIn evt = boolToEvt $ asig ==* 1    
+    where asig = Sig $ fmap readOnlyVar $ listenKeyEvt evt
 
 -- Outputs
 

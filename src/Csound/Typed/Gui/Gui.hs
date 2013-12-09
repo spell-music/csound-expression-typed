@@ -212,11 +212,14 @@ newtype Gui = Gui { unGui :: LowGui }
 type LowGui = Box.Scene Props ElemWithOuts
 
 data Panel 
-    = Single Win
+    = Single 
+        { singleContent :: Win
+        , singleIsKeybdSensitive :: Bool }
     | Tabs 
         { tabsTitle     :: String 
         , tabsRect      :: Maybe Rect
-        , tabsContent   :: [Win] }
+        , tabsContent   :: [Win]
+        , tabsIsKeybdSensitive :: Bool }
 
 data Win = Win 
     { winTitle :: String 
@@ -242,8 +245,8 @@ fromGuiHandle = Gui . Box.prim . ElemWithOuts [] [] . GuiVar
 
 mapGuiOnPanel :: (Gui -> Gui) -> Panel -> Panel
 mapGuiOnPanel f x = case x of
-    Single w            -> Single $ mapWin w
-    Tabs title rect ws  -> Tabs title rect $ fmap mapWin ws
+    Single w isKey            -> Single (mapWin w) isKey
+    Tabs title rect ws  isKey -> Tabs title rect (fmap mapWin ws) isKey
     where mapWin a = a{ winGui = f $ winGui a  }
 
 onLowGuis :: ([LowGui] -> LowGui) -> ([Gui] -> Gui)
@@ -349,8 +352,8 @@ guiStmt panels = depT_ $ noRate phi
 
 drawGui :: Panel -> Doc
 drawGui x = case x of
-    Single w    -> panel boundingRect $ drawWin (withWinMargin boundingRect) w
-    Tabs _ _ ws -> panel tabPanelRect $ case ws of 
+    Single w    isKeybd -> panel isKeybd boundingRect $ drawWin (withWinMargin boundingRect) w
+    Tabs _ _ ws isKeybd -> panel isKeybd tabPanelRect $ case ws of 
         [] -> empty
         _  -> onTabs mainTabRect $ vcat $ fmap (uncurry $ drawTab shift) tabsRs        
     where boundingRect = panelRect (fmap fst tabsRs) x
@@ -366,8 +369,10 @@ drawGui x = case x of
 
           panel = onPanel (panelTitle x)
 
-          onPanel title rect body = vcat 
-            [ ppProc "FLpanel" [text $ show title, int $ width rect, int $ height rect]
+          onPanel title isKeybdSensitive rect body = vcat 
+            -- panel with default position no border and capture of keyboard events
+            [ ppProc "FLpanel" [ text $ show title, int $ width rect, int $ height rect, int (-1), int (-1), int 0
+                               , int $ if isKeybdSensitive then 1 else 0 ]
             , body
             , ppProc "FLpanelEnd" []]
 
@@ -379,13 +384,13 @@ drawGui x = case x of
 
 panelTitle :: Panel -> String
 panelTitle x = case x of
-    Single w        -> winTitle w
-    Tabs title _ _  -> title
+    Single w _       -> winTitle w
+    Tabs title _ _ _ -> title
 
 panelRect :: [Rect] -> Panel -> Rect
 panelRect rs x = case x of
-    Single w        -> winBoundingRect w
-    Tabs _ mrect _  -> case rs of
+    Single w _       -> winBoundingRect w
+    Tabs _ mrect _ _ -> case rs of
         [] -> Box.zeroRect
         _  -> maybe (foldr boundingRect (head rs) rs) id mrect
     where boundingRect a b = Rect { px = x1, py = y1, width = x2 - x1, height = y2 - y1 }
@@ -409,8 +414,8 @@ mainTabRectAndShift r = (res, (dx, dy))
 
 tabsRects :: Panel -> [(Rect, Win)]
 tabsRects x = case x of
-    Single _    -> []
-    Tabs _ _ ws -> zip (fmap winBoundingRect ws) ws
+    Single _ _    -> []
+    Tabs _ _ ws _ -> zip (fmap winBoundingRect ws) ws
 
 winBoundingRect :: Win -> Rect
 winBoundingRect w = maybe (shiftBy 50 $ bestRect $ winGui w) id $ winRect w

@@ -51,12 +51,7 @@ saveMixInstr_ a = do
 saveMasterInstr :: Arity -> InsExp -> GE ()
 saveMasterInstr arity sigs = do
     gainLevel <- fmap defGain getOptions 
-    saveAlwaysOnInstr =<< 
-        (saveInstr $ (SE . C.sendOut (arityOuts arity) . C.safeOut gainLevel) =<< sigs)
-    expr2 <- getSysExpr 
-    saveAlwaysOnInstr =<< saveInstr (SE expr2)
-    expr3 <- guiInstrExp 
-    saveAlwaysOnInstr =<< saveInstr (SE expr3)
+    saveAlwaysOnInstr =<< (saveInstr $ (SE . C.sendOut (arityOuts arity) . C.safeOut gainLevel) =<< sigs)
 
 saveMidiInstr :: MidiType -> Channel -> Arity -> InsExp -> GE [E]
 saveMidiInstr midiType channel arity instr = do

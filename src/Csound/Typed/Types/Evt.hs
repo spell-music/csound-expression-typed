@@ -97,8 +97,7 @@ readSnap = toTuple . fromTuple
 snaps :: Sig -> Evt D
 snaps asig = snapshot const asig trigger
     where 
-        trigger = sigToEvt $ fromGE $ fmap changed $ toGE asig
-        changed x = C.opcs "changed" [(C.Kr, [C.Kr])] [x]
+        trigger = sigToEvt $ fromGE $ fmap C.changed $ toGE asig
 
 -------------------------------------------------------------------
 -- snap 

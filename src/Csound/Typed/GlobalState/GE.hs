@@ -1,5 +1,6 @@
 module Csound.Typed.GlobalState.GE(
     GE, Dep, History(..), withOptions, withHistory, getOptions, evalGE, execGE,
+    getHistory, putHistory,
     -- * Globals
     onGlobals, 
     -- * Midi
@@ -19,12 +20,16 @@ module Csound.Typed.GlobalState.GE(
     -- * Guis
     newGuiHandle, saveGuiRoot, appendToGui, 
     newGuiVar, getPanels, guiHandleToVar,
-    guiInstrExp
+    guiInstrExp,
+    listenKeyEvt, Key(..), KeyEvt(..),
+    getKeyEventListener
 ) where
 
 import Control.Applicative
 import Control.Monad
+import Data.Boolean
 import Data.Default
+import qualified Data.IntMap as IM
 
 import Control.Monad.IO.Class
 import Control.Monad.Trans.Class
@@ -159,6 +164,12 @@ withOptions f = GE $ asks f
 getOptions :: GE Options
 getOptions = withOptions id
 
+getHistory :: GE History
+getHistory = GE $ lift get
+
+putHistory :: History -> GE ()
+putHistory h = GE $ lift $ put h
+
 withHistory :: (History -> a) -> GE a
 withHistory f = GE $ lift $ fmap f get
 
@@ -217,10 +228,15 @@ data Guis = Guis
     { guiStateNewId     :: Int
     , guiStateInstr     :: DepT GE ()
     , guiStateToDraw    :: [GuiNode] 
-    , guiStateRoots     :: [Panel] }
+    , guiStateRoots     :: [Panel]
+    , guiKeyEvents      :: KeyCodeMap }
+
+-- it maps integer key codes to global variables 
+-- that acts like sensors.
+type KeyCodeMap = IM.IntMap Var
 
 instance Default Guis where 
-    def = Guis 0 (return ()) [] []
+    def = Guis 0 (return ()) [] [] def
 
 newGuiHandle :: GE GuiHandle 
 newGuiHandle = modifyWithHistory $ \h -> 
@@ -256,4 +272,142 @@ getPanels h = fmap (mapGuiOnPanel (restoreTree m)) $ guiStateRoots $ guis h
 guiInstrExp :: GE (DepT GE ())
 guiInstrExp = withHistory (guiStateInstr . guis) 
 
+
+-- key codes
+
+data KeyEvt = Press Key | Release Key
+    deriving (Show, Eq)
+
+data Key 
+    = CharKey Char
+    | F1 | F2 | F3 | F4 | F5 | F6 | F7 | F8 | F9 | F10 | F11 | F12 | Scroll
+    | CapsLook | LeftShift | RightShift | LeftCtrl | RightCtrl | Enter | LeftAlt | RightAlt | LeftWinKey | RightWinKey 
+    | Backspace | ArrowUp | ArrowLeft | ArrowRight | ArrowDown 
+    | Insert | Home | PgUp | Delete | End | PgDown
+    | NumLock | NumDiv | NumMul | NumSub | NumHome | NumArrowUp 
+    | NumPgUp | NumArrowLeft | NumSpace | NumArrowRight | NumEnd 
+    | NumArrowDown | NumPgDown | NumIns | NumDel | NumEnter | NumPlus 
+    | Num7 | Num8 | Num9 | Num4 | Num5 | Num6 | Num1 | Num2 | Num3 | Num0 | NumDot 
+    deriving (Show, Eq)
+
+keyToCode :: Key -> Int
+keyToCode x = case x of
+    CharKey a -> fromEnum a
+    F1 -> 446
+    F2 -> 447
+    F3 -> 448 
+    F4 -> 449
+    F5 -> 450
+    F6 -> 451
+    F7 -> 452
+    F8 -> 453
+    F9 -> 454
+    F10 -> 456
+    F11 -> 457
+    F12 -> 458
+    Scroll-> 276
+    CapsLook -> 485 
+    LeftShift -> 481
+    RightShift -> 482
+    LeftCtrl -> 483
+    RightCtrl -> 484
+    Enter -> 269
+    LeftAlt -> 489
+    RightAlt -> 490
+    LeftWinKey -> 491
+    RightWinKey -> 492
+    Backspace -> 264 
+    ArrowUp -> 338
+    ArrowLeft -> 337
+    ArrowRight -> 339
+    ArrowDown -> 340
+    Insert -> 355
+    Home -> 336
+    PgUp -> 341
+    Delete -> 511
+    End -> 343
+    PgDown -> 342
+
+    NumLock -> 383
+    NumDiv -> 431
+    NumMul -> 426
+    NumSub -> 429
+    NumHome -> 436
+    NumArrowUp -> 438
+    NumPgUp -> 341
+    NumArrowLeft -> 337
+    NumSpace -> 267
+    NumArrowRight -> 339
+    NumEnd -> 343
+    NumArrowDown -> 340
+    NumPgDown -> 342
+    NumIns -> 355
+    NumDel -> 511
+    NumEnter -> 397
+    NumPlus -> 427
+
+    Num7 -> 439
+    Num8 -> 440
+    Num9 -> 441
+    Num4 -> 436
+    Num5 -> 437
+    Num6 -> 438
+    Num1 -> 433
+    Num2 -> 434
+    Num3 -> 435
+    Num0 -> 432
+    NumDot -> 430
+
+keyEvtToCode :: KeyEvt -> Int
+keyEvtToCode x = case x of
+    Press k   -> keyToCode k
+    Release k -> negate $ keyToCode k
+
+listenKeyEvt :: KeyEvt -> GE Var
+listenKeyEvt evt = do
+    hist <- getHistory
+    let g      = guis hist
+        keyMap = guiKeyEvents g
+        code   = keyEvtToCode evt
+
+    case IM.lookup code keyMap of
+        Just var -> return var
+        Nothing  -> do
+            var <- onGlobals $ newClearableGlobalVar Kr 0
+            hist2 <- getHistory
+            let newKeyMap = IM.insert code var keyMap 
+                newG      = g { guiKeyEvents = newKeyMap }
+                hist3     = hist2 { guis = newG }
+            putHistory hist3
+            return var
+
+-- assumes that first instrument id is 18 and 17 is free to use.
+keyEventInstrId :: InstrId
+keyEventInstrId = intInstrId 17
+
+keyEventInstrBody :: KeyCodeMap -> GE InstrBody
+keyEventInstrBody keyMap = execDepT $ do
+    let keys     = flKeyIn
+        isChange = changed keys ==* 1
+    when1 isChange $ do
+        whens (fmap (uncurry $ listenEvt keys) events) doNothing
+    where 
+        doNothing = return ()
+
+        listenEvt keySig keyCode var = (keySig ==* int keyCode, writeVar var 1)
+
+        events = IM.toList keyMap
+
+        flKeyIn :: E
+        flKeyIn = opcs "FLkeyIn" [(Kr, [])] []
+
+getKeyEventListener :: GE (Maybe Instr)
+getKeyEventListener = do
+    h <- getHistory
+    if (IM.null $ guiKeyEvents $ guis h) 
+        then return Nothing
+        else do
+            saveAlwaysOnInstr keyEventInstrId
+            body <- keyEventInstrBody $ guiKeyEvents $ guis h
+            return $ Just (Instr keyEventInstrId body)
 

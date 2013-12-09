@@ -4,7 +4,7 @@ module Csound.Typed.GlobalState.Opcodes(
     ChnRef(..), chnRefFromParg, chnRefAlloc, readChn, writeChn, 
     chnUpdateUdo,
     -- * trigger an instrument
-    Event(..), event, event_i, appendChn, subinstr, subinstr_,
+    Event(..), event, event_i, appendChn, subinstr, subinstr_, changed,
     -- * output
     out, outs, safeOut, autoOff, turnoff,
     -- * vco2
@@ -111,6 +111,9 @@ subinstr_ :: Monad m => InstrId -> [E] -> DepT m ()
 subinstr_ instrId args = depT_ $ head $ ($ 1) $  mopcs "subinstr" 
     (repeat Ar, Ir : repeat Kr)
     (prim (PrimInstrId instrId) : args)
+
+changed :: E -> E
+changed x = opcs "changed" [(Kr, [Kr])] [x]
 
 -- output
 

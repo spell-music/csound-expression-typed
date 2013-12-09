@@ -11,7 +11,6 @@ import qualified Data.Map as M
 import Data.Default
 import Data.Maybe
 import Data.Tuple
-import Control.Monad
 
 import Csound.Dynamic hiding (csdFlags)
 import Csound.Typed.Types
@@ -26,7 +25,7 @@ import Csound.Typed.Gui.Gui(guiStmt)
 toCsd :: Tuple a => Options -> SE a -> GE Csd
 toCsd options sigs = do   
     saveMasterInstr (constArity sigs) (masterExp sigs)
-    join $ withHistory $ renderHistory (outArity sigs) options
+    renderHistory (outArity sigs) options
 
 renderOut_ :: SE () -> IO String
 renderOut_ = renderOutBy_ def 
@@ -46,18 +45,26 @@ renderEff = renderEffBy def
 renderEffBy :: (Sigs a, Sigs b) => Options -> (a -> SE b) -> IO String
 renderEffBy options eff = renderOutBy options $ eff =<< getIns
 
-renderHistory :: Int -> Options -> History -> GE Csd
-renderHistory nchnls opt hist = do
-    instr0 <- execDepT $ getInstr0 nchnls opt hist
-    let orc = Orc instr0 (fmap (uncurry Instr) $ instrsContent $ instrs hist)   
+renderHistory :: Int -> Options -> GE Csd
+renderHistory nchnls opt = do
+    keyEventListener <- getKeyEventListener
+    hist1 <- getHistory
+    instr0 <- execDepT $ getInstr0 nchnls opt hist1
+    expr2 <- getSysExpr 
+    saveAlwaysOnInstr =<< saveInstr (SE expr2)
+    expr3 <- guiInstrExp 
+    saveAlwaysOnInstr =<< saveInstr (SE expr3)
+    hist2 <- getHistory
+    let orc = Orc instr0 (maybeAppend keyEventListener $ fmap (uncurry Instr) $ instrsContent $ instrs hist2)   
+    hist3 <- getHistory 
+    let flags   = reactOnMidi hist3 $ csdFlags opt
+        sco     = Sco (Just $ getTotalDur opt $ totalDur hist3) 
+                      (renderGens $ genMap hist3) $
+                      (fmap alwaysOn $ alwaysOnInstrs hist3)
     return $ Csd flags orc sco
     where
-        flags   = reactOnMidi hist $ csdFlags opt
-        sco     = Sco (Just $ getTotalDur opt $ totalDur hist) 
-                      (renderGens $ genMap hist) $
-                      (fmap alwaysOn $ alwaysOnInstrs hist)
-
         renderGens = fmap swap . M.toList . idMapContent        
+        maybeAppend ma = maybe id (:) ma 
 
 getInstr0 :: Int -> Options -> History -> Dep ()
 getInstr0 nchnls opt hist = do

@@ -19,7 +19,7 @@ module Csound.Typed.GlobalState.Elements(
     InstrBody, getIn, sendOut, sendChn, sendGlobal, 
     Event(..),
     ChnRef(..), chnRefFromParg, chnRefAlloc, readChn, writeChn, chnUpdateUdo,
-    subinstr, subinstr_, event_i, event, safeOut, autoOff
+    subinstr, subinstr_, event_i, event, safeOut, autoOff, changed
 ) where
 
 
@@ -153,10 +153,11 @@ data Globals = Globals
 data AllocVar = AllocVar 
     { allocVarType     :: GlobalVarType 
     , allocVar         :: Var
-    , allocVarInit     :: E }
+    , allocVarInit     :: E 
+    } deriving (Show)
 
 data GlobalVarType = PersistentGlobalVar | ClearableGlobalVar
-    deriving (Eq)
+    deriving (Eq, Show)
 
 instance Default Globals where
     def = Globals def def
@@ -193,7 +194,7 @@ data Instrs = Instrs
     }
 
 instance Default Instrs where
-    def = Instrs DM.empty 17 []
+    def = Instrs DM.empty 18 []
 
 type CacheName = DM.DynamicStableName
 
