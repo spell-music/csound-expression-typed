@@ -391,6 +391,7 @@ meter name sp v = setLabelSink name $ singleIn setVal (Just v) (Slider sp)
 -------------------------------------------------------------
 -- keyboard
 
+-- | The stream of keyboard press/release events.
 keyIn :: KeyEvt -> Evt Unit
 keyIn evt = boolToEvt $ asig ==* 1    
     where asig = Sig $ fmap readOnlyVar $ listenKeyEvt evt
