@@ -8,7 +8,9 @@ module Csound.Typed.GlobalState.GE(
     -- * Instruments
     saveAlwaysOnInstr, onInstr, saveUserInstr0, getSysExpr,
     -- * Total duration
-    TotalDur(..), getTotalDur, setDuration, setDurationToInfinite,
+    TotalDur(..), getTotalDurGE, getTotalDur, setDuration, setDurationToInfinite,
+    -- * Notes
+    addNote,
     -- * GEN routines
     saveGen,
     -- * Band-limited waves
@@ -80,13 +82,14 @@ data History = History
     , midis             :: [MidiAssign]
     , totalDur          :: Maybe TotalDur
     , alwaysOnInstrs    :: [InstrId]
+    , notes             :: [(InstrId, CsdEvent Note)]
     , userInstr0        :: Dep ()
     , bandLimitedMap    :: BandLimitedMap
     , cache             :: Cache GE
     , guis              :: Guis }
 
 instance Default History where
-    def = History def def def def def def def (return ()) def def def
+    def = History def def def def def def def def (return ()) def def def
 
 data Msg = Msg
 data MidiAssign = MidiAssign MidiType Channel InstrId
@@ -101,6 +104,12 @@ renderMidiAssign (MidiAssign ty chn instrId) = case ty of
 
 data TotalDur = NumDur Double | InfiniteDur
     deriving (Eq, Ord)
+
+getTotalDurGE :: GE Double
+getTotalDurGE = do
+    opt <- getOptions
+    dt  <- fmap totalDur getHistory
+    return $ getTotalDur opt dt
 
 getTotalDur :: Options -> (Maybe TotalDur) -> Double
 getTotalDur _ = toDouble . maybe InfiniteDur id  
@@ -149,6 +158,9 @@ getSysExpr = withHistory $ clearGlobals . globals
 saveAlwaysOnInstr :: InstrId -> GE ()
 saveAlwaysOnInstr instrId = onAlwaysOnInstrs $ modify (instrId : )
     where onAlwaysOnInstrs = onHistory alwaysOnInstrs (\a h -> h { alwaysOnInstrs = a })
+
+addNote :: InstrId -> CsdEvent Note -> GE ()
+addNote instrId evt = modifyHistory $ \h -> h { notes = (instrId, evt) : notes h }
 
 {-
 setMasterInstrId :: InstrId -> GE ()

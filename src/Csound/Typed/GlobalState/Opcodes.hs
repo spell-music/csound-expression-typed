@@ -6,7 +6,7 @@ module Csound.Typed.GlobalState.Opcodes(
     -- * trigger an instrument
     Event(..), event, event_i, appendChn, subinstr, subinstr_, changed,
     -- * output
-    out, outs, safeOut, autoOff, turnoff,
+    out, outs, safeOut, autoOff, turnoff, turnoff2,
     -- * vco2
     oscili, oscilikt, vco2ft, vco2ift, vco2init, ftgen,
     -- * times
@@ -151,6 +151,9 @@ follow asig dt = opcs "follow" [(Ar, [Ar, Ir])] [asig, dt]
 
 turnoff :: Monad m => DepT m ()
 turnoff = depT_ $ opcs "turnoff" [(Xr, [])] []
+
+turnoff2 :: Monad m => E -> DepT m ()
+turnoff2 instrId = depT_ $ opcs "turnoff2" [(Xr, [Ir, Ir, Ir])] [instrId, 0, 0]
 
 ihold :: Monad m => DepT m ()
 ihold = depT_ $ opcs "ihold" [(Xr, [])] []

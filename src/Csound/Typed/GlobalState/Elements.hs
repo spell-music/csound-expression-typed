@@ -14,7 +14,7 @@ module Csound.Typed.GlobalState.Elements(
     Globals(..), newPersistentGlobalVar, newClearableGlobalVar, 
     renderGlobals,
     -- * Instruments
-    Instrs(..), saveInstr, CacheName, makeCacheName, saveCachedInstr,
+    Instrs(..), saveInstr, CacheName, makeCacheName, saveCachedInstr, getInstrIds,
     -- * Src
     InstrBody, getIn, sendOut, sendChn, sendGlobal, 
     Event(..),
@@ -200,6 +200,9 @@ type CacheName = DM.DynamicStableName
 
 makeCacheName :: a -> IO CacheName
 makeCacheName = DM.makeDynamicStableName 
+
+getInstrIds :: Instrs -> [InstrId]
+getInstrIds = fmap fst . instrsContent
 
 -----------------------------------------------------------------
 --

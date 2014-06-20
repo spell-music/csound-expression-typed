@@ -25,6 +25,7 @@ import Csound.Typed.Gui.Gui(guiStmt)
 toCsd :: Tuple a => Options -> SE a -> GE Csd
 toCsd options sigs = do   
     saveMasterInstr (constArity sigs) (masterExp sigs)
+    saveTerminatorInstr
     renderHistory (outArity sigs) options
 
 renderOut_ :: SE () -> IO String
@@ -60,11 +61,12 @@ renderHistory nchnls opt = do
     let flags   = reactOnMidi hist3 $ csdFlags opt
         sco     = Sco (Just $ getTotalDur opt $ totalDur hist3) 
                       (renderGens $ genMap hist3) $
-                      (fmap alwaysOn $ alwaysOnInstrs hist3)
+                      ((fmap alwaysOn $ alwaysOnInstrs hist3) ++ (getNoteEvents $ notes hist3))
     return $ Csd flags orc sco
     where
         renderGens = fmap swap . M.toList . idMapContent        
         maybeAppend ma = maybe id (:) ma 
+        getNoteEvents = fmap $ \(instrId, evt) -> (instrId, [evt])
 
 getInstr0 :: Int -> Options -> History -> Dep ()
 getInstr0 nchnls opt hist = do
