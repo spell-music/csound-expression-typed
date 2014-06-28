@@ -10,7 +10,7 @@ import Csound.Typed.GlobalState.GE
 import Csound.Typed.GlobalState.SE
 import Csound.Typed.GlobalState.Options
 import Csound.Typed.GlobalState.Cache
-import Csound.Typed.GlobalState.Opcodes(turnoff2)
+import Csound.Typed.GlobalState.Opcodes(turnoff2, exitnow)
 import Csound.Typed.GlobalState.Elements(getInstrIds)
 
 data Arity = Arity
@@ -76,16 +76,8 @@ saveIns0 arity rates as = do
     saveUserInstr0 $ unSE $ (SE . zipWithM_ writeVar vars) =<< as 
     return $ fmap readOnlyVar vars
 
-saveTerminatorInstr :: GE () 
-saveTerminatorInstr = do
-    instrId <- saveInstr =<< terminatorInstr
-    dt <- getTotalDurGE
-    addNote instrId (dt, 0.01, [])
-
 terminatorInstr :: GE (SE ())
 terminatorInstr = do
     ids <- fmap (getInstrIds . instrs) getHistory
-    return $ fromDep_ $ mapM_ turnoff2 $ fmap instrIdE ids
-    
-    
+    return $ fromDep_ $ (mapM_ turnoff2 $ fmap instrIdE ids) >> exitnow
 

@@ -1,6 +1,6 @@
 -- | Converts to low-level instruments
 module Csound.Typed.Control.Instr(
-    Arity(..), InsExp, EffExp,
+    Arity(..), InsExp, EffExp, 
     funArity, constArity, 
     insExp, effExp, masterExp, midiExp, unitExp, 
     apInstr, apInstr0

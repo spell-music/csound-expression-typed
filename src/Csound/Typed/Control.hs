@@ -4,7 +4,7 @@ module Csound.Typed.Control (
     -- ** SE reference
     module Csound.Typed.Control.SERef,
     -- * Global settings
-    instr0, getIns,
+    instr0, getIns, setDur,
     -- * Score
     module Csound.Typed.Control.Mix,
     -- * Midi
@@ -45,4 +45,11 @@ getIns = res
         proxy :: SE a -> a
         proxy = const undefined
 
+-- | Sets total duration to the given value.
+setDur :: Sigs a => D -> a -> a
+setDur mdt as = toTuple $ do
+    dt <- toGE mdt
+    vals <- fromTuple as
+    setDurationForce dt
+    return vals
 

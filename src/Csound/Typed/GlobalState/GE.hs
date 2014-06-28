@@ -8,7 +8,8 @@ module Csound.Typed.GlobalState.GE(
     -- * Instruments
     saveAlwaysOnInstr, onInstr, saveUserInstr0, getSysExpr,
     -- * Total duration
-    TotalDur(..), getTotalDurGE, getTotalDur, setDuration, setDurationToInfinite,
+    TotalDur(..), pureGetTotalDurForF0, getTotalDurForTerminator, 
+    setDurationForce, setDuration, setDurationToInfinite,
     -- * Notes
     addNote,
     -- * GEN routines
@@ -102,22 +103,41 @@ renderMidiAssign (MidiAssign ty chn instrId) = case ty of
         massign n instr = depT_ $ opcs "massign" [(Xr, [Ir,Ir])] [int n, prim $ PrimInstrId instr]
         pgmassign pgm instr mchn = depT_ $ opcs "pgmassign" [(Xr, [Ir,Ir,Ir])] ([int pgm, prim $ PrimInstrId instr] ++ maybe [] (return . int) mchn)
 
-data TotalDur = NumDur Double | InfiniteDur
+data TotalDur = ExpDur E | NumDur Double | InfiniteDur
     deriving (Eq, Ord)
 
-getTotalDurGE :: GE Double
-getTotalDurGE = do
-    opt <- getOptions
-    dt  <- fmap totalDur getHistory
-    return $ getTotalDur opt dt
+getTotalDurForF0 :: GE Double
+getTotalDurForF0 = fmap (pureGetTotalDurForF0 . totalDur) getHistory
 
-getTotalDur :: Options -> (Maybe TotalDur) -> Double
-getTotalDur _ = toDouble . maybe InfiniteDur id  
-    where 
+getTotalDurForTerminator :: GE E
+getTotalDurForTerminator = fmap (getTotalDurForTerminator' . totalDur) getHistory
+
+pureGetTotalDurForF0 :: Maybe TotalDur -> Double
+pureGetTotalDurForF0 = toDouble . maybe InfiniteDur id  
+    where
         toDouble x = case x of
             NumDur d    -> d
+            _           -> infiniteDur
+ 
+getTotalDurForTerminator' :: Maybe TotalDur -> E
+getTotalDurForTerminator' = toExpr . maybe InfiniteDur id
+    where
+        toExpr x = case x of
+            NumDur d    -> double d
             InfiniteDur -> infiniteDur
-        infiniteDur = 7 * 24 * 60 * 60 -- a week
+            ExpDur e    -> e            
+
+infiniteDur :: Num a => a
+infiniteDur = 7 * 24 * 60 * 60 -- a week        
+
+setDurationToInfinite :: GE ()
+setDurationToInfinite = setTotalDur InfiniteDur
+
+setDuration :: Double -> GE ()
+setDuration = setTotalDur . NumDur
+
+setDurationForce :: E -> GE ()
+setDurationForce = setTotalDur . ExpDur 
 
 saveStr :: String -> GE E
 saveStr = fmap prim . onStringMap . newString
@@ -132,13 +152,6 @@ saveBandLimitedWave = onBandLimitedMap . saveBandLimited
     where onBandLimitedMap = onHistory 
                 (\a -> (genMap a, bandLimitedMap a)) 
                 (\(gm, blm) h -> h { genMap = gm, bandLimitedMap = blm})
-
-setDurationToInfinite :: GE ()
-setDurationToInfinite = setTotalDur InfiniteDur
-
-setDuration :: Double -> GE ()
-setDuration = setTotalDur . NumDur
-
 setTotalDur :: TotalDur -> GE ()
 setTotalDur = onTotalDur . modify . const . Just
     where onTotalDur = onHistory totalDur (\a h -> h { totalDur = a })
@@ -151,8 +164,12 @@ saveUserInstr0 :: Dep () -> GE ()
 saveUserInstr0 expr = onUserInstr0 $ modify ( >> expr)
     where onUserInstr0 = onHistory userInstr0 (\a h -> h { userInstr0 = a })
 
-getSysExpr :: GE (Dep ())
-getSysExpr = withHistory $ clearGlobals . globals
+getSysExpr :: InstrId -> GE (Dep ())
+getSysExpr terminatorInstrId = do
+    e1 <- withHistory $ clearGlobals . globals
+    dt <- getTotalDurForTerminator
+    let e2 = event_i $ Event terminatorInstrId dt 0.01 [] 
+    return $ e1 >> e2
     where clearGlobals = snd . renderGlobals
 
 saveAlwaysOnInstr :: InstrId -> GE ()

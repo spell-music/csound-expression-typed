@@ -25,7 +25,6 @@ import Csound.Typed.Gui.Gui(guiStmt)
 toCsd :: Tuple a => Options -> SE a -> GE Csd
 toCsd options sigs = do   
     saveMasterInstr (constArity sigs) (masterExp sigs)
-    saveTerminatorInstr
     renderHistory (outArity sigs) options
 
 renderOut_ :: SE () -> IO String
@@ -50,8 +49,9 @@ renderHistory :: Int -> Options -> GE Csd
 renderHistory nchnls opt = do
     keyEventListener <- getKeyEventListener
     hist1 <- getHistory
-    instr0 <- execDepT $ getInstr0 nchnls opt hist1
-    expr2 <- getSysExpr 
+    instr0 <- execDepT $ getInstr0 nchnls opt hist1    
+    terminatorInstrId <- saveInstr =<< terminatorInstr
+    expr2 <- getSysExpr terminatorInstrId 
     saveAlwaysOnInstr =<< saveInstr (SE expr2)
     expr3 <- guiInstrExp 
     saveAlwaysOnInstr =<< saveInstr (SE expr3)
@@ -59,7 +59,7 @@ renderHistory nchnls opt = do
     let orc = Orc instr0 (maybeAppend keyEventListener $ fmap (uncurry Instr) $ instrsContent $ instrs hist2)   
     hist3 <- getHistory 
     let flags   = reactOnMidi hist3 $ csdFlags opt
-        sco     = Sco (Just $ getTotalDur opt $ totalDur hist3) 
+        sco     = Sco (Just $ pureGetTotalDurForF0 $ totalDur hist3) 
                       (renderGens $ genMap hist3) $
                       ((fmap alwaysOn $ alwaysOnInstrs hist3) ++ (getNoteEvents $ notes hist3))
     return $ Csd flags orc sco
