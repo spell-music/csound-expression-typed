@@ -15,7 +15,7 @@ import qualified Csound.Typed.GlobalState.Elements as C
 
 import Csound.Typed.Types
 import Csound.Typed.Types.MixSco
-import Csound.Typed.GlobalState
+import Csound.Typed.GlobalState hiding (notes)
 import Csound.Typed.Control.Instr
 
 -- | Special type that represents a scores of sound signals.
