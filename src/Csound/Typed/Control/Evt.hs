@@ -1,8 +1,8 @@
 {-# Language FlexibleContexts #-}
 module Csound.Typed.Control.Evt(
-    trig, sched, schedHarp, 
-    trigBy, schedBy, schedHarpBy,
-    trig_, sched_,
+    trigs, scheds, schedHarps, 
+    trigsBy, schedsBy, schedHarpsBy,
+    trigs_, scheds_,
 ) where
 
 import System.Mem.StableName
@@ -24,8 +24,8 @@ import Csound.Typed.Control.Instr
 -- contains triples:
 --
 -- > (delay_after_event_is_fired, duration_of_the_event, argument_for_the_instrument)
-trig :: (Arg a, Sigs b) => (a -> SE b) -> Evt (D, D, a) -> b
-trig instr evts = apInstr0 $ do
+trigs :: (Arg a, Sigs b) => (a -> SE b) -> Evt [(D, D, a)] -> b
+trigs instr evts = apInstr0 $ do
     key <- evtKey evts instr
     withCache InfiniteDur getEvtKey saveEvtKey key $ do
         cacheName <- liftIO $ C.makeCacheName instr
@@ -33,15 +33,15 @@ trig instr evts = apInstr0 $ do
         saveEvtInstr (arityOuts $ funArity instr) instrId evts
 
 -- | A closure to trigger an instrument inside the body of another instrument.
-trigBy :: (Arg a, Sigs b, Arg c) => (a -> SE b) -> (c -> Evt (D, D, a)) -> (c -> b)
-trigBy instr evts args = flip apInstr args $ do
+trigsBy :: (Arg a, Sigs b, Arg c) => (a -> SE b) -> (c -> Evt [(D, D, a)]) -> (c -> b)
+trigsBy instr evts args = flip apInstr args $ do
     key <- evtKey evts instr
     withCache InfiniteDur getEvtKey saveEvtKey key $ do        
         cacheName <- liftIO $ C.makeCacheName instr
         instrId <- saveSourceInstrCached cacheName (funArity instr) (insExp instr)
         saveEvtInstr (arityOuts $ funArity instr) instrId (evts toArg)  
 
-saveEvtInstr :: Arg a => Int -> C.InstrId -> Evt (D, D, a) -> GE C.InstrId
+saveEvtInstr :: Arg a => Int -> C.InstrId -> Evt [(D, D, a)] -> GE C.InstrId
 saveEvtInstr arity instrId evts = saveInstr evtMixInstr
     where
         evtMixInstr :: SE ()
@@ -50,54 +50,58 @@ saveEvtInstr arity instrId evts = saveInstr evtMixInstr
             go chnId evts
             fromDep_ $ hideGEinDep $ fmap (\chn -> C.sendOut arity =<< C.readChn chn) chnId 
 
-        go :: Arg a => GE C.ChnRef -> Evt (D, D, a) -> SE ()
-        go mchnId es = 
-            runEvt es $ \(start, dur, args) -> fromDep_ $ hideGEinDep $ do
-                chnId <- mchnId
-                e <- C.Event instrId <$> toGE start <*> toGE dur <*> (fmap (++ [C.chnRefId chnId]) $ toNote args) 
-                return $ C.event e 
+        go :: Arg a => GE C.ChnRef -> Evt [(D, D, a)] -> SE ()
+        go mchnId events = 
+            runEvt events $ \es -> do
+                chnId <- geToSe mchnId
+                fromDep_ $ mapM_ (event chnId) es
+    
+        event :: Arg a => C.ChnRef -> (D, D, a) -> Dep ()
+        event chnId (start, dur, args) = hideGEinDep $ fmap C.event $ 
+            C.Event instrId <$> toGE start <*> toGE dur <*> (fmap (++ [C.chnRefId chnId]) $ toNote args) 
+            
 
--- | It's like the function @trig@, but delay is set to zero.
-sched :: (Arg a, Sigs b) => (a -> SE b) -> Evt (D, a) -> b
-sched instr evts = apInstr0 $ do
+-- | It's like the function @trigs@, but delay is set to zero.
+scheds :: (Arg a, Sigs b) => (a -> SE b) -> Evt [(D, a)] -> b
+scheds instr evts = apInstr0 $ do
     key <- evtKey evts instr
     withCache InfiniteDur getEvtKey saveEvtKey key $ do
         cacheName <- liftIO $ C.makeCacheName instr
         instrId <- saveSourceInstrCached cacheName (funArity instr) (insExp instr)
-        saveEvtInstr (arityOuts $ funArity instr) instrId (fmap phi evts)  
+        saveEvtInstr (arityOuts $ funArity instr) instrId (fmap (fmap phi) evts)  
     where phi (a, b) = (0, a, b)
      
 -- | A closure to trigger an instrument inside the body of another instrument.
-schedBy :: (Arg a, Sigs b, Arg c) => (a -> SE b) -> (c -> Evt (D, a)) -> (c -> b)
-schedBy instr evts args = flip apInstr args $ do
+schedsBy :: (Arg a, Sigs b, Arg c) => (a -> SE b) -> (c -> Evt [(D, a)]) -> (c -> b)
+schedsBy instr evts args = flip apInstr args $ do
     key <- evtKey evts instr
     withCache InfiniteDur getEvtKey saveEvtKey key $ do
         cacheName <- liftIO $ C.makeCacheName instr
         instrId <- saveSourceInstrCached cacheName (funArity instr) (insExp instr)
-        saveEvtInstr (arityOuts $ funArity instr) instrId (fmap phi $ evts toArg)  
+        saveEvtInstr (arityOuts $ funArity instr) instrId (fmap (fmap phi) $ evts toArg)  
     where phi (a, b) = (0, a, b)
 
 -- | An instrument is triggered with event stream and delay time is set to zero 
 -- (event fires immediately) and duration is set to inifinite time. The note is 
 -- held while the instrument is producing something. If the instrument is silent
 -- for some seconds (specified in the first argument) then it's turned off.
-schedHarp :: (Arg a, Sigs b) => D -> (a -> SE b) -> Evt a -> b
-schedHarp turnOffTime instr evts = apInstr0 $ do
+schedHarps :: (Arg a, Sigs b) => D -> (a -> SE b) -> Evt [a] -> b
+schedHarps turnOffTime instr evts = apInstr0 $ do
     key <- evtKey evts instr
     withCache InfiniteDur getEvtKey saveEvtKey key $ do
         cacheName <- liftIO $ C.makeCacheName instr
         instrId <- saveSourceInstrCached cacheName (funArity instr) (insExp $ (autoOff turnOffTime =<< ) . instr)
-        saveEvtInstr (arityOuts $ funArity instr) instrId (fmap phi evts)
+        saveEvtInstr (arityOuts $ funArity instr) instrId (fmap (fmap phi) evts)
     where phi a = (0, -1, a)
 
 -- | A closure to trigger an instrument inside the body of another instrument.
-schedHarpBy :: (Arg a, Sigs b, Arg c) => D -> (a -> SE b) -> (c -> Evt a) -> (c -> b)
-schedHarpBy turnOffTime instr evts args = flip apInstr args $ do
+schedHarpsBy :: (Arg a, Sigs b, Arg c) => D -> (a -> SE b) -> (c -> Evt [a]) -> (c -> b)
+schedHarpsBy turnOffTime instr evts args = flip apInstr args $ do
     key <- evtKey evts instr
     withCache InfiniteDur getEvtKey saveEvtKey key $ do
         cacheName <- liftIO $ C.makeCacheName instr
         instrId <- saveSourceInstrCached cacheName (funArity instr) (insExp $ (autoOff turnOffTime =<< ) . instr)
-        saveEvtInstr (arityOuts $ funArity instr) instrId (fmap phi $ evts toArg)
+        saveEvtInstr (arityOuts $ funArity instr) instrId (fmap (fmap phi) $ evts toArg)
     where phi a = (0, -1, a)
 
 autoOff :: Sigs a => D -> a -> SE a
@@ -110,8 +114,8 @@ autoOff dt sigs = fmap toTuple $ fromDep $ hideGEinDep $ phi =<< fromTuple sigs
 -----------------------------------------------------------------------
 
 -- | Triggers a procedure on the event stream.
-trig_ :: (Arg a) => (a -> SE ()) -> Evt (D, D, a) -> SE ()
-trig_ instr evts = fromDep_ $ hideGEinDep $ do
+trigs_ :: (Arg a) => (a -> SE ()) -> Evt [(D, D, a)] -> SE ()
+trigs_ instr evts = fromDep_ $ hideGEinDep $ do
     key <- evtKey evts instr
     withCache InfiniteDur getEvtProcKey saveEvtProcKey key $ do
         cacheName <- liftIO $ C.makeCacheName instr
@@ -119,18 +123,18 @@ trig_ instr evts = fromDep_ $ hideGEinDep $ do
         return $ saveEvtInstr_ instrId evts
 
 -- | Triggers a procedure on the event stream. A delay time is set to zero.
-sched_ :: (Arg a) => (a -> SE ()) -> Evt (D, a) -> SE ()
-sched_ instr evts = fromDep_ $ hideGEinDep $ do
+scheds_ :: (Arg a) => (a -> SE ()) -> Evt [(D, a)] -> SE ()
+scheds_ instr evts = fromDep_ $ hideGEinDep $ do
     key <- evtKey evts instr
     withCache InfiniteDur getEvtProcKey saveEvtProcKey key $ do
         cacheName <- liftIO $ C.makeCacheName instr
         instrId <- saveSourceInstrCached_ cacheName (unitExp $ fmap (const unit) $ instr toArg)
-        return $ saveEvtInstr_ instrId $ fmap phi evts
+        return $ saveEvtInstr_ instrId $ fmap (fmap phi) evts
     where phi (a, b) = (0, a, b)
 
-saveEvtInstr_ :: Arg a => C.InstrId -> Evt (D, D, a) -> Dep ()
-saveEvtInstr_ instrId evts = unSE $ runEvt evts $ \(start, dur, args) -> fromDep_ $ hideGEinDep$ 
-    fmap C.event $ C.Event instrId <$> toGE start <*> toGE dur <*> toNote args
+saveEvtInstr_ :: Arg a => C.InstrId -> Evt [(D, D, a)] -> Dep ()
+saveEvtInstr_ instrId evts = unSE $ runEvt evts $ \es -> fromDep_ $ mapM_ event es
+    where event (start, dur, args) = hideGEinDep $ fmap C.event $ C.Event instrId <$> toGE start <*> toGE dur <*> toNote args
 
 -------------------------------------------------------------------
 
