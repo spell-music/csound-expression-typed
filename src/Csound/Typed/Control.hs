@@ -45,7 +45,9 @@ getIns = res
         proxy :: SE a -> a
         proxy = const undefined
 
--- | Sets total duration to the given value.
+-- | Sets the global duration of the file or output signal to the given value.
+-- It should be used only once! The proper place is in the top-most
+-- expression before sending to @dac@ or @writeWav@.
 setDur :: Sigs a => D -> a -> a
 setDur mdt as = toTuple $ do
     dt <- toGE mdt
