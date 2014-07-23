@@ -2,7 +2,7 @@ module Csound.Typed.GlobalState.GE(
     GE, Dep, History(..), withOptions, withHistory, getOptions, evalGE, execGE,
     getHistory, putHistory,
     -- * Globals
-    onGlobals, 
+    onGlobals,
     -- * Midi
     MidiAssign(..), Msg(..), renderMidiAssign, saveMidi,  
     -- * Instruments
@@ -105,9 +105,6 @@ renderMidiAssign (MidiAssign ty chn instrId) = case ty of
 
 data TotalDur = ExpDur E | NumDur Double | InfiniteDur
     deriving (Eq, Ord)
-
-getTotalDurForF0 :: GE Double
-getTotalDurForF0 = fmap (pureGetTotalDurForF0 . totalDur) getHistory
 
 getTotalDurForTerminator :: GE E
 getTotalDurForTerminator = fmap (getTotalDurForTerminator' . totalDur) getHistory
@@ -441,4 +438,5 @@ getKeyEventListener = do
             saveAlwaysOnInstr keyEventInstrId
             body <- keyEventInstrBody $ guiKeyEvents $ guis h
             return $ Just (Instr keyEventInstrId body)
+
 
