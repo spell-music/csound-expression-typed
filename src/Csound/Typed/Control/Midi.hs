@@ -2,7 +2,8 @@
 module Csound.Typed.Control.Midi(
     Msg, Channel,
     midi, midin, pgmidi, 
-    midi_, midin_, pgmidi_
+    midi_, midin_, pgmidi_,
+    initMidiCtrl
 ) where
 
 import System.Mem.StableName
@@ -57,4 +58,11 @@ genMidi_ midiType chn instr = fromDep_ $ hideGEinDep $ do
 
 midiKey :: MidiType -> Channel -> a -> GE MidiKey
 midiKey ty chn a = liftIO $ MidiKey ty chn . hashStableName <$> makeStableName a  
+
+-----------------------------------------------------------------
+-- midi ctrls
+
+initMidiCtrl :: D -> D -> D -> SE ()
+initMidiCtrl chno ctrlno val = geToSe $ 
+    saveMidiCtrl =<< (MidiCtrl <$> toGE chno <*> toGE ctrlno <*> toGE val)
 

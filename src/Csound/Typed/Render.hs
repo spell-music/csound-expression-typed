@@ -72,6 +72,7 @@ getInstr0 :: Int -> Options -> History -> Dep ()
 getInstr0 nchnls opt hist = do
     globalConstants
     midiAssigns
+    midiInitCtrls
     initGlobals
     renderBandLimited (genMap hist) (bandLimitedMap hist)
     userInstr0 hist
@@ -84,7 +85,8 @@ getInstr0 nchnls opt hist = do
             setNchnls   (max 1 nchnls)
             setZeroDbfs 1
 
-        midiAssigns = mapM_ renderMidiAssign $ midis hist
+        midiAssigns   = mapM_ renderMidiAssign $ midis hist
+        midiInitCtrls = mapM_ renderMidiCtrl   $ midiCtrls hist
 
         initGlobals = fst $ renderGlobals $ globals $ hist
 

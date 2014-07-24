@@ -5,6 +5,7 @@ module Csound.Typed.GlobalState.GE(
     onGlobals,
     -- * Midi
     MidiAssign(..), Msg(..), renderMidiAssign, saveMidi,  
+    MidiCtrl(..), saveMidiCtrl, renderMidiCtrl,
     -- * Instruments
     saveAlwaysOnInstr, onInstr, saveUserInstr0, getSysExpr,
     -- * Total duration
@@ -81,6 +82,7 @@ data History = History
     , globals           :: Globals
     , instrs            :: Instrs
     , midis             :: [MidiAssign]
+    , midiCtrls         :: [MidiCtrl]
     , totalDur          :: Maybe TotalDur
     , alwaysOnInstrs    :: [InstrId]
     , notes             :: [(InstrId, CsdEvent Note)]
@@ -90,10 +92,11 @@ data History = History
     , guis              :: Guis }
 
 instance Default History where
-    def = History def def def def def def def def (return ()) def def def
+    def = History def def def def def def def def def (return ()) def def def
 
 data Msg = Msg
 data MidiAssign = MidiAssign MidiType Channel InstrId
+data MidiCtrl   = MidiCtrl E E E
             
 renderMidiAssign :: Monad m => MidiAssign -> DepT m ()
 renderMidiAssign (MidiAssign ty chn instrId) = case ty of
@@ -102,6 +105,12 @@ renderMidiAssign (MidiAssign ty chn instrId) = case ty of
     where
         massign n instr = depT_ $ opcs "massign" [(Xr, [Ir,Ir])] [int n, prim $ PrimInstrId instr]
         pgmassign pgm instr mchn = depT_ $ opcs "pgmassign" [(Xr, [Ir,Ir,Ir])] ([int pgm, prim $ PrimInstrId instr] ++ maybe [] (return . int) mchn)
+
+renderMidiCtrl :: Monad m => MidiCtrl -> DepT m ()
+renderMidiCtrl (MidiCtrl chno ctrlno val) = initc7 chno ctrlno val
+    where 
+        initc7 :: Monad m => E -> E -> E -> DepT m ()
+        initc7 a b c = depT_ $ opcs "initc7" [(Xr, [Ir, Ir, Ir])] [a, b, c]
 
 data TotalDur = ExpDur E | NumDur Double | InfiniteDur
     deriving (Eq, Ord)
@@ -156,6 +165,10 @@ setTotalDur = onTotalDur . modify . const . Just
 saveMidi :: MidiAssign -> GE ()
 saveMidi ma = onMidis $ modify (ma: )
     where onMidis = onHistory midis (\a h -> h { midis = a })
+
+saveMidiCtrl :: MidiCtrl -> GE ()
+saveMidiCtrl ma = onMidis $ modify (ma: )
+    where onMidis = onHistory midiCtrls (\a h -> h { midiCtrls = a })
 
 saveUserInstr0 :: Dep () -> GE ()
 saveUserInstr0 expr = onUserInstr0 $ modify ( >> expr)
