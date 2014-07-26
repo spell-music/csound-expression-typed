@@ -2,7 +2,7 @@
 {-# Language ScopedTypeVariables #-}
 module Csound.Typed.Control.Osc(
     OscRef, OscHost, OscPort, OscAddress, OscType, 
-    oscInit, oscListen, oscSend
+    initOsc, listenOsc, sendOsc
 ) where
 
 import Data.Boolean ((==*))
@@ -33,8 +33,8 @@ type OscType = String
 type OscHost = String
 
 -- | Initializes host client. The process starts to run in the background.
-oscInit :: OscPort -> SE OscRef
-oscInit port = do
+initOsc :: OscPort -> SE OscRef
+initOsc port = do
     oscRef <- fmap fromGE $ fromDep $ C.oscInit (fromIntegral port)
     varRef <- newGlobalSERef (0 :: D)
     writeSERef varRef oscRef
@@ -56,8 +56,8 @@ oscInit port = do
 -- with standard function @runEvt@:
 --
 -- > runEvt :: Evt a -> (a -> SE ()) -> SE ()
-oscListen :: forall a . Tuple a => OscRef -> OscAddress -> OscType -> Evt a
-oscListen oscRef oscAddr oscType = Evt $ \bam -> do
+listenOsc :: forall a . Tuple a => OscRef -> OscAddress -> OscType -> Evt a
+listenOsc oscRef oscAddr oscType = Evt $ \bam -> do
     (readCond, writeCond) <- sensorsSE (0 :: Sig)
     resRef <- newSERef (defTuple :: a)
     writeCond =<< listen resRef
@@ -84,8 +84,8 @@ oscListen oscRef oscAddr oscType = Evt $ \bam -> do
 -- (empty string is alocal machine), port on which the target 
 -- machine is listening, OSC-addres and type. The last argument
 -- produces the values for OSC-messages.
-oscSend :: forall a . Tuple a => OscHost -> OscPort -> OscAddress -> OscType -> Evt a -> SE ()
-oscSend host port addr ty evts = runEvt evts send
+sendOsc :: forall a . Tuple a => OscHost -> OscPort -> OscAddress -> OscType -> Evt a -> SE ()
+sendOsc host port addr ty evts = runEvt evts send
     where 
         send :: Tuple a => a -> SE ()
         send as = SE $ hideGEinDep $ do
