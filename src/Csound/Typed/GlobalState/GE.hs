@@ -97,7 +97,7 @@ instance Default History where
 data Msg = Msg
 data MidiAssign = MidiAssign MidiType Channel InstrId
 data MidiCtrl   = MidiCtrl E E E
-            
+
 renderMidiAssign :: Monad m => MidiAssign -> DepT m ()
 renderMidiAssign (MidiAssign ty chn instrId) = case ty of
     Massign         -> massign chn instrId

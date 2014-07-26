@@ -9,6 +9,8 @@ module Csound.Typed.GlobalState.Opcodes(
     out, outs, safeOut, autoOff, turnoff, turnoff2, exitnow,
     -- * vco2
     oscili, oscilikt, vco2ft, vco2ift, vco2init, ftgen,
+    -- * OSC
+    oscInit, oscListen, oscSend,
     -- * times
     times
 ) where
@@ -198,7 +200,19 @@ ftgen n g = opcs "ftgen" [(Ir, repeat Ir)]
 vco2init :: [E] -> E
 vco2init = opcs "vco2init" [(Ir, repeat Ir)]
 
-----------------------
+-----------------------------------------------------------
+-- OSC
+
+oscInit :: Monad m => E -> DepT m E
+oscInit port = depT $ opcs "OSCinit" [(Ir, [Ir])] [port]
+
+oscListen :: Monad m => [E] -> DepT m E
+oscListen args = depT $ opcs "OSClisten" [(Kr, Ir:Ir:Ir:repeat Xr)] args
+
+oscSend :: Monad m => [E] -> DepT m ()
+oscSend args = depT_ $ opcs "OSCsend" [(Xr, Kr:Ir:Ir:Ir:Ir:repeat Xr)] args
+
+-----------------------------------------------------------
 -- times
 
 times :: Monad m => DepT m E

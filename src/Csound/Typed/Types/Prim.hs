@@ -23,7 +23,7 @@ module Csound.Typed.Types.Prim(
     quot', rem', div', mod', ceil', floor', round', int', frac',
    
     -- ** logic funs
-    when1, whens, boolSig
+    when1, whens, untilDo, whileDo, boolSig
 ) where
 
 import Control.Applicative hiding ((<*))
@@ -35,8 +35,8 @@ import qualified Data.IntMap as IM
 import Data.Default
 import Data.Boolean
 
-import Csound.Dynamic hiding (double, int, str, when1, whens, ifBegin, ifEnd, elseBegin, elseIfBegin)
-import qualified Csound.Dynamic as D(double, int, str, ifBegin, ifEnd, elseBegin, elseIfBegin)
+import Csound.Dynamic hiding (double, int, str, when1, whens, ifBegin, ifEnd, elseBegin, elseIfBegin, untilBegin, untilEnd, untilDo)
+import qualified Csound.Dynamic as D(double, int, str, ifBegin, ifEnd, elseBegin, elseIfBegin, untilBegin, untilEnd)
 import Csound.Typed.GlobalState
 
 -- | Signals
@@ -408,6 +408,21 @@ elseBegin = fromDep_ D.elseBegin
 
 elseIfBegin :: BoolSig -> SE ()
 elseIfBegin a = fromDep_ $ D.elseIfBegin =<< lift (toGE a)
+
+untilDo :: BoolSig -> SE () -> SE ()
+untilDo p body = do
+    untilBegin p
+    body
+    untilEnd
+
+whileDo :: BoolSig -> SE () -> SE ()
+whileDo p = untilDo (notB p) 
+
+untilBegin :: BoolSig -> SE ()
+untilBegin a = fromDep_ $ D.untilBegin =<< lift (toGE a)
+
+untilEnd :: SE ()
+untilEnd = fromDep_ D.untilEnd
 
 -- | Creates a constant boolean signal.
 boolSig :: BoolD -> BoolSig

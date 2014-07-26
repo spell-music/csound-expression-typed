@@ -58,6 +58,7 @@ Library
     Csound.Typed.Control.Vco
     Csound.Typed.Control.Mix
     Csound.Typed.Control.Midi
+    Csound.Typed.Control.Osc
     Csound.Typed.Control.SERef
     Csound.Typed.Control.Instr
 

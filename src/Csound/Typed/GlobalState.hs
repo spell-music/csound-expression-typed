@@ -7,7 +7,8 @@ module Csound.Typed.GlobalState (
     -- * Reexports dynamic
     BandLimited(..), readBandLimited, renderBandLimited,
     Instrs(..), IdMap(..), getInstrIds,
-    getIn, chnUpdateUdo, renderGlobals, turnoff, turnoff2, exitnow
+    getIn, chnUpdateUdo, renderGlobals, turnoff, turnoff2, exitnow,
+    oscListen, oscInit, oscSend
 ) where
 
 import Csound.Typed.GlobalState.Options

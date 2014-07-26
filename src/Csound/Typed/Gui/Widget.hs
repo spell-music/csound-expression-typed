@@ -11,7 +11,7 @@ module Csound.Typed.Gui.Widget(
     -- * Widgets
     count, countSig, joy, knob, roller, slider, sliderBank, numeric, meter, box,
     button, butBank, butBankSig, butBank1, butBankSig1, toggle, toggleSig,
-    value, 
+    setNumeric, 
     -- * Transformers
     setTitle,
     -- * Keyboard    
@@ -199,10 +199,10 @@ singleOut v0 el = geToSe $ do
 
 singleIn :: (GuiHandle -> Output Sig) -> Maybe Double -> Elem -> Sink Sig 
 singleIn outs v0 el = geToSe $ do
-    (_, handle) <- newGuiVar
+    (var, handle) <- newGuiVar
     let handleVar = guiHandleToVar handle        
         inits = maybe [] (return . InitMe handleVar) v0
-        gui = fromElem [handleVar] inits el
+        gui = fromElem [var, handleVar] inits el
     appendToGui (GuiNode gui handle) (unSE noInner)
     return (fromGuiHandle handle, outs handle)
 
@@ -374,13 +374,9 @@ butBankSig1 :: String -> Int -> Int -> (Int, Int) -> Source Sig
 butBankSig1 name xn yn (x0, y0) = setSourceTitle name $ singleOut (Just n) $ ButBank xn yn
     where n = fromIntegral $ y0 + x0 * yn
 
--- | FLvalue shows current the value of a valuator in a text field.
---
--- > value initVal
---
--- doc: <http://www.csounds.com/manual/html/FLvalue.html>
-value :: String -> Double -> Sink Sig 
-value name v = setLabelSink name $ singleIn printk2 (Just v) Value
+-- |  FLtext that is sink shows current the value of a valuator in a text field.
+setNumeric :: String -> ValDiap -> ValStep -> Double -> Sink Sig
+setNumeric name diap step v0 = setLabelSource name $ singleIn printk2 (Just v0) $ Text diap step 
 
 -- | A slider that serves as indicator. It consumes values instead of producing.
 --
