@@ -1,5 +1,5 @@
 Name:          csound-expression-typed
-Version:       0.0.5.3
+Version:       0.0.5.4
 Cabal-Version: >= 1.6
 License:       BSD3
 License-file:  LICENSE
@@ -59,6 +59,7 @@ Library
     Csound.Typed.Control.Mix
     Csound.Typed.Control.Midi
     Csound.Typed.Control.Osc
+    Csound.Typed.Control.Channel
     Csound.Typed.Control.SERef
     Csound.Typed.Control.Instr
 

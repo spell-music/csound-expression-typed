@@ -11,6 +11,8 @@ module Csound.Typed.GlobalState.Opcodes(
     oscili, oscilikt, vco2ft, vco2ift, vco2init, ftgen,
     -- * OSC
     oscInit, oscListen, oscSend,
+    -- * channels
+    chnGet, chnSet,
     -- * times
     times
 ) where
@@ -211,6 +213,15 @@ oscListen args = depT $ opcs "OSClisten" [(Kr, Ir:Ir:Ir:repeat Xr)] args
 
 oscSend :: Monad m => [E] -> DepT m ()
 oscSend args = depT_ $ opcs "OSCsend" [(Xr, Kr:Ir:Ir:Ir:Ir:repeat Xr)] args
+
+-----------------------------------------------------------
+-- Channel
+
+chnGet :: Monad m => Rate -> E -> DepT m E
+chnGet r chn = depT $ opcs "chnget" [(r, [Sr])] [chn]
+
+chnSet :: Monad m => Rate -> E -> E -> DepT m ()
+chnSet r val chn = depT_ $ opcs "chnset" [(Xr, [r, Sr])] [val, chn]
 
 -----------------------------------------------------------
 -- times

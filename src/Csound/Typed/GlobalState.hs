@@ -8,7 +8,8 @@ module Csound.Typed.GlobalState (
     BandLimited(..), readBandLimited, renderBandLimited,
     Instrs(..), IdMap(..), getInstrIds,
     getIn, chnUpdateUdo, renderGlobals, turnoff, turnoff2, exitnow,
-    oscListen, oscInit, oscSend
+    oscListen, oscInit, oscSend,
+    chnSet, chnGet
 ) where
 
 import Csound.Typed.GlobalState.Options
