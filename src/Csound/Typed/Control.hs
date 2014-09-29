@@ -13,6 +13,8 @@ module Csound.Typed.Control (
     module Csound.Typed.Control.Osc,
     -- * Channel
     module Csound.Typed.Control.Channel,
+    -- * Sf2
+    module Csound.Typed.Control.Sf2,
     -- * Events
     module Csound.Typed.Control.Evt,
     -- * Band-limited oscillators
@@ -28,6 +30,7 @@ import Csound.Typed.Control.Mix
 import Csound.Typed.Control.Midi
 import Csound.Typed.Control.Osc
 import Csound.Typed.Control.Channel
+import Csound.Typed.Control.Sf2
 import Csound.Typed.Control.Vco
 
 import Csound.Typed.Types
