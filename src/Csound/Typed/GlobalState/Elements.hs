@@ -4,6 +4,8 @@ module Csound.Typed.GlobalState.Elements(
     IdMap(..), saveId, newIdMapId,
     -- ** Gens
     GenMap, newGen, newGenId,
+    -- Sf2
+    SfFluid(..), SfSpec(..), SfMap, newSf, sfVar, renderSf,
     -- ** Band-limited waveforms
     BandLimited(..), BandLimitedMap, 
     saveBandLimited, renderBandLimited,
@@ -78,6 +80,46 @@ type StringMap = IdMap String
 
 newString :: String -> State StringMap Prim
 newString = fmap PrimInt . saveId
+
+-- sf
+
+data SfFluid = SfFluid 
+    { sfId   :: Int
+    , sfVars :: [Var] }
+
+data SfSpec = SfSpec
+    { sfName    :: String
+    , sfBank    :: Int
+    , sfProgram :: Int 
+    } deriving (Eq, Ord, Show)
+
+type SfMap = IdMap SfSpec
+
+newSf :: SfSpec -> State SfMap Int
+newSf = saveId
+
+sfVar :: Int -> E
+sfVar n = readOnlyVar (VarVerbatim Ir $ sfEngineName n)
+
+sfEngineName :: Int -> String
+sfEngineName n = "gi_Sf_engine_" ++ show n
+
+sfInstrName :: Int -> String
+sfInstrName n = "i_Sf_instr_" ++ show n
+
+renderSf :: Monad m => SfSpec -> Int -> DepT m ()
+renderSf (SfSpec name bank prog) n = verbatim $ 
+    engineStr ++ "\n" ++
+    loadStr   ++ "\n" ++
+    selectProgStr ++ "\n"
+    where 
+        engineStr = engineName ++ " fluidEngine"
+        loadStr   = insName ++ " fluidLoad \"" ++ name ++ "\", " ++  engineName ++ ", 1"
+        selectProgStr = "fluidProgramSelect " ++ engineName ++ ", 1, " ++ insName 
+            ++ ", " ++ show bank ++ ", " ++ show prog
+
+        engineName = sfEngineName n
+        insName    = sfInstrName n
 
 -- band-limited waveforms (used with vco2init)
 

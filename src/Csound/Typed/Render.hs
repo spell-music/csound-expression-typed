@@ -11,6 +11,8 @@ import qualified Data.Map as M
 import Data.Default
 import Data.Maybe
 import Data.Tuple
+import Data.Ord
+import Data.List(sortBy, groupBy)
 
 import Csound.Dynamic hiding (csdFlags)
 import Csound.Typed.Types
@@ -76,7 +78,8 @@ getInstr0 nchnls opt hist = do
     initGlobals
     renderBandLimited (genMap hist) (bandLimitedMap hist)
     userInstr0 hist
-    chnUpdateUdo 
+    chnUpdateUdo
+    sf2
     guiStmt $ getPanels hist
     where
         globalConstants = do
@@ -90,6 +93,11 @@ getInstr0 nchnls opt hist = do
 
         initGlobals = fst $ renderGlobals $ globals $ hist
 
+        sf2 = mapM_ (uncurry sfSetList) $ sfGroup $ sfTable hist
+        sfGroup = fmap phi . groupBy (\a b -> getName a == getName b) . sortBy (comparing getName)
+            where 
+                getName = sfName . fst
+                phi as = (getName $ head as, fmap (\(sf, index) -> (sfBank sf, sfProgram sf, index)) as)
 
 reactOnMidi :: History -> Flags -> Flags
 reactOnMidi h flags

@@ -15,6 +15,8 @@ module Csound.Typed.GlobalState.GE(
     addNote,
     -- * GEN routines
     saveGen,
+    -- * Sf2
+    saveSf, sfTable,
     -- * Band-limited waves
     saveBandLimitedWave,
     -- * Strings
@@ -34,6 +36,7 @@ import Control.Monad
 import Data.Boolean
 import Data.Default
 import qualified Data.IntMap as IM
+import qualified Data.Map    as M
 
 import Control.Monad.IO.Class
 import Control.Monad.Trans.Class
@@ -79,6 +82,7 @@ instance MonadIO GE where
 data History = History
     { genMap            :: GenMap
     , stringMap         :: StringMap
+    , sfMap             :: SfMap
     , globals           :: Globals
     , instrs            :: Instrs
     , midis             :: [MidiAssign]
@@ -92,7 +96,7 @@ data History = History
     , guis              :: Guis }
 
 instance Default History where
-    def = History def def def def def def def def def (return ()) def def def
+    def = History def def def def def def def def def def (return ()) def def def
 
 data Msg = Msg
 data MidiAssign = MidiAssign MidiType Channel InstrId
@@ -153,6 +157,15 @@ saveGen :: Gen -> GE E
 saveGen = onGenMap . newGen
     where onGenMap = onHistory genMap (\val h -> h{ genMap = val })
 
+onSfMap :: State SfMap a -> GE a
+onSfMap = onHistory sfMap (\val h -> h{ sfMap = val })
+
+saveSf :: SfSpec -> GE Int
+saveSf = onSfMap . newSf 
+
+sfTable :: History -> [(SfSpec, Int)]
+sfTable = M.toList . idMapContent . sfMap
+
 saveBandLimitedWave :: BandLimited -> GE Int
 saveBandLimitedWave = onBandLimitedMap . saveBandLimited
     where onBandLimitedMap = onHistory 
@@ -188,6 +201,9 @@ saveAlwaysOnInstr instrId = onAlwaysOnInstrs $ modify (instrId : )
 
 addNote :: InstrId -> CsdEvent Note -> GE ()
 addNote instrId evt = modifyHistory $ \h -> h { notes = (instrId, evt) : notes h }
+
+
+
 
 {-
 setMasterInstrId :: InstrId -> GE ()

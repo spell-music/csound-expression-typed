@@ -14,10 +14,14 @@ module Csound.Typed.GlobalState.Opcodes(
     -- * channels
     chnGet, chnSet,
     -- * times
-    times
+    times,
+    -- * Fluid
+    fluidEngine, fluidLoad, fluidProgramSelect,
+    -- * Soundfonts
+    sfSetList
 ) where
 
-import Control.Monad(zipWithM_)
+import Control.Monad(zipWithM_, forM_)
 import Data.Boolean
 
 import Csound.Dynamic
@@ -229,3 +233,34 @@ chnSet r val chn = depT_ $ opcs "chnset" [(Xr, [r, Sr])] [val, chn]
 times :: Monad m => DepT m E
 times = depT $ opcs "times" [(Ir, []), (Kr, [])] []
 
+-----------------------------------------------------------
+-- fluid engine
+
+fluidEngine :: Monad m => DepT m E
+fluidEngine = depT $ opcs "fluidEngine" [(Ir, [])] []
+
+fluidLoad :: Monad m => String -> E -> DepT m E
+fluidLoad sfName engine = depT $ opcs "fluidLoad" [(Ir, [Sr, Ir, Ir])] [str sfName, engine, 1]
+
+fluidProgramSelect :: Monad m => E -> E -> Int -> Int -> DepT m E
+fluidProgramSelect engine sfInstr bank prog = depT $ opcs "fluidProgramSelect" 
+    [(Xr, replicate 5 Ir)] [engine, 1, sfInstr, int bank, int prog]
+
+-----------------------------------------------------------
+-- soundfonts
+
+sfload :: Monad m => String -> DepT m E
+sfload fileName =  depT $ opcs "sfload" [(Ir, [Sr])] [str fileName]
+
+sfplist :: Monad m => E -> DepT m ()
+sfplist sf = depT_ $ opcs "sfplist" [(Xr, [Ir])] [sf]
+
+sfpreset :: Monad m => Int -> Int -> E -> Int -> DepT m ()
+sfpreset bank prog sf index = depT_ $ opcs "iPreset sfpreset" [(Xr, [Ir, Ir, Ir, Ir])] [int prog, int bank, sf, int index]
+
+sfSetList :: Monad m => String -> [(Int, Int, Int)] -> DepT m ()
+sfSetList fileName presets = do
+    sf <- sfload fileName
+    sfplist sf
+    forM_ presets $ \(bank, prog, index) -> sfpreset bank prog sf index
+    
