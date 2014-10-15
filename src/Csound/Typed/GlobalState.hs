@@ -9,7 +9,9 @@ module Csound.Typed.GlobalState (
     Instrs(..), IdMap(..), getInstrIds,
     getIn, chnUpdateUdo, renderGlobals, turnoff, turnoff2, exitnow,
     oscListen, oscInit, oscSend,
-    chnSet, chnGet,
+    chnSet, chnGet, 
+    masterUpdateChnAlive,
+    servantUpdateChnAlive,
     SfFluid(..), SfSpec(..), renderSf, sfVar,
     sfSetList
 ) where

@@ -10,7 +10,7 @@ import Csound.Typed.GlobalState.GE
 import Csound.Typed.GlobalState.SE
 import Csound.Typed.GlobalState.Options
 import Csound.Typed.GlobalState.Cache
-import Csound.Typed.GlobalState.Opcodes(turnoff2, exitnow)
+import Csound.Typed.GlobalState.Opcodes(turnoff2, exitnow, servantUpdateChnAlive)
 import Csound.Typed.GlobalState.Elements(getInstrIds)
 
 data Arity = Arity
@@ -27,12 +27,25 @@ saveInstr a = onInstr . C.saveInstr =<< execSE a
 saveCachedInstr :: C.CacheName -> SE () -> GE InstrId
 saveCachedInstr cacheName a = onInstr . C.saveCachedInstr cacheName =<< execSE a
 
+livenessWatch :: Arity -> SE ()
+livenessWatch arity = fromDep_ $ servantUpdateChnAlive (C.chnPargId $ arityIns arity)
+
+saveSourceInstrCachedWithLivenessWatch :: C.CacheName -> Arity -> InsExp -> GE InstrId
+saveSourceInstrCachedWithLivenessWatch cacheName arity instr = saveCachedInstr cacheName $ do
+    toOut =<< instr
+    livenessWatch arity 
+    where toOut = SE . C.sendChn (arityIns arity) (arityOuts arity)
+
 saveSourceInstrCached :: C.CacheName -> Arity -> InsExp -> GE InstrId
 saveSourceInstrCached cacheName arity instr = saveCachedInstr cacheName $ toOut =<< instr
     where toOut = SE . C.sendChn (arityIns arity) (arityOuts arity)
 
 saveSourceInstrCached_ :: C.CacheName -> UnitExp -> GE InstrId
 saveSourceInstrCached_ cacheName instr = saveCachedInstr cacheName instr
+
+saveSourceInstrCachedWithLivenessWatch_ :: C.CacheName -> Arity -> UnitExp -> GE InstrId
+saveSourceInstrCachedWithLivenessWatch_ cacheName arity instr = saveCachedInstr cacheName $ 
+    instr >> livenessWatch arity
 
 saveEffectInstr :: Arity -> EffExp -> GE InstrId
 saveEffectInstr arity eff = saveInstr $ setOuts =<< eff =<< getIns

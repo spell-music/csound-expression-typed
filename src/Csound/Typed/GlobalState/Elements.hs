@@ -18,7 +18,7 @@ module Csound.Typed.GlobalState.Elements(
     -- * Instruments
     Instrs(..), saveInstr, CacheName, makeCacheName, saveCachedInstr, getInstrIds,
     -- * Src
-    InstrBody, getIn, sendOut, sendChn, sendGlobal, 
+    InstrBody, getIn, sendOut, sendChn, sendGlobal, chnPargId,
     Event(..),
     ChnRef(..), chnRefFromParg, chnRefAlloc, readChn, writeChn, chnUpdateUdo,
     subinstr, subinstr_, event_i, event, safeOut, autoOff, changed
@@ -309,7 +309,10 @@ sendGlobal arityOuts sigs = do
     return (fmap readOnlyVar vars, zipWithM_ (appendVarBy (+)) vars sigs)
 
 sendChn :: Monad m => Int -> Int -> [E] -> DepT m ()
-sendChn arityIns arityOuts sigs = writeChn (chnRefFromParg (4 + arityIns) arityOuts) sigs
+sendChn arityIns arityOuts sigs = writeChn (chnRefFromParg (chnPargId arityIns) arityOuts) sigs
+
+chnPargId :: Int -> Int
+chnPargId arityIns = 4 + arityIns
 
 -- guis
 

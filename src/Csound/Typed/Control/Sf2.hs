@@ -5,10 +5,8 @@ module Csound.Typed.Control.Sf2(
 
 import Data.Boolean
 import Data.Default
-import Control.Monad
 
 import qualified Csound.Dynamic as D
-import qualified Csound.Typed.GlobalState.Elements as C
 
 import Csound.Typed.Types
 import Csound.Typed.GlobalState

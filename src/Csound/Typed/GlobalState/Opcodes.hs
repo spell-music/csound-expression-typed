@@ -2,7 +2,7 @@ module Csound.Typed.GlobalState.Opcodes(
     sprintf,
     -- * channel opcodes
     ChnRef(..), chnRefFromParg, chnRefAlloc, readChn, writeChn, 
-    chnUpdateUdo,
+    chnUpdateUdo, masterUpdateChnAlive, servantUpdateChnAlive,
     -- * trigger an instrument
     Event(..), event, event_i, appendChn, subinstr, subinstr_, changed,
     -- * output
@@ -58,6 +58,21 @@ chnName :: Int -> E -> E
 chnName name chnId = sprintf formatString [chnId]
     where formatString = str $ 'p' : show name ++ "_" ++ "%d"
 
+masterUpdateChnAlive :: Monad m => ChnRef -> E -> DepT m ()
+masterUpdateChnAlive ref count = chnsetK count (chnAliveName $ chnRefId ref)    
+
+servantUpdateChnAlive :: Monad m => Int -> DepT m ()
+servantUpdateChnAlive pargId = do
+    let sName = chnAliveName (pn pargId) 
+    kAlive <- chngetK sName
+    when1 (kAlive <* 0) $ do
+        turnoff
+    chnsetK (kAlive - 1) sName
+
+chnAliveName :: E -> E
+chnAliveName chnId = sprintf formatString [chnId]
+    where formatString = str $ "alive" ++ "_" ++ "%d"
+
 sprintf :: E -> [E] -> E
 sprintf a as = opcs "sprintf" [(Sr, Sr:repeat Ir)] (a:as)
 
@@ -70,6 +85,12 @@ chnmix asig name = do
 
 chnget :: Monad m => E -> DepT m E
 chnget name = depT $ opcs "chnget" [(Ar, [Sr])] [name]
+
+chngetK :: Monad m => E -> DepT m E
+chngetK name = depT $ opcs "chnget" [(Kr, [Sr])] [name]
+
+chnsetK :: Monad m => E -> E -> DepT m ()
+chnsetK val name = depT_ $ opcsNoInlineArgs "chnset" [(Xr, [Kr, Sr])] [val, name]
 
 chnclear :: Monad m => E -> DepT m ()
 chnclear name = depT_ $ opcs "chnclear" [(Xr, [Sr])] [name]

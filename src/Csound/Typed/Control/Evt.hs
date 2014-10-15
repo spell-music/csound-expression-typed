@@ -17,6 +17,8 @@ import Csound.Typed.Types
 import Csound.Typed.GlobalState
 import Csound.Typed.Control.Instr
 
+import Csound.Typed.Control.SERef
+
 -------------------------------------------------
 -- triggereing the events
 
@@ -29,7 +31,7 @@ trigs instr evts = apInstr0 $ do
     key <- evtKey evts instr
     withCache InfiniteDur getEvtKey saveEvtKey key $ do
         cacheName <- liftIO $ C.makeCacheName instr
-        instrId <- saveSourceInstrCached cacheName (funArity instr) (insExp instr)
+        instrId <- saveSourceInstrCachedWithLivenessWatch cacheName (funArity instr) (insExp instr)
         saveEvtInstr (arityOuts $ funArity instr) instrId evts
 
 -- | A closure to trigger an instrument inside the body of another instrument.
@@ -38,21 +40,26 @@ trigsBy instr evts args = flip apInstr args $ do
     key <- evtKey evts instr
     withCache InfiniteDur getEvtKey saveEvtKey key $ do        
         cacheName <- liftIO $ C.makeCacheName instr
-        instrId <- saveSourceInstrCached cacheName (funArity instr) (insExp instr)
+        instrId <- saveSourceInstrCachedWithLivenessWatch cacheName (funArity instr) (insExp instr)
         saveEvtInstr (arityOuts $ funArity instr) instrId (evts toArg)  
 
 saveEvtInstr :: Arg a => Int -> C.InstrId -> Evt [(D, D, a)] -> GE C.InstrId
-saveEvtInstr arity instrId evts = saveInstr evtMixInstr
+saveEvtInstr arity instrId evts = saveInstr $ do
+    aliveCountRef <- newSERef (10 :: D)
+    evtMixInstr aliveCountRef
     where
-        evtMixInstr :: SE ()
-        evtMixInstr = do
+        evtMixInstr :: SERef D -> SE ()
+        evtMixInstr aliveCountRef = do
             chnId <- fromDep $ C.chnRefAlloc arity
-            go chnId evts
+            go aliveCountRef chnId evts
             fromDep_ $ hideGEinDep $ fmap (\chn -> C.sendOut arity =<< C.readChn chn) chnId 
+            aliveCount <- readSERef aliveCountRef
+            fromDep_ $ hideGEinDep $ liftA2 masterUpdateChnAlive chnId $ toGE aliveCount 
 
-        go :: Arg a => GE C.ChnRef -> Evt [(D, D, a)] -> SE ()
-        go mchnId events = 
+        go :: Arg a => SERef D -> GE C.ChnRef -> Evt [(D, D, a)] -> SE ()
+        go aliveCountRef mchnId events = 
             runEvt events $ \es -> do
+                writeSERef aliveCountRef $ int $ 2 * length es
                 chnId <- geToSe mchnId
                 fromDep_ $ mapM_ (event chnId) es
     
@@ -67,7 +74,7 @@ scheds instr evts = apInstr0 $ do
     key <- evtKey evts instr
     withCache InfiniteDur getEvtKey saveEvtKey key $ do
         cacheName <- liftIO $ C.makeCacheName instr
-        instrId <- saveSourceInstrCached cacheName (funArity instr) (insExp instr)
+        instrId <- saveSourceInstrCachedWithLivenessWatch cacheName (funArity instr) (insExp instr)
         saveEvtInstr (arityOuts $ funArity instr) instrId (fmap (fmap phi) evts)  
     where phi (a, b) = (0, a, b)
      
@@ -77,7 +84,7 @@ schedsBy instr evts args = flip apInstr args $ do
     key <- evtKey evts instr
     withCache InfiniteDur getEvtKey saveEvtKey key $ do
         cacheName <- liftIO $ C.makeCacheName instr
-        instrId <- saveSourceInstrCached cacheName (funArity instr) (insExp instr)
+        instrId <- saveSourceInstrCachedWithLivenessWatch cacheName (funArity instr) (insExp instr)
         saveEvtInstr (arityOuts $ funArity instr) instrId (fmap (fmap phi) $ evts toArg)  
     where phi (a, b) = (0, a, b)
 
@@ -90,7 +97,7 @@ schedHarps turnOffTime instr evts = apInstr0 $ do
     key <- evtKey evts instr
     withCache InfiniteDur getEvtKey saveEvtKey key $ do
         cacheName <- liftIO $ C.makeCacheName instr
-        instrId <- saveSourceInstrCached cacheName (funArity instr) (insExp $ (autoOff turnOffTime =<< ) . instr)
+        instrId <- saveSourceInstrCachedWithLivenessWatch cacheName (funArity instr) (insExp $ (autoOff turnOffTime =<< ) . instr)
         saveEvtInstr (arityOuts $ funArity instr) instrId (fmap (fmap phi) evts)
     where phi a = (0, -1, a)
 
@@ -100,7 +107,7 @@ schedHarpsBy turnOffTime instr evts args = flip apInstr args $ do
     key <- evtKey evts instr
     withCache InfiniteDur getEvtKey saveEvtKey key $ do
         cacheName <- liftIO $ C.makeCacheName instr
-        instrId <- saveSourceInstrCached cacheName (funArity instr) (insExp $ (autoOff turnOffTime =<< ) . instr)
+        instrId <- saveSourceInstrCachedWithLivenessWatch cacheName (funArity instr) (insExp $ (autoOff turnOffTime =<< ) . instr)
         saveEvtInstr (arityOuts $ funArity instr) instrId (fmap (fmap phi) $ evts toArg)
     where phi a = (0, -1, a)
 
