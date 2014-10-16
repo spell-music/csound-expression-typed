@@ -6,6 +6,7 @@ module Csound.Typed.Types.Prim(
     -- ** Tables
     preTab, TabSize(..), TabArgs(..), updateTabSize,
     fromPreTab, getPreTabUnsafe, skipNorm, forceNorm,
+    nsamp, ftlen, ftchnls, ftsr, ftcps,
 
     -- ** constructors
     double, int, text, 
@@ -427,4 +428,31 @@ untilEnd = fromDep_ D.untilEnd
 -- | Creates a constant boolean signal.
 boolSig :: BoolD -> BoolSig
 boolSig = fromGE . toGE
+
+
+----------------------------------------------
+
+-- | nsamp — Returns the number of samples loaded into a stored function table number.
+--
+-- > nsamp(x) (init-rate args only)
+--
+-- csound doc: <http://www.csounds.com/manual/html/nsamp.html>
+nsamp :: Tab -> D
+nsamp = on1 $ opr1 "nsamp"
+
+-- | Returns a length of the table.
+ftlen :: Tab -> D
+ftlen = on1 $ opr1 "ftlen"
+
+-- | Returns the number of channels for a table that stores wav files
+ftchnls :: Tab -> D
+ftchnls = on1 $ opr1 "ftchnls"
+
+-- | Returns the sample rate for a table that stores wav files
+ftsr :: Tab -> D
+ftsr = on1 $ opr1 "ftsr"
+
+-- | Returns the base frequency for a table that stores wav files
+ftcps :: Tab -> D
+ftcps = on1 $ opr1 "ftcps"
 
