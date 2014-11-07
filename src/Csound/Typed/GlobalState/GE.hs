@@ -117,7 +117,6 @@ renderMidiCtrl (MidiCtrl chno ctrlno val) = initc7 chno ctrlno val
         initc7 a b c = depT_ $ opcs "initc7" [(Xr, [Ir, Ir, Ir])] [a, b, c]
 
 data TotalDur = ExpDur E | NumDur Double | InfiniteDur
-    deriving (Eq, Ord)
 
 getTotalDurForTerminator :: GE E
 getTotalDurForTerminator = fmap (getTotalDurForTerminator' . totalDur) getHistory

@@ -196,10 +196,10 @@ data AllocVar = AllocVar
     { allocVarType     :: GlobalVarType 
     , allocVar         :: Var
     , allocVarInit     :: E 
-    } deriving (Show)
+    }
 
 data GlobalVarType = PersistentGlobalVar | ClearableGlobalVar
-    deriving (Eq, Show)
+    deriving (Eq)
 
 instance Default Globals where
     def = Globals def def

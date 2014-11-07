@@ -24,7 +24,7 @@ Source-repository head
 Library
   Ghc-Options:    -Wall
   Build-Depends:
-        base >= 4, base < 5, ghc-prim, containers, transformers >= 0.3, Boolean >= 0.1.0, colour >= 2.3, data-default,
+        base >= 4, base < 5, ghc-prim, containers, transformers >= 0.3, Boolean >= 0.1.0, colour >= 2.3, data-default, deepseq,
         wl-pprint, stable-maps >= 0.0.3.3, csound-expression-dynamic >= 0.0.7
   Hs-Source-Dirs:      src/
   Exposed-Modules:

@@ -6,12 +6,13 @@ module Csound.Typed.Gui.Widget(
     -- * Types
     Input, Output, Inner,
     noInput, noOutput, noInner,
-    Widget, widget, Source, source, Sink, sink, Display, display,
+    Widget, widget, Source, source, Sink, sink, Display, display, SinkSource, sinkSource,
 
     -- * Widgets
     count, countSig, joy, knob, roller, slider, sliderBank, numeric, meter, box,
     button, butBank, butBankSig, butBank1, butBankSig1, toggle, toggleSig,
     setNumeric, 
+    setToggle, setToggleSig,
     -- * Transformers
     setTitle,
     -- * Keyboard    
@@ -25,7 +26,7 @@ import Control.Monad.Trans.Class
 
 import Data.Boolean
 
-import Csound.Dynamic hiding (int)
+import Csound.Dynamic hiding (int, when1)
 import qualified Csound.Typed.GlobalState.Elements as C
 
 import Csound.Typed.Gui.Gui
@@ -123,6 +124,8 @@ type Sink   a = SE (Gui, Output a)
 -- | A producer of the values.
 type Source a = SE (Gui, Input a)
 
+type SinkSource a = SE (Gui, Output a, Input a)
+
 -- | A static element. We can only look at it.
 type Display  = SE Gui
 
@@ -153,6 +156,12 @@ sink x = fmap select $ widget $ fmap append x
     where 
         select (g, o, _, _) = (g, o)
         append (g, o) = (g, o, noInput, noInner)
+
+sinkSource :: SE (Gui, Output a, Input a) -> SinkSource a
+sinkSource x = fmap select $ widget $ fmap append x
+    where
+        select (g, o, i, _) = (g, o, i)
+        append (g, o, i) = (g, o, i, noInner)
 
 -- | A display constructor.
 display :: SE Gui -> Display 
@@ -188,6 +197,11 @@ setLabelSink a
     | null a    = id
     | otherwise = fmap (first $ setLabel a)
 
+setLabelSnkSource :: String -> SinkSource a -> SinkSource a
+setLabelSnkSource a 
+    | null a    = id
+    | otherwise = fmap (\(x, y, z) -> (setLabel a x, y, z)) 
+
 singleOut :: Maybe Double -> Elem -> Source Sig 
 singleOut v0 el = geToSe $ do
     (var, handle) <- newGuiVar
@@ -205,6 +219,15 @@ singleIn outs v0 el = geToSe $ do
         gui = fromElem [var, handleVar] inits el
     appendToGui (GuiNode gui handle) (unSE noInner)
     return (fromGuiHandle handle, outs handle)
+
+singleInOut :: (GuiHandle -> Output Sig) -> Maybe Double -> Elem -> SinkSource Sig
+singleInOut outs v0 el = geToSe $ do
+    (var, handle) <- newGuiVar
+    let handleVar = guiHandleToVar handle
+        inits = maybe [] (return . InitMe handleVar) v0
+        gui = fromElem [var, handleVar] inits el
+    appendToGui (GuiNode gui handle) (unSE noInner)
+    return (fromGuiHandle handle, outs handle, readSig var)
 
 -- | A variance on the function 'Csound.Gui.Widget.count', but it produces 
 -- a signal of piecewise constant function. 
@@ -385,6 +408,18 @@ meter :: String -> ValSpan -> Double -> Sink Sig
 meter name sp v = setLabelSink name $ singleIn setVal (Just v) (Slider sp)
 
 -------------------------------------------------------------
+-- writeable widgets
+
+setToggleSig :: String -> SinkSource Sig
+setToggleSig name = setLabelSnkSource name $ singleInOut setVal Nothing Toggle
+
+setToggle :: String -> SinkSource (Evt D)
+setToggle name = sinkSource $ do
+    (g, outs, ins) <- setToggleSig name
+    let evtOuts a = outs =<< stepper 0 (fmap sig a)
+    return (g, evtOuts, snaps ins)
+
+-------------------------------------------------------------
 -- keyboard
 
 -- | The stream of keyboard press/release events.
@@ -430,6 +465,7 @@ flPrintk2 val handle = SE $ (depT_ =<<) $ lift $ f <$> unSig val <*> unD handle
 changed :: [Sig] -> Sig
 changed = Sig . fmap f . mapM unSig
     where f = opcs "changed" [(Kr, repeat Kr)]
+
 
 
 

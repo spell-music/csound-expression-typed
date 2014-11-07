@@ -29,8 +29,8 @@ instance Monad SE where
     return = SE . return
     ma >>= mf = SE $ unSE ma >>= unSE . mf
 
-runSE :: SE a -> GE (a, LocalHistory)
-runSE = runDepT . unSE
+runSE :: SE a -> GE a
+runSE = fmap fst . runDepT . unSE
 
 execSE :: SE () -> GE InstrBody
 execSE a = execDepT $ unSE a
@@ -54,7 +54,7 @@ fromDep_ :: Dep () -> SE ()
 fromDep_ = SE
             
 evalSE :: SE a -> GE a
-evalSE = fmap fst . runSE
+evalSE = evalDepT . unSE
 
 geToSe :: GE a -> SE a
 geToSe = SE . lift
