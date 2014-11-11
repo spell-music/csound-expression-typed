@@ -7,6 +7,7 @@ module Csound.Typed.Gui.Widget(
     Input, Output, Inner,
     noInput, noOutput, noInner,
     Widget, widget, Source, source, Sink, sink, Display, display, SinkSource, sinkSource,
+    mapSource, mapGuiSource, mhor, mver, msca,
 
     -- * Widgets
     count, countSig, joy, knob, roller, slider, sliderBank, numeric, meter, box,
@@ -24,6 +25,7 @@ import Control.Arrow
 import Control.Monad
 import Control.Monad.Trans.Class
 
+import Data.Monoid
 import Data.Boolean
 
 import Csound.Dynamic hiding (int, when1)
@@ -129,9 +131,31 @@ type SinkSource a = SE (Gui, Output a, Input a)
 -- | A static element. We can only look at it.
 type Display  = SE Gui
 
+
 -- | A handy function for transforming the value of producers.
 mapSource :: (a -> b) -> Source a -> Source b
 mapSource f = fmap $ \(gui, ins) -> (gui, f ins) 
+
+-- | A handy function for transforming the GUIs of producers.
+mapGuiSource :: (Gui -> Gui) -> Source a -> Source a
+mapGuiSource f = fmap $ \(gui, ins) -> (f gui, ins) 
+
+mGroup :: Monoid a => ([Gui] -> Gui) -> [Source a] -> Source a
+mGroup guiGroup as = do
+    (gs, fs) <- fmap unzip $ sequence as    
+    return (guiGroup gs, mconcat fs)
+
+-- | Horizontal grouping of widgets that can produce monoidal values.
+mhor :: Monoid a => [Source a] -> Source a
+mhor = mGroup hor
+
+-- | Vertical grouping of widgets that can produce monoidal values.
+mver :: Monoid a => [Source a] -> Source a
+mver = mGroup ver
+
+-- | Scaling of widgets that can produce values.
+msca :: Double -> Source a -> Source a
+msca d = mapGuiSource (sca d)
 
 -- | A widget constructor.
 widget :: SE (Gui, Output a, Input b, Inner) -> Widget a b
@@ -354,13 +378,16 @@ button name = setLabelSource name $ source $ do
 -- > button text
 -- 
 -- doc: <http://www.csounds.com/manual/html/FLbutton.html>
-toggle :: String -> Source (Evt D)
-toggle name = mapSource snaps $ toggleSig name
-
+toggle :: String -> Bool -> Source (Evt D)
+toggle name initVal = mapSource snaps $ toggleSig name initVal
+    
 -- | A variance on the function 'Csound.Gui.Widget.toggle', but it produces 
 -- a signal of piecewise constant function. 
-toggleSig :: String -> Source Sig
-toggleSig name = setLabelSource name $ singleOut Nothing Toggle
+toggleSig :: String -> Bool -> Source Sig
+toggleSig name initVal = setLabelSource name $ singleOut (initToggle initVal) Toggle
+
+initToggle :: Bool -> Maybe Double
+initToggle a = if a then (Just 1) else Nothing
 
 -- | A FLTK widget opcode that creates a bank of buttons.
 -- Result is (x, y) coordinate of the triggered button.
@@ -410,12 +437,12 @@ meter name sp v = setLabelSink name $ singleIn setVal (Just v) (Slider sp)
 -------------------------------------------------------------
 -- writeable widgets
 
-setToggleSig :: String -> SinkSource Sig
-setToggleSig name = setLabelSnkSource name $ singleInOut setVal Nothing Toggle
+setToggleSig :: String -> Bool -> SinkSource Sig
+setToggleSig name initVal = setLabelSnkSource name $ singleInOut setVal (initToggle initVal) Toggle
 
-setToggle :: String -> SinkSource (Evt D)
-setToggle name = sinkSource $ do
-    (g, outs, ins) <- setToggleSig name
+setToggle :: String -> Bool -> SinkSource (Evt D)
+setToggle name initVal = sinkSource $ do
+    (g, outs, ins) <- setToggleSig name initVal
     let evtOuts a = outs =<< stepper 0 (fmap sig a)
     return (g, evtOuts, snaps ins)
 
