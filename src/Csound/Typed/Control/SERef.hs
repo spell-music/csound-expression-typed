@@ -32,9 +32,17 @@ readSERef (SERef vars) = SE $ fmap (toTuple . return) $ mapM readVar vars
 -- A reference can contain a tuple of variables.
 newSERef :: Tuple a => a -> SE (SERef a)
 newSERef t = fmap SERef $ newLocalVars (tupleRates t) (fromTuple t)    
-    {-let wr a = fromDep_ $ (zipWithM_ writeVar vars) =<< lift (fromTuple a))
-        re   = fmap toTuple $ fromDep $ mapM readVar vars
-    return (SERef wr re)-}
+   
+-- | Adds the given signal to the value that is contained in the
+-- reference.
+mixSERef :: (Num a, Tuple a) => SERef a -> a -> SE ()
+mixSERef ref asig = modifySERef ref (+ asig)
+
+-- | Modifies the SERef value with given function.
+modifySERef :: Tuple a => SERef a -> (a -> a) -> SE ()
+modifySERef ref f = do
+    v <- readSERef ref      
+    writeSERef ref (f v)
 
 -- | An alias for the function @newSERef@. It returns not the reference
 -- to mutable value but a pair of reader and writer functions.
@@ -47,12 +55,6 @@ sensorsSE a = do
 -- A reference can contain a tuple of variables.
 newGlobalSERef :: Tuple a => a -> SE (SERef a)
 newGlobalSERef t = fmap SERef $ newGlobalVars (tupleRates t) (fromTuple t)    
-{-
-    vars <- newGlobalVars (tupleRates t) (fromTuple t)
-    let wr a = fromDep_ $ (zipWithM_ writeVar vars) =<< lift (fromTuple a)
-        re   = fmap toTuple $ fromDep $ mapM readVar vars
-    return (SERef wr re)
-    -}
 
 -- | An alias for the function @newSERef@. It returns not the reference
 -- to mutable value but a pair of reader and writer functions.

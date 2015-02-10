@@ -9,32 +9,35 @@ module Csound.Typed.Control.Midi(
 import System.Mem.StableName
 
 import Control.Applicative
+import Control.Monad
 import Control.Monad.IO.Class
 import Csound.Typed.Types
 import Csound.Typed.GlobalState
 import Csound.Typed.Control.Instr
+import Csound.Typed.Control.SERef
 
 -- | Triggers a midi-instrument (aka Csound's massign) for all channels. 
 -- It's useful to test a single instrument.
-midi :: (Sigs a) => (Msg -> SE a) -> a
-midi = midin 0
+midi :: (Num a, Sigs a) => (Msg -> SE a) -> SE a
+midi = fromProcMidi midi_
 
 -- | Triggers a midi-instrument (aka Csound's massign) on the specified channel. 
-midin :: (Sigs a) => Channel -> (Msg -> SE a) -> a
-midin n f = genMidi Massign n f
+midin :: (Num a, Sigs a) => Channel -> (Msg -> SE a) -> SE a
+midin n = fromProcMidi (midin_ n)
 
 -- | Triggers a midi-instrument (aka Csound's pgmassign) on the specified programm bank. 
-pgmidi :: (Sigs a) => Maybe Int -> Channel -> (Msg -> SE a) -> a
-pgmidi mchn n f = genMidi (Pgmassign mchn) n f 
+pgmidi :: (Num a, Sigs a) => Maybe Int -> Channel -> (Msg -> SE a) -> SE a
+pgmidi mchn n = fromProcMidi (pgmidi_ mchn n)
 
-genMidi :: (Sigs a) => MidiType -> Channel -> (Msg -> SE a) -> a
-genMidi midiType chn instr = toTuple $ do    
-    key <- midiKey midiType chn instr
-    withCache InfiniteDur getMidiKey saveMidiKey key $
-        saveMidiInstr midiType chn (constArity $ instr Msg) (midiExp instr)
+fromProcMidi :: (Num a, Sigs a) => ((Msg -> SE ()) -> SE ()) -> (Msg -> SE a) -> SE a
+fromProcMidi procMidi f = do
+    ref <- newGlobalSERef 0
+    procMidi (mixSERef ref <=< f)
+    res <- readSERef ref
+    writeSERef ref 0
+    return res
 
 -----------------------------------------------------------------
---
 
 -- | Triggers a midi-procedure (aka Csound's massign) for all channels. 
 midi_ :: (Msg -> SE ()) -> SE ()
