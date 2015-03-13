@@ -49,6 +49,7 @@ import Csound.Dynamic(DepT, depT_, Var(..), VarType(..), Rate(..), noRate, MainE
 
 import qualified Csound.Typed.Gui.BoxModel as Box
 import Csound.Typed.Gui.BoxModel(Rect(..))
+import Csound.Typed.Constants(infiniteDur)
 
 newtype GuiHandle = GuiHandle { unGuiHandle :: Int }
 
@@ -570,7 +571,7 @@ drawElemDef ctx rectWithoutLabel el = case elemContent el of
             [getButtonBankType ctx, int xn, int yn] ++ frameWithoutLabel ++ [noOpc] 
 
         -- FLbutton's
-        drawButton instrId = f "FLbutton" $ [int 1, int 0, getButtonType ctx] ++ frameWithoutLabel ++ (onOpc instrId [0, -1])
+        drawButton instrId = f "FLbutton" $ [int 1, int 0, getButtonType ctx] ++ frameWithoutLabel ++ (onOpc instrId [0, infiniteDur])
         
         drawToggle = f "FLbutton" $ [int 1, int 0, getToggleType ctx] ++ frameWithoutLabel ++ [noOpc]
 

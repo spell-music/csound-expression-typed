@@ -67,3 +67,5 @@ Library
     Csound.Typed.Gui.Gui
     Csound.Typed.Gui.Widget
     Csound.Typed.Gui.BoxModel
+
+    Csound.Typed.Constants

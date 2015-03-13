@@ -10,7 +10,7 @@ import Csound.Typed.GlobalState.GE
 import Csound.Typed.GlobalState.SE
 import Csound.Typed.GlobalState.Options
 import Csound.Typed.GlobalState.Cache
-import Csound.Typed.GlobalState.Opcodes(turnoff2, exitnow, servantUpdateChnAlive)
+import Csound.Typed.GlobalState.Opcodes(turnoff2, exitnow, servantUpdateChnAlive, servantUpdateChnRetrig)
 import Csound.Typed.GlobalState.Elements(getInstrIds)
 
 data Arity = Arity
@@ -30,11 +30,27 @@ saveCachedInstr cacheName a = onInstr . C.saveCachedInstr cacheName =<< execSE a
 livenessWatch :: Arity -> SE ()
 livenessWatch arity = fromDep_ $ servantUpdateChnAlive (C.chnPargId $ arityIns arity)
 
+retrigWatch :: Arity -> SE ()
+retrigWatch arity = fromDep_ $ servantUpdateChnRetrig (C.chnPargId $ arityIns arity)
+
 saveSourceInstrCachedWithLivenessWatch :: C.CacheName -> Arity -> InsExp -> GE InstrId
 saveSourceInstrCachedWithLivenessWatch cacheName arity instr = saveCachedInstr cacheName $ do
     toOut =<< instr
     livenessWatch arity 
     where toOut = SE . C.sendChn (arityIns arity) (arityOuts arity)
+
+saveSourceInstrCachedWithLivenessWatchAndRetrig :: C.CacheName -> Arity -> InsExp -> GE InstrId
+saveSourceInstrCachedWithLivenessWatchAndRetrig cacheName arity instr = saveCachedInstr cacheName $ do
+    toOut =<< instr
+    livenessWatch arity
+    retrigWatch arity
+    where toOut = SE . C.sendChn (arityIns arity) (arityOuts arity)
+
+saveSourceInstrCachedWithLivenessWatchAndRetrigAndEvtLoop :: C.CacheName -> Arity -> InsExp -> UnitExp -> GE (InstrId, InstrId)
+saveSourceInstrCachedWithLivenessWatchAndRetrigAndEvtLoop cacheName arity instr evtInstr = do 
+    instrId <- saveSourceInstrCachedWithLivenessWatchAndRetrig cacheName arity instr
+    evtInstrId <- saveInstr evtInstr
+    return (instrId, evtInstrId)
 
 saveSourceInstrCached :: C.CacheName -> Arity -> InsExp -> GE InstrId
 saveSourceInstrCached cacheName arity instr = saveCachedInstr cacheName $ toOut =<< instr

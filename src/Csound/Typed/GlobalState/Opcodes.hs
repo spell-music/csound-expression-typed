@@ -2,9 +2,12 @@ module Csound.Typed.GlobalState.Opcodes(
     sprintf,
     -- * channel opcodes
     ChnRef(..), chnRefFromParg, chnRefAlloc, readChn, writeChn, 
+    readChnEvtLoop,
     chnUpdateUdo, masterUpdateChnAlive, servantUpdateChnAlive,
+    masterUpdateChnRetrig, servantUpdateChnRetrig,
+    servantUpdateChnEvtLoop,
     -- * trigger an instrument
-    Event(..), event, event_i, appendChn, subinstr, subinstr_, changed,
+    Event(..), event, event_i, appendChn, subinstr, subinstr_, changed, diff, delay1,
     -- * output
     out, outs, safeOut, autoOff, turnoff, turnoff2, exitnow,
     -- * vco2
@@ -61,6 +64,9 @@ chnName name chnId = sprintf formatString [chnId]
 masterUpdateChnAlive :: Monad m => ChnRef -> E -> DepT m ()
 masterUpdateChnAlive ref count = chnsetK count (chnAliveName $ chnRefId ref)    
 
+masterUpdateChnRetrig :: Monad m => ChnRef -> E -> DepT m ()
+masterUpdateChnRetrig ref count = chnsetK count (chnRetrigName $ chnRefId ref)    
+
 servantUpdateChnAlive :: Monad m => Int -> DepT m ()
 servantUpdateChnAlive pargId = do
     let sName = chnAliveName (pn pargId) 
@@ -69,9 +75,35 @@ servantUpdateChnAlive pargId = do
         turnoff
     chnsetK (kAlive - 1) sName
 
+servantUpdateChnRetrig :: Monad m => Int -> DepT m ()
+servantUpdateChnRetrig pargId = do
+    let sName = chnRetrigName (pn pargId) 
+    let retrigVal = pn $ pargId + 1
+    kRetrig <- chngetK sName
+    when1 (kRetrig /=* retrigVal) $ do
+        turnoff    
+
+servantUpdateChnEvtLoop :: Monad m => Int -> DepT m ()
+servantUpdateChnEvtLoop pargId = do
+    let sName = chnEvtLoopName (pn pargId) 
+    kEvtLoop <- chngetK sName
+    chnsetK (ifB (kEvtLoop ==* 0) 1 0) sName
+    turnoff
+
+readChnEvtLoop :: Monad m => ChnRef -> DepT m E
+readChnEvtLoop ref = chngetK $ chnEvtLoopName (chnRefId ref)
+
 chnAliveName :: E -> E
 chnAliveName chnId = sprintf formatString [chnId]
     where formatString = str $ "alive" ++ "_" ++ "%d"
+
+chnRetrigName :: E -> E
+chnRetrigName chnId = sprintf formatString [chnId]
+    where formatString = str $ "retrig" ++ "_" ++ "%d"
+
+chnEvtLoopName :: E -> E
+chnEvtLoopName chnId = sprintf formatString [chnId]
+    where formatString = str $ "evtLoop" ++ "_" ++ "%d"
 
 sprintf :: E -> [E] -> E
 sprintf a as = opcs "sprintf" [(Sr, Sr:repeat Ir)] (a:as)
@@ -143,6 +175,12 @@ subinstr_ instrId args = depT_ $ head $ ($ 1) $  mopcs "subinstr"
 
 changed :: E -> E
 changed x = opcs "changed" [(Kr, [Kr])] [x]
+
+diff :: E -> E
+diff x = opcs "diff" [(Kr, [Kr])] [x]
+
+delay1 :: E -> E
+delay1 x = opcs "delay1" [(Ar, [Ar])] [x]
 
 -- output
 

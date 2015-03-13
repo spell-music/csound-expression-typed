@@ -1,6 +1,6 @@
 {-# Language FlexibleContexts #-}
 module Csound.Typed.Control.Evt(
-    trigs, scheds, schedHarps, 
+    trigs, scheds, schedHarps, retrigs, evtLoop,
     trigsBy, schedsBy, schedHarpsBy,
     trigs_, scheds_,
 ) where
@@ -18,6 +18,7 @@ import Csound.Typed.GlobalState
 import Csound.Typed.Control.Instr
 
 import Csound.Typed.Control.SERef
+import Csound.Typed.Constants(infiniteDur)
 
 -------------------------------------------------
 -- triggereing the events
@@ -67,6 +68,105 @@ saveEvtInstr arity instrId evts = saveInstr $ do
         event chnId (start, dur, args) = hideGEinDep $ fmap C.event $ 
             C.Event instrId <$> toGE start <*> toGE dur <*> (fmap (++ [C.chnRefId chnId]) $ toNote args) 
             
+retrigs :: (Arg a, Sigs b) => (a -> SE b) -> Evt [a] -> b
+retrigs instr evts = apInstr0 $ do
+    key <- evtKey evts instr
+    withCache InfiniteDur getEvtKey saveEvtKey key $ do
+        cacheName <- liftIO $ C.makeCacheName instr
+        instrId <- saveSourceInstrCachedWithLivenessWatchAndRetrig cacheName (funArity instr) (insExp instr)
+        saveRetrigEvtInstr (arityOuts $ funArity instr) instrId evts
+   
+saveRetrigEvtInstr :: Arg a => Int -> C.InstrId -> Evt [a] -> GE C.InstrId
+saveRetrigEvtInstr arity instrId evts = saveInstr $ do
+    aliveCountRef  <- newSERef (10 :: D)
+    retrigWatchRef <- newSERef (0  :: D)
+    evtMixInstr aliveCountRef retrigWatchRef
+    where
+        evtMixInstr :: SERef D -> SERef D -> SE ()
+        evtMixInstr aliveCountRef retrigWatchRef = do
+            chnId <- fromDep $ C.chnRefAlloc arity
+            go aliveCountRef retrigWatchRef chnId evts
+            fromDep_ $ hideGEinDep $ fmap (\chn -> C.sendOut arity =<< C.readChn chn) chnId 
+            aliveCount <- readSERef aliveCountRef
+            fromDep_ $ hideGEinDep $ liftA2 masterUpdateChnAlive chnId $ toGE aliveCount                         
+
+        go :: Arg a => SERef D -> SERef D -> GE C.ChnRef -> Evt [a] -> SE ()
+        go aliveCountRef retrigWatchRef mchnId events = 
+            runEvt events $ \es -> do
+                writeSERef aliveCountRef $ int $ 2 * length es                
+                modifySERef retrigWatchRef (+ 1)
+                chnId <- geToSe mchnId
+                currentRetrig <- readSERef retrigWatchRef
+                fromDep_ $ hideGEinDep $ liftA2 masterUpdateChnRetrig mchnId $ toGE currentRetrig                                
+                fromDep_ $ mapM_ (event chnId currentRetrig) es
+    
+        event :: Arg a => C.ChnRef -> D -> a -> Dep ()
+        event chnId currentRetrig args = hideGEinDep $ fmap C.event $ do
+            currentRetrigExp <- toGE currentRetrig
+            C.Event instrId 0 infiniteDur <$> (fmap (++ [C.chnRefId chnId, currentRetrigExp]) $ toNote args) 
+
+evtLoop :: Sigs a => SE a -> Evt Unit -> a
+evtLoop instr evts = apInstr0 $ do
+    key <- evtKey evts instr
+    withCache InfiniteDur getEvtKey saveEvtKey key $ do
+        cacheName <- liftIO $ C.makeCacheName instr        
+        (instrId, evtInstrId) <- saveSourceInstrCachedWithLivenessWatchAndRetrigAndEvtLoop cacheName (constArity instr) (insExp $ toInstrExp instr) (evtLoopInstr evts)
+        saveEvtLoopInstr (arityOuts $ constArity instr) instrId evtInstrId
+    where 
+        toInstrExp :: a -> (Unit -> a)
+        toInstrExp = const
+
+evtLoopInstr :: Evt Unit -> SE ()
+evtLoopInstr evts = do
+    runEvt evts $ const $ fromDep_ $ servantUpdateChnEvtLoop (C.chnPargId $ 0)
+
+saveEvtLoopInstr :: Int -> C.InstrId -> C.InstrId -> GE C.InstrId
+saveEvtLoopInstr arity instrId evtInstrId = saveInstr $ do
+    aliveCountRef  <- newSERef (10 :: D)
+    retrigWatchRef <- newSERef (0  :: D)        
+    evtMixInstr aliveCountRef retrigWatchRef
+    where
+        evtMixInstr :: SERef D -> SERef D -> SE ()
+        evtMixInstr aliveCountRef retrigWatchRef = do
+            chnId <- fromDep $ C.chnRefAlloc arity
+            initStartInstrs chnId
+            masterEvt <- fmap (sigToEvt . fromGE . fmap C.changed . toGE) $ readServantEvt chnId
+            go aliveCountRef retrigWatchRef chnId masterEvt
+            fromDep_ $ hideGEinDep $ fmap (\chn -> C.sendOut arity =<< C.readChn chn) chnId 
+            aliveCount <- readSERef aliveCountRef
+            fromDep_ $ hideGEinDep $ liftA2 masterUpdateChnAlive chnId $ toGE aliveCount           
+
+        go :: SERef D -> SERef D -> GE C.ChnRef -> Evt Unit -> SE ()
+        go aliveCountRef retrigWatchRef mchnId events = 
+            runEvt events $ \es -> do
+                writeSERef aliveCountRef 2                
+                modifySERef retrigWatchRef (+ 1)
+                chnId <- geToSe mchnId
+                currentRetrig <- readSERef retrigWatchRef
+                fromDep_ $ hideGEinDep $ liftA2 masterUpdateChnRetrig mchnId $ toGE currentRetrig                                
+                fromDep_ $ event chnId currentRetrig
+                fromDep_ $ startEvtInstr chnId
+    
+        event :: C.ChnRef -> D -> Dep ()
+        event chnId currentRetrig = hideGEinDep $ fmap C.event $ do
+            currentRetrigExp <- toGE currentRetrig
+            return $ eventForAudioInstr chnId currentRetrigExp           
+
+        startEvtInstr chnId = C.event $ C.Event evtInstrId 0 infiniteDur [C.chnRefId chnId]
+
+        initStartInstrs mchnId = fromDep_ $ hideGEinDep $ do
+            chnId <- mchnId
+            return $ initStartEvtInstr   chnId >> initStartAudioInstr chnId
+
+        initStartEvtInstr   chnId = C.event_i $ eventForEvtInstr chnId
+        initStartAudioInstr chnId = C.event_i $ eventForAudioInstr chnId 0
+
+        eventForEvtInstr chnId = C.Event evtInstrId 0 infiniteDur [C.chnRefId chnId]
+        eventForAudioInstr chnId currentRetrig = 
+            C.Event instrId 0 infiniteDur [C.chnRefId chnId, currentRetrig] 
+
+        readServantEvt :: GE C.ChnRef -> SE Sig
+        readServantEvt chnId = SE $ fmap fromE $ hideGEinDep $ fmap readChnEvtLoop chnId
 
 -- | It's like the function @trigs@, but delay is set to zero.
 scheds :: (Arg a, Sigs b) => (a -> SE b) -> Evt [(D, a)] -> b
@@ -99,7 +199,7 @@ schedHarps turnOffTime instr evts = apInstr0 $ do
         cacheName <- liftIO $ C.makeCacheName instr
         instrId <- saveSourceInstrCachedWithLivenessWatch cacheName (funArity instr) (insExp $ (autoOff turnOffTime =<< ) . instr)
         saveEvtInstr (arityOuts $ funArity instr) instrId (fmap (fmap phi) evts)
-    where phi a = (0, -1, a)
+    where phi a = (0, infiniteDur, a)
 
 -- | A closure to trigger an instrument inside the body of another instrument.
 schedHarpsBy :: (Arg a, Sigs b, Arg c) => D -> (a -> SE b) -> (c -> Evt [a]) -> (c -> b)
@@ -109,7 +209,7 @@ schedHarpsBy turnOffTime instr evts args = flip apInstr args $ do
         cacheName <- liftIO $ C.makeCacheName instr
         instrId <- saveSourceInstrCachedWithLivenessWatch cacheName (funArity instr) (insExp $ (autoOff turnOffTime =<< ) . instr)
         saveEvtInstr (arityOuts $ funArity instr) instrId (fmap (fmap phi) $ evts toArg)
-    where phi a = (0, -1, a)
+    where phi a = (0, infiniteDur, a)
 
 autoOff :: Sigs a => D -> a -> SE a
 autoOff dt sigs = fmap toTuple $ fromDep $ hideGEinDep $ phi =<< fromTuple sigs
@@ -148,4 +248,14 @@ saveEvtInstr_ instrId evts = unSE $ runEvt evts $ \es -> fromDep_ $ mapM_ event 
 evtKey :: a -> b -> GE EvtKey
 evtKey a b = liftIO $ EvtKey <$> hash a <*> hash b
     where hash x = hashStableName <$> makeStableName x
+
+
+-------------------------------------------------------------------
+-- sample level triggering
+
+samNext :: (Sigs a) => Evt Unit -> a -> a -> a
+samNext = undefined
+
+samLoop :: (Sigs a) => Evt Unit -> a -> a
+samLoop = undefined
 

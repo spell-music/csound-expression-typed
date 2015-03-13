@@ -10,7 +10,7 @@ module Csound.Typed.GlobalState.GE(
     saveAlwaysOnInstr, onInstr, saveUserInstr0, getSysExpr,
     -- * Total duration
     TotalDur(..), pureGetTotalDurForF0, getTotalDurForTerminator, 
-    setDurationForce, setDuration, setDurationToInfinite,
+    setDurationForce, setDuration, setDurationToInfinite,    
     -- * Notes
     addNote,
     -- * GEN routines
@@ -48,6 +48,7 @@ import Csound.Dynamic
 import Csound.Typed.GlobalState.Options
 import Csound.Typed.GlobalState.Cache
 import Csound.Typed.GlobalState.Elements
+import Csound.Typed.Constants(infiniteDur)
 
 import Csound.Typed.Gui.Gui(Panel, GuiNode, GuiHandle(..), restoreTree, guiMap, mapGuiOnPanel)
 
@@ -135,9 +136,6 @@ getTotalDurForTerminator' = toExpr . maybe InfiniteDur id
             NumDur d    -> double d
             InfiniteDur -> infiniteDur
             ExpDur e    -> e            
-
-infiniteDur :: Num a => a
-infiniteDur = 7 * 24 * 60 * 60 -- a week        
 
 setDurationToInfinite :: GE ()
 setDurationToInfinite = setTotalDur InfiniteDur

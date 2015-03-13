@@ -30,6 +30,7 @@ import Data.Boolean
 
 import Csound.Dynamic hiding (int, when1)
 import qualified Csound.Typed.GlobalState.Elements as C
+import qualified Csound.Typed.GlobalState.Opcodes as C
 
 import Csound.Typed.Gui.Gui
 import Csound.Typed.GlobalState
@@ -360,18 +361,23 @@ rawBox label = geToSe $ do
 button :: String -> Source (Evt Unit)
 button name = setLabelSource name $ source $ do
     flag <- geToSe $ onGlobals $ C.newPersistentGlobalVar Kr 0
+    flagChanged <- geToSe $ onGlobals $ C.newPersistentGlobalVar Kr 0    
     instrId <- geToSe $ saveInstr $ instr flag
+    geToSe $ (saveAlwaysOnInstr =<< ) $ saveInstr $ instrCh flag flagChanged
     (g, _) <- singleOut Nothing (Button instrId)
-    val <- fmap fromGE $ fromDep $ readVar flag
-    return (g, sigToEvt $ changed [val])
+    val <- fmap fromGE $ fromDep $ readVar flagChanged
+    return (g, sigToEvt val)
     where
         instr ref = SE $ do
             val <- readVar ref
             whens 
                 [ (val ==* 0, writeVar ref 1)
-                ] (writeVar ref 0)
+                ] (writeVar ref 0)            
             turnoff
-        
+
+        instrCh ref refCh = SE $ do
+            val <- readVar ref
+            writeVar refCh (C.changed val)        
             
 -- | A FLTK widget opcode that creates a toggle button.
 --
