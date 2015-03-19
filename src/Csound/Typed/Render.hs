@@ -27,6 +27,7 @@ import Csound.Typed.Gui.Gui(guiStmt)
 toCsd :: Tuple a => Options -> SE a -> GE Csd
 toCsd options sigs = do   
     saveMasterInstr (constArity sigs) (masterExp sigs)
+    saveMidiMap  -- save midi innstruments
     renderHistory (outArity sigs) options
 
 renderOut_ :: SE () -> IO String
@@ -56,7 +57,7 @@ renderHistory nchnls opt = do
     expr2 <- getSysExpr terminatorInstrId 
     saveAlwaysOnInstr =<< saveInstr (SE expr2)
     expr3 <- guiInstrExp 
-    saveAlwaysOnInstr =<< saveInstr (SE expr3)
+    saveAlwaysOnInstr =<< saveInstr (SE expr3)    
     hist2 <- getHistory
     let orc = Orc instr0 (maybeAppend keyEventListener $ fmap (uncurry Instr) $ instrsContent $ instrs hist2)   
     hist3 <- getHistory 

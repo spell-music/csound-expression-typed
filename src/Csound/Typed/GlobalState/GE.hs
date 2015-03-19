@@ -4,7 +4,7 @@ module Csound.Typed.GlobalState.GE(
     -- * Globals
     onGlobals,
     -- * Midi
-    MidiAssign(..), Msg(..), renderMidiAssign, saveMidi,  
+    MidiAssign(..), Msg(..), renderMidiAssign, saveMidi, saveToMidiInstr, 
     MidiCtrl(..), saveMidiCtrl, renderMidiCtrl,
     -- * Instruments
     saveAlwaysOnInstr, onInstr, saveUserInstr0, getSysExpr,
@@ -84,6 +84,7 @@ data History = History
     { genMap            :: GenMap
     , stringMap         :: StringMap
     , sfMap             :: SfMap
+    , midiMap           :: MidiMap GE
     , globals           :: Globals
     , instrs            :: Instrs
     , midis             :: [MidiAssign]
@@ -97,7 +98,7 @@ data History = History
     , guis              :: Guis }
 
 instance Default History where
-    def = History def def def def def def def def def def (return ()) def def def
+    def = History def def def def def def def def def def def (return ()) def def def
 
 data Msg = Msg
 data MidiAssign = MidiAssign MidiType Channel InstrId
@@ -176,6 +177,10 @@ saveMidi :: MidiAssign -> GE ()
 saveMidi ma = onMidis $ modify (ma: )
     where onMidis = onHistory midis (\a h -> h { midis = a })
 
+saveToMidiInstr :: MidiType -> Channel -> Dep () -> GE ()
+saveToMidiInstr ty chn expr = onMidiMap (saveMidiInstr ty chn expr)
+    where onMidiMap = modifyHistoryField midiMap (\a h -> h { midiMap = a })
+
 saveMidiCtrl :: MidiCtrl -> GE ()
 saveMidiCtrl ma = onMidis $ modify (ma: )
     where onMidis = onHistory midiCtrls (\a h -> h { midiCtrls = a })
@@ -227,6 +232,9 @@ withHistory f = GE $ lift $ fmap f get
 
 modifyHistory :: (History -> History) -> GE ()
 modifyHistory = GE . lift . modify
+
+modifyHistoryField :: (History -> a) -> (a -> History -> History) -> (a -> a) -> GE ()
+modifyHistoryField getter setter f = modifyHistory (\h -> setter (f $ getter h) h)
 
 modifyWithHistory :: (History -> (a, History)) -> GE a
 modifyWithHistory f = GE $ lift $ state f

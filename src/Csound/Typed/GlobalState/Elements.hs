@@ -12,6 +12,8 @@ module Csound.Typed.GlobalState.Elements(
     readBandLimited, readBandLimitedConstCps,
     -- ** String arguments
     StringMap, newString,
+    -- * Midi
+    MidiType(..), Channel, MidiMap, MidiKey(..), saveMidiInstr,
     -- * Global variables
     Globals(..), newPersistentGlobalVar, newClearableGlobalVar, 
     renderGlobals,
@@ -185,7 +187,23 @@ readBandLimited n cps = oscilikt 1 cps (vco2ft cps (int n))
 
 readBandLimitedConstCps :: Int -> E -> E
 readBandLimitedConstCps n cps = oscili 1 cps (vco2ift cps (int n))
-   
+
+----------------------------------------------------------
+-- Midi
+
+type Channel = Int
+
+data MidiType = Massign | Pgmassign (Maybe Int)
+    deriving (Show, Eq, Ord)
+
+data MidiKey = MidiKey MidiType Channel
+    deriving (Show, Eq, Ord)
+
+type MidiMap m = M.Map MidiKey (DepT m ())
+
+saveMidiInstr :: Monad m => MidiType -> Channel -> DepT m () -> MidiMap m -> MidiMap m
+saveMidiInstr ty chn body = M.insertWith (flip (>>)) (MidiKey ty chn) body
+
 -- global variables
 
 data Globals = Globals

@@ -52,15 +52,7 @@ pgmidi_ :: Maybe Int -> Channel -> (Msg -> SE ()) -> SE ()
 pgmidi_ mchn = genMidi_ (Pgmassign mchn)
 
 genMidi_ :: MidiType -> Channel -> (Msg -> SE ()) -> SE ()
-genMidi_ midiType chn instr = fromDep_ $ hideGEinDep $ do
-    key <- midiKey midiType chn instr
-    withCache InfiniteDur getMidiProcKey saveMidiProcKey key $ 
-        saveMidiInstr_ midiType chn (unitExp $ fmap (const unit) $ instr Msg)
-
------------------------------------------------------------------
-
-midiKey :: MidiType -> Channel -> a -> GE MidiKey
-midiKey ty chn a = liftIO $ MidiKey ty chn . hashStableName <$> makeStableName a  
+genMidi_ midiType chn instr = geToSe $ saveToMidiInstr midiType chn (unSE $ instr Msg)
 
 -----------------------------------------------------------------
 -- midi ctrls

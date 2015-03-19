@@ -17,7 +17,9 @@ module Csound.Typed.GlobalState (
     servantUpdateChnRetrig,
     servantUpdateChnEvtLoop,
     SfFluid(..), SfSpec(..), renderSf, sfVar,
-    sfSetList
+    sfSetList,
+    -- * Midis
+    MidiType(..), Channel
 ) where
 
 import Csound.Typed.GlobalState.Options

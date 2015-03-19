@@ -1,6 +1,7 @@
 module Csound.Typed.GlobalState.Instr where
 
 import Control.Monad
+import Data.Map
 
 import Csound.Dynamic
 import qualified Csound.Typed.GlobalState.Elements as C
@@ -84,7 +85,7 @@ saveMasterInstr arity sigs = do
     gainLevel <- fmap defGain getOptions 
     saveAlwaysOnInstr =<< (saveInstr $ (SE . C.sendOut (arityOuts arity) . C.safeOut gainLevel) =<< sigs)
 
-saveMidiInstr :: MidiType -> Channel -> Arity -> InsExp -> GE [E]
+saveMidiInstr :: C.MidiType -> C.Channel -> Arity -> InsExp -> GE [E]
 saveMidiInstr midiType channel arity instr = do
     setDurationToInfinite
     vars <- onGlobals $ sequence $ replicate (arityOuts arity) (C.newClearableGlobalVar Ar 0)
@@ -93,11 +94,15 @@ saveMidiInstr midiType channel arity instr = do
     saveMidi $ MidiAssign midiType channel instrId
     return $ fmap readOnlyVar vars 
 
-saveMidiInstr_ :: MidiType -> Channel -> UnitExp -> GE (Dep ())
+saveMidiMap :: GE ()
+saveMidiMap = do
+    m <- fmap midiMap getHistory
+    mapM_ (\(C.MidiKey midiType channel, instrExpr) -> saveMidiInstr_ midiType channel (SE instrExpr)) $ toList m
+
+saveMidiInstr_ :: C.MidiType -> C.Channel -> UnitExp -> GE ()
 saveMidiInstr_ midiType channel instr = do
     instrId <- onInstr . C.saveInstr =<< execSE instr
-    saveMidi $ MidiAssign midiType channel instrId
-    return $ return ()
+    saveMidi $ MidiAssign midiType channel instrId   
 
 saveIns0 :: Int -> [Rate] -> SE [E] -> GE [E]
 saveIns0 arity rates as = do

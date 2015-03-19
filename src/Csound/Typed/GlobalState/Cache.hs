@@ -1,13 +1,5 @@
 module Csound.Typed.GlobalState.Cache(
-    Cache(..), HashKey,
-
-    -- * Midi
-    -- ** Functions
-    CacheMidi, MidiKey(..), Channel, MidiType(..),
-    saveMidiKey, getMidiKey,
-    -- ** Procedures
-    CacheMidiProc, 
-    saveMidiProcKey, getMidiProcKey,
+    Cache(..), HashKey,    
     -- * Mix
     -- ** Functions
     CacheMix, MixKey(..),
@@ -30,15 +22,13 @@ import Data.Default
 import Csound.Dynamic
 
 data Cache m = Cache 
-    { cacheMidi     :: CacheMidi 
-    , cacheMidiProc :: CacheMidiProc m
-    , cacheMix      :: CacheMix
+    { cacheMix      :: CacheMix
     , cacheMixProc  :: CacheMixProc m
     , cacheEvt      :: CacheEvt
     , cacheEvtProc  :: CacheEvtProc m }
 
 instance Default (Cache m) where
-    def = Cache def def def def def def
+    def = Cache def def def def
 
 type HashKey = Int
 
@@ -50,37 +40,6 @@ getKeyMap f key x = M.lookup key $ f x
 
 saveKeyMap :: (Ord key) => (Cache m -> M.Map key val) -> (M.Map key val -> Cache m -> Cache m) -> SaveKey m key val
 saveKeyMap getter setter key val cache = setter (M.insert key val $ getter cache) cache
-
-----------------------------------------------------------
--- Midi
-
-type Channel = Int
-
-data MidiType = Massign | Pgmassign (Maybe Int)
-    deriving (Eq, Ord)
-
-data MidiKey = MidiKey MidiType Channel HashKey
-    deriving (Eq, Ord)
-
--- Midi functions
-
-type CacheMidi = M.Map MidiKey [E]
-
-getMidiKey :: GetKey m MidiKey [E]
-getMidiKey = getKeyMap cacheMidi
-
-saveMidiKey :: SaveKey m MidiKey [E]
-saveMidiKey = saveKeyMap cacheMidi (\a x -> x { cacheMidi = a })
-
--- Midi procedures
-
-type CacheMidiProc m = M.Map MidiKey (DepT m ())
-
-getMidiProcKey :: GetKey m MidiKey (DepT m ())
-getMidiProcKey = getKeyMap cacheMidiProc
-
-saveMidiProcKey :: SaveKey m MidiKey (DepT m ())
-saveMidiProcKey = saveKeyMap cacheMidiProc (\a x -> x { cacheMidiProc = a })
 
 ----------------------------------------------------------
 -- Mix
