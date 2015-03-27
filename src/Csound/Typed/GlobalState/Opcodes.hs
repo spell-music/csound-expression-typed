@@ -5,7 +5,7 @@ module Csound.Typed.GlobalState.Opcodes(
     readChnEvtLoop,
     chnUpdateUdo, masterUpdateChnAlive, servantUpdateChnAlive,
     masterUpdateChnRetrig, servantUpdateChnRetrig,
-    servantUpdateChnEvtLoop,
+    servantUpdateChnEvtLoop, getRetrigVal,
     -- * trigger an instrument
     Event(..), event, event_i, appendChn, subinstr, subinstr_, changed, diff, delay1,
     -- * output
@@ -71,9 +71,12 @@ servantUpdateChnAlive :: Monad m => Int -> DepT m ()
 servantUpdateChnAlive pargId = do
     let sName = chnAliveName (pn pargId) 
     kAlive <- chngetK sName
-    when1 (kAlive <* 0) $ do
+    when1 (kAlive <* -10) $ do
         turnoff
     chnsetK (kAlive - 1) sName
+
+getRetrigVal :: Int -> E
+getRetrigVal pargId = pn $ pargId + 1
 
 servantUpdateChnRetrig :: Monad m => Int -> DepT m ()
 servantUpdateChnRetrig pargId = do

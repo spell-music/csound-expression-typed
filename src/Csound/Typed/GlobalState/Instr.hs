@@ -43,16 +43,18 @@ saveSourceInstrCachedWithLivenessWatch cacheName arity instr = saveCachedInstr c
 saveSourceInstrCachedWithLivenessWatchAndRetrig :: C.CacheName -> Arity -> InsExp -> GE InstrId
 saveSourceInstrCachedWithLivenessWatchAndRetrig cacheName arity instr = saveCachedInstr cacheName $ do
     toOut =<< instr
-    livenessWatch arity
     retrigWatch arity
+    livenessWatch arity    
     where toOut = SE . C.sendChn (arityIns arity) (arityOuts arity)
 
 saveSourceInstrCachedWithLivenessWatchAndRetrigAndEvtLoop :: C.CacheName -> Arity -> InsExp -> UnitExp -> GE (InstrId, InstrId)
 saveSourceInstrCachedWithLivenessWatchAndRetrigAndEvtLoop cacheName arity instr evtInstr = do 
     instrId <- saveSourceInstrCachedWithLivenessWatchAndRetrig cacheName arity instr
-    evtInstrId <- saveInstr evtInstr
+    evtInstrId <- saveInstr (evtInstr >> retrigWatch evtInstrArity >> livenessWatch evtInstrArity)
     return (instrId, evtInstrId)
-
+    where 
+        evtInstrArity = Arity 0 0
+        
 saveSourceInstrCached :: C.CacheName -> Arity -> InsExp -> GE InstrId
 saveSourceInstrCached cacheName arity instr = saveCachedInstr cacheName $ toOut =<< instr
     where toOut = SE . C.sendChn (arityIns arity) (arityOuts arity)

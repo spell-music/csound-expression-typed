@@ -16,6 +16,7 @@ module Csound.Typed.GlobalState (
     masterUpdateChnRetrig,
     servantUpdateChnRetrig,
     servantUpdateChnEvtLoop,
+    getRetrigVal,
     SfFluid(..), SfSpec(..), renderSf, sfVar,
     sfSetList,
     -- * Midis

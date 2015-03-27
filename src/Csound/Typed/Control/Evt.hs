@@ -1,13 +1,16 @@
 {-# Language FlexibleContexts #-}
 module Csound.Typed.Control.Evt(
-    trigs, scheds, schedHarps, retrigs, evtLoop,
+    trigs, scheds, schedHarps, retrigs, evtLoop, evtLoopOnce,
     trigsBy, schedsBy, schedHarpsBy,
     trigs_, scheds_,
 ) where
 
 import System.Mem.StableName
 
+import Data.Boolean
+
 import Control.Applicative
+import Control.Monad
 import Control.Monad.IO.Class
 
 import qualified Csound.Dynamic as C
@@ -105,23 +108,48 @@ saveRetrigEvtInstr arity instrId evts = saveInstr $ do
             currentRetrigExp <- toGE currentRetrig
             C.Event instrId 0 infiniteDur <$> (fmap (++ [C.chnRefId chnId, currentRetrigExp]) $ toNote args) 
 
-evtLoop :: Sigs a => SE a -> Evt Unit -> a
-evtLoop instr evts = apInstr0 $ do
+evtLoop :: (Num a, Tuple a, Sigs a) => Maybe (Evt Unit) -> [SE a] -> [Evt Unit] -> a
+evtLoop = evtLoopGen True
+
+evtLoopOnce :: (Num a, Tuple a, Sigs a) => Maybe (Evt Unit) -> [SE a] -> [Evt Unit] -> a
+evtLoopOnce = evtLoopGen False
+
+evtLoopGen :: (Num a, Tuple a, Sigs a) => Bool -> Maybe (Evt Unit) -> [SE a] -> [Evt Unit] -> a
+evtLoopGen mustLoop maybeOffEvt instrs evts = apInstr0 $ do
     key <- evtKey evts instr
     withCache InfiniteDur getEvtKey saveEvtKey key $ do
         cacheName <- liftIO $ C.makeCacheName instr        
-        (instrId, evtInstrId) <- saveSourceInstrCachedWithLivenessWatchAndRetrigAndEvtLoop cacheName (constArity instr) (insExp $ toInstrExp instr) (evtLoopInstr evts)
-        saveEvtLoopInstr (arityOuts $ constArity instr) instrId evtInstrId
-    where 
+        (instrId, evtInstrId) <- saveSourceInstrCachedWithLivenessWatchAndRetrigAndEvtLoop cacheName (constArity instr) (insExp $ toInstrExp instr) (toSingleEvt evts)
+        saveEvtLoopInstr mustLoop loopLength maybeOffEvt (arityOuts $ constArity instr) instrId evtInstrId
+    where         
+        loopLength = int $ lcm (length instrs) (length evts)
+        instr = toSingleInstr instrs
+
         toInstrExp :: a -> (Unit -> a)
         toInstrExp = const
+
+        toSingleInstr :: (Num a, Tuple a) => [SE a] -> SE a
+        toSingleInstr as = do
+            let n = mod' (fromE $ getRetrigVal 4) (sig $ int $ length as)
+            ref <- newSERef 0
+            zipWithM_ (f ref n) (fmap (sig . int) [0 .. ]) as
+            readSERef ref
+            where 
+                f ref n ix a = when1 (n ==* ix) $ writeSERef ref =<< a
+
+        toSingleEvt :: [Evt Unit] -> SE ()
+        toSingleEvt evts = do
+            let n = mod' (fromE $ getRetrigVal 4) (sig $ int $ length evts)
+            zipWithM_ (f n) (fmap (sig . int) [0 .. ]) evts
+            where 
+                f n ix evt = when1 (n ==* ix) $ evtLoopInstr evt
 
 evtLoopInstr :: Evt Unit -> SE ()
 evtLoopInstr evts = do
     runEvt evts $ const $ fromDep_ $ servantUpdateChnEvtLoop (C.chnPargId $ 0)
 
-saveEvtLoopInstr :: Int -> C.InstrId -> C.InstrId -> GE C.InstrId
-saveEvtLoopInstr arity instrId evtInstrId = saveInstr $ do
+saveEvtLoopInstr :: Bool -> D -> Maybe (Evt Unit) -> Int -> C.InstrId -> C.InstrId -> GE C.InstrId
+saveEvtLoopInstr mustLoop loopLength maybeOffEvt arity instrId evtInstrId = saveInstr $ do
     aliveCountRef  <- newSERef (10 :: D)
     retrigWatchRef <- newSERef (0  :: D)        
     evtMixInstr aliveCountRef retrigWatchRef
@@ -130,40 +158,64 @@ saveEvtLoopInstr arity instrId evtInstrId = saveInstr $ do
         evtMixInstr aliveCountRef retrigWatchRef = do
             chnId <- fromDep $ C.chnRefAlloc arity
             initStartInstrs chnId
-            masterEvt <- fmap (sigToEvt . fromGE . fmap C.changed . toGE) $ readServantEvt chnId
+            isOn <- fmap sig $ case maybeOffEvt of
+                Nothing     -> return 1
+                Just offEvt -> do
+                    isOn <- newSERef (1 :: D)                    
+                    runEvt offEvt $ const $ do
+                        writeSERef isOn 0
+                        modifySERef retrigWatchRef (+ 1)
+                        currentRetrig <- readSERef retrigWatchRef
+                        fromDep_ $ hideGEinDep $ liftA2 masterUpdateChnRetrig chnId $ toGE currentRetrig                        
+                    readSERef isOn         
+
+            masterEvt <- fmap (sigToEvt . (* isOn) . fromGE . fmap C.changed . toGE) $ readServantEvt chnId
             go aliveCountRef retrigWatchRef chnId masterEvt
             fromDep_ $ hideGEinDep $ fmap (\chn -> C.sendOut arity =<< C.readChn chn) chnId 
             aliveCount <- readSERef aliveCountRef
-            fromDep_ $ hideGEinDep $ liftA2 masterUpdateChnAlive chnId $ toGE aliveCount           
+            fromDep_ $ hideGEinDep $ liftA2 masterUpdateChnAlive chnId $ toGE aliveCount    
 
-        go :: SERef D -> SERef D -> GE C.ChnRef -> Evt Unit -> SE ()
-        go aliveCountRef retrigWatchRef mchnId events = 
-            runEvt events $ \es -> do
-                writeSERef aliveCountRef 2                
-                modifySERef retrigWatchRef (+ 1)
+        go = goBy (+ 1)   
+
+        goBy :: (D -> D) -> SERef D -> SERef D -> GE C.ChnRef -> Evt Unit -> SE ()
+        goBy updateRetrig aliveCountRef retrigWatchRef mchnId events = 
+            runEvt events $ \es -> do                
+                modifySERef retrigWatchRef updateRetrig
                 chnId <- geToSe mchnId
                 currentRetrig <- readSERef retrigWatchRef
+                if not mustLoop 
+                    then do
+                        when1 (sig currentRetrig >=* (sig loopLength)) $ do
+                            fromDep_ turnoff
+                    else return ()
                 fromDep_ $ hideGEinDep $ liftA2 masterUpdateChnRetrig mchnId $ toGE currentRetrig                                
-                fromDep_ $ event chnId currentRetrig
-                fromDep_ $ startEvtInstr chnId
-    
-        event :: C.ChnRef -> D -> Dep ()
-        event chnId currentRetrig = hideGEinDep $ fmap C.event $ do
-            currentRetrigExp <- toGE currentRetrig
-            return $ eventForAudioInstr chnId currentRetrigExp           
+                audioEvent chnId currentRetrig
+                evtEvent chnId currentRetrig  
 
-        startEvtInstr chnId = C.event $ C.Event evtInstrId 0 infiniteDur [C.chnRefId chnId]
+
+
+        fireEventFor :: (C.ChnRef -> E -> C.Event) -> C.ChnRef -> D -> SE ()
+        fireEventFor f chnId currentRetrig = fromDep_ $ hideGEinDep $ fmap C.event $ do
+            currentRetrigExp <- toGE currentRetrig
+            return $ f chnId currentRetrigExp           
+
+        audioEvent = fireEventFor eventForAudioInstr
+        evtEvent   = fireEventFor eventForEvtInstr
+
+        startEvtInstr chnId currentRetrig = C.event $ eventForEvtInstr chnId currentRetrig
 
         initStartInstrs mchnId = fromDep_ $ hideGEinDep $ do
             chnId <- mchnId
             return $ initStartEvtInstr   chnId >> initStartAudioInstr chnId
 
-        initStartEvtInstr   chnId = C.event_i $ eventForEvtInstr chnId
+        initStartEvtInstr   chnId = C.event_i $ eventForEvtInstr chnId 0 
         initStartAudioInstr chnId = C.event_i $ eventForAudioInstr chnId 0
 
-        eventForEvtInstr chnId = C.Event evtInstrId 0 infiniteDur [C.chnRefId chnId]
-        eventForAudioInstr chnId currentRetrig = 
-            C.Event instrId 0 infiniteDur [C.chnRefId chnId, currentRetrig] 
+        eventForEvtInstr   = eventFor evtInstrId
+        eventForAudioInstr = eventFor instrId
+
+        eventFor idx chnId currentRetrig = 
+            C.Event idx 0 infiniteDur [C.chnRefId chnId, currentRetrig] 
 
         readServantEvt :: GE C.ChnRef -> SE Sig
         readServantEvt chnId = SE $ fmap fromE $ hideGEinDep $ fmap readChnEvtLoop chnId
