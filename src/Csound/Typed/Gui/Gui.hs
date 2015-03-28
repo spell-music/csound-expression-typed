@@ -2,6 +2,7 @@ module Csound.Typed.Gui.Gui (
     Panel(..), Win(..), GuiNode(..), GuiHandle(..), Gui(..),
     Elem(..), InitMe(..),
     restoreTree, guiMap, mapGuiOnPanel, fromElem, fromGuiHandle,
+    panelIsKeybdSensitive, defText,
     guiStmt,
 
     -- * Layout
@@ -222,6 +223,11 @@ data Panel
         , tabsContent   :: [Win]
         , tabsIsKeybdSensitive :: Bool }
 
+panelIsKeybdSensitive :: Panel -> Bool
+panelIsKeybdSensitive x = case x of
+    Single _ res -> res
+    Tabs _ _ _ res -> res
+
 data Win = Win 
     { winTitle :: String 
     , winRect  :: Maybe Rect
@@ -237,6 +243,9 @@ data ElemWithOuts = ElemWithOuts
     , elemContent   :: Elem }
 
 type ElemOuts = [Var]
+
+defText :: String -> Gui
+defText str = Gui $ Box.Prim (ElemWithOuts [Var LocalVar Ir "keybd"] [] $ Box str)
 
 fromElem :: ElemOuts -> [InitMe] -> Elem -> Gui
 fromElem outs inits el = Gui $ Box.prim (ElemWithOuts outs inits el)

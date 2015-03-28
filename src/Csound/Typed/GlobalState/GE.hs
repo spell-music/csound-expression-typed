@@ -24,10 +24,10 @@ module Csound.Typed.GlobalState.GE(
     -- * Cache
     GetCache, SetCache, withCache,
     -- * Guis
-    newGuiHandle, saveGuiRoot, appendToGui, 
+    newGuiHandle, saveGuiRoot, saveDefKeybdPanel, appendToGui, 
     newGuiVar, getPanels, guiHandleToVar,
     guiInstrExp,
-    listenKeyEvt, Key(..), KeyEvt(..),
+    listenKeyEvt, Key(..), KeyEvt(..), Guis(..),
     getKeyEventListener
 ) where
 
@@ -50,7 +50,7 @@ import Csound.Typed.GlobalState.Cache
 import Csound.Typed.GlobalState.Elements
 import Csound.Typed.Constants(infiniteDur)
 
-import Csound.Typed.Gui.Gui(Panel, GuiNode, GuiHandle(..), restoreTree, guiMap, mapGuiOnPanel)
+import Csound.Typed.Gui.Gui(Panel(..), Win(..), GuiNode, GuiHandle(..), restoreTree, guiMap, mapGuiOnPanel, defText)
 
 type Dep a = DepT GE a
 
@@ -320,6 +320,12 @@ appendToGui gui act = modifyGuis $ \st -> st
 saveGuiRoot :: Panel -> GE ()
 saveGuiRoot g = modifyGuis $ \st -> 
     st { guiStateRoots = g : guiStateRoots st }
+
+saveDefKeybdPanel :: GE ()
+saveDefKeybdPanel = saveGuiRoot $ Single (Win "" Nothing g) isKeybd
+    where 
+        g = defText "keyboard listener"
+        isKeybd = True
 
 bumpGuiStateId :: Guis -> (Int, Guis)
 bumpGuiStateId s = (guiStateNewId s, s{ guiStateNewId = succ $ guiStateNewId s })

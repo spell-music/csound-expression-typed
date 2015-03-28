@@ -13,6 +13,7 @@ import Data.Maybe
 import Data.Tuple
 import Data.Ord
 import Data.List(sortBy, groupBy)
+import qualified Data.IntMap as IM
 
 import Csound.Dynamic hiding (csdFlags)
 import Csound.Typed.Types
@@ -22,13 +23,24 @@ import Csound.Typed.Control.Instr
 import Csound.Typed.Control(getIns)
 import Csound.Dynamic.Types.Flags
 
-import Csound.Typed.Gui.Gui(guiStmt)
+import Csound.Typed.Gui.Gui(guiStmt, panelIsKeybdSensitive)
+
 
 toCsd :: Tuple a => Options -> SE a -> GE Csd
 toCsd options sigs = do   
     saveMasterInstr (constArity sigs) (masterExp sigs)
     saveMidiMap  -- save midi innstruments
+    handleMissingKeyPannel
     renderHistory (outArity sigs) options
+
+handleMissingKeyPannel :: GE ()
+handleMissingKeyPannel = do
+    st <- fmap guis $ getHistory
+    if (not $ IM.null $ guiKeyEvents st) && (null $ filter panelIsKeybdSensitive $ guiStateRoots st)
+        then do
+            saveDefKeybdPanel
+        else do
+            return ()
 
 renderOut_ :: SE () -> IO String
 renderOut_ = renderOutBy_ def 

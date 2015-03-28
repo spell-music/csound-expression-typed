@@ -141,13 +141,14 @@ ar1 = id;   ar2 = id;   ar4 = id;   ar6 = id;   ar8 = id
 -- out instances
 
 -- | The tuples of signals.
-class (Tuple a) => Sigs a where
+class (Tuple a, Num a) => Sigs a where
 
 instance Sigs Sig
 instance Sigs (Sig, Sig)
 instance Sigs (Sig, Sig, Sig, Sig)
 instance Sigs (Sig, Sig, Sig, Sig, Sig, Sig)
 instance Sigs (Sig, Sig, Sig, Sig, Sig, Sig, Sig, Sig)
+{-
 instance Sigs ( (Sig, Sig, Sig, Sig, Sig, Sig, Sig, Sig)
               , (Sig, Sig, Sig, Sig, Sig, Sig, Sig, Sig) )
 
@@ -155,7 +156,7 @@ instance Sigs ( (Sig, Sig, Sig, Sig, Sig, Sig, Sig, Sig)
               , (Sig, Sig, Sig, Sig, Sig, Sig, Sig, Sig)
               , (Sig, Sig, Sig, Sig, Sig, Sig, Sig, Sig)
               , (Sig, Sig, Sig, Sig, Sig, Sig, Sig, Sig) )
-
+-}
 outArity :: Tuple a => SE a -> Int
 outArity = tupleArity . proxy
     where

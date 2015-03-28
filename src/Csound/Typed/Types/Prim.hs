@@ -1,4 +1,4 @@
-{-# Language TypeFamilies #-}
+{-# Language TypeFamilies, FlexibleInstances #-}
 module Csound.Typed.Types.Prim(
     Sig(..), D(..), Tab(..), unTab, Str(..), Spec(..), Wspec(..), 
     BoolSig(..), BoolD(..), Unit(..), unit, Val(..), hideGE, SigOrD,
@@ -456,3 +456,50 @@ ftsr = on1 $ opr1 "ftsr"
 ftcps :: Tab -> D
 ftcps = on1 $ opr1 "ftcps"
 
+-------------------------------------------------
+-- numeric instances
+
+instance Num (Sig, Sig) where
+    (a1, a2) + (b1, b2) = (a1 + b1, a2 + b2)
+    (a1, a2) * (b1, b2) = (a1 * b1, a2 * b2)
+    negate (a1, a2) = (negate a1, negate a2)
+
+    fromInteger n = (fromInteger n, fromInteger n)
+    signum (a1, a2) = (signum a1, signum a2)
+    abs (a1, a2) = (abs a1, abs a2)
+
+instance Num (Sig, Sig, Sig) where
+    (a1, a2, a3) + (b1, b2, b3) = (a1 + b1, a2 + b2, a3 + b3)
+    (a1, a2, a3) * (b1, b2, b3) = (a1 * b1, a2 * b2, a3 * b3)
+    negate (a1, a2, a3) = (negate a1, negate a2, negate a3)
+
+    fromInteger n = (fromInteger n, fromInteger n, fromInteger n)
+    signum (a1, a2, a3) = (signum a1, signum a2, signum a3)
+    abs (a1, a2, a3) = (abs a1, abs a2, abs a3)
+
+instance Num (Sig, Sig, Sig, Sig) where
+    (a1, a2, a3, a4) + (b1, b2, b3, b4) = (a1 + b1, a2 + b2, a3 + b3, a4 + b4)
+    (a1, a2, a3, a4) * (b1, b2, b3, b4) = (a1 * b1, a2 * b2, a3 * b3, a4 * b4)
+    negate (a1, a2, a3, a4) = (negate a1, negate a2, negate a3, negate a4)
+
+    fromInteger n = (fromInteger n, fromInteger n, fromInteger n, fromInteger n)
+    signum (a1, a2, a3, a4) = (signum a1, signum a2, signum a3, signum a4)
+    abs (a1, a2, a3, a4) = (abs a1, abs a2, abs a3, abs a4)
+
+instance Num (Sig, Sig, Sig, Sig, Sig, Sig) where
+    (a1, a2, a3, a4, a5, a6) + (b1, b2, b3, b4, b5, b6) = (a1 + b1, a2 + b2, a3 + b3, a4 + b4, a5 + b5, a6 + b6)
+    (a1, a2, a3, a4, a5, a6) * (b1, b2, b3, b4, b5, b6) = (a1 * b1, a2 * b2, a3 * b3, a4 * b4, a5 * b5, a6 * b6)
+    negate (a1, a2, a3, a4, a5, a6) = (negate a1, negate a2, negate a3, negate a4, negate a5, negate a6)
+
+    fromInteger n = (fromInteger n, fromInteger n, fromInteger n, fromInteger n, fromInteger n, fromInteger n)
+    signum (a1, a2, a3, a4, a5, a6) = (signum a1, signum a2, signum a3, signum a4, signum a5, signum a6)
+    abs (a1, a2, a3, a4, a5, a6) = (abs a1, abs a2, abs a3, abs a4, abs a5, abs a6)
+
+instance Num (Sig, Sig, Sig, Sig, Sig, Sig, Sig, Sig) where
+    (a1, a2, a3, a4, a5, a6, a7, a8) + (b1, b2, b3, b4, b5, b6, b7, b8) = (a1 + b1, a2 + b2, a3 + b3, a4 + b4, a5 + b5, a6 + b6, a7 + b7, a8 + b8)
+    (a1, a2, a3, a4, a5, a6, a7, a8) * (b1, b2, b3, b4, b5, b6, b7, b8) = (a1 * b1, a2 * b2, a3 * b3, a4 * b4, a5 * b5, a6 * b6, a7 + b7, a8 + b8)
+    negate (a1, a2, a3, a4, a5, a6, a7, a8) = (negate a1, negate a2, negate a3, negate a4, negate a5, negate a6, negate a7, negate a8)
+
+    fromInteger n = (fromInteger n, fromInteger n, fromInteger n, fromInteger n, fromInteger n, fromInteger n, fromInteger n, fromInteger n)
+    signum (a1, a2, a3, a4, a5, a6, a7, a8) = (signum a1, signum a2, signum a3, signum a4, signum a5, signum a6, signum a7, signum a8)
+    abs (a1, a2, a3, a4, a5, a6, a7, a8) = (abs a1, abs a2, abs a3, abs a4, abs a5, abs a6, abs a7, abs a8)
