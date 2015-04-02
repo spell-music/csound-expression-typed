@@ -26,12 +26,12 @@ import Csound.Dynamic.Types.Flags
 import Csound.Typed.Gui.Gui(guiStmt, panelIsKeybdSensitive)
 
 
-toCsd :: Tuple a => Options -> SE a -> GE Csd
-toCsd options sigs = do   
+toCsd :: Tuple a => Maybe Int -> Options -> SE a -> GE Csd
+toCsd mnchnls_i options sigs = do   
     saveMasterInstr (constArity sigs) (masterExp sigs)
     saveMidiMap  -- save midi innstruments
     handleMissingKeyPannel
-    renderHistory (outArity sigs) options
+    renderHistory mnchnls_i (outArity sigs) options
 
 handleMissingKeyPannel :: GE ()
 handleMissingKeyPannel = do
@@ -46,25 +46,25 @@ renderOut_ :: SE () -> IO String
 renderOut_ = renderOutBy_ def 
 
 renderOutBy_ :: Options -> SE () -> IO String
-renderOutBy_ options sigs = evalGE options $ fmap renderCsd $ toCsd options (fmap (const unit) sigs)
+renderOutBy_ options sigs = evalGE options $ fmap renderCsd $ toCsd Nothing options (fmap (const unit) sigs)
 
 renderOut :: Sigs a => SE a -> IO String
 renderOut = renderOutBy def
 
 renderOutBy :: Sigs a => Options -> SE a -> IO String
-renderOutBy options sigs = evalGE options $ fmap renderCsd $ toCsd options sigs
+renderOutBy options sigs = evalGE options $ fmap renderCsd $ toCsd Nothing options sigs
 
 renderEff :: (Sigs a, Sigs b) => (a -> SE b) -> IO String
 renderEff = renderEffBy def
 
 renderEffBy :: (Sigs a, Sigs b) => Options -> (a -> SE b) -> IO String
-renderEffBy options eff = renderOutBy options $ eff =<< getIns
+renderEffBy options eff = evalGE options $ fmap renderCsd $ toCsd (Just (arityIns $ funArity eff)) options (eff =<< getIns)
 
-renderHistory :: Int -> Options -> GE Csd
-renderHistory nchnls opt = do
+renderHistory :: Maybe Int -> Int -> Options -> GE Csd
+renderHistory mnchnls_i nchnls opt = do
     keyEventListener <- getKeyEventListener
     hist1 <- getHistory
-    instr0 <- execDepT $ getInstr0 nchnls opt hist1    
+    instr0 <- execDepT $ getInstr0 mnchnls_i nchnls opt hist1    
     terminatorInstrId <- saveInstr =<< terminatorInstr
     expr2 <- getSysExpr terminatorInstrId 
     saveAlwaysOnInstr =<< saveInstr (SE expr2)
@@ -83,8 +83,8 @@ renderHistory nchnls opt = do
         maybeAppend ma = maybe id (:) ma 
         getNoteEvents = fmap $ \(instrId, evt) -> (instrId, [evt])
 
-getInstr0 :: Int -> Options -> History -> Dep ()
-getInstr0 nchnls opt hist = do
+getInstr0 :: Maybe Int -> Int -> Options -> History -> Dep ()
+getInstr0 mnchnls_i nchnls opt hist = do
     globalConstants
     midiAssigns
     midiInitCtrls
@@ -98,9 +98,10 @@ getInstr0 nchnls opt hist = do
         globalConstants = do
             setSr       $ defSampleRate opt
             setKsmps    $ defBlockSize opt
-            setNchnls   (max 1 nchnls)
+            setNchnls   (max 1 nchnls)            
             setZeroDbfs 1
-
+            maybe (return ()) setNchnls_i mnchnls_i 
+            
         midiAssigns   = mapM_ renderMidiAssign $ midis hist
         midiInitCtrls = mapM_ renderMidiCtrl   $ midiCtrls hist
 
