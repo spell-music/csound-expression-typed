@@ -36,8 +36,8 @@ import qualified Data.IntMap as IM
 import Data.Default
 import Data.Boolean
 
-import Csound.Dynamic hiding (double, int, str, when1, whens, ifBegin, ifEnd, elseBegin, elseIfBegin, untilBegin, untilEnd, untilDo)
-import qualified Csound.Dynamic as D(double, int, str, ifBegin, ifEnd, elseBegin, elseIfBegin, untilBegin, untilEnd)
+import Csound.Dynamic hiding (double, int, str, when1, whens, ifBegin, ifEnd, elseBegin, untilBegin, untilEnd, untilDo)
+import qualified Csound.Dynamic as D(double, int, str, ifBegin, ifEnd, elseBegin, untilBegin, untilEnd)
 import Csound.Typed.GlobalState
 
 -- | Signals
@@ -395,8 +395,8 @@ whens bodies el = case bodies of
         elseIfs as
         elseBegin 
         el
-        ifEnd
-    where elseIfs = mapM_ (\(p, body) -> elseIfBegin p >> body)
+        foldl1 (>>) $ replicate (1 + length bodies) ifEnd
+    where elseIfs = mapM_ (\(p, body) -> elseBegin >> ifBegin p >> body)
 
 ifBegin :: BoolSig -> SE ()
 ifBegin a = fromDep_ $ D.ifBegin =<< lift (toGE a)
@@ -407,8 +407,8 @@ ifEnd = fromDep_ D.ifEnd
 elseBegin :: SE ()
 elseBegin = fromDep_ D.elseBegin
 
-elseIfBegin :: BoolSig -> SE ()
-elseIfBegin a = fromDep_ $ D.elseIfBegin =<< lift (toGE a)
+-- elseIfBegin :: BoolSig -> SE ()
+-- elseIfBegin a = fromDep_ $ D.elseIfBegin =<< lift (toGE a)
 
 untilDo :: BoolSig -> SE () -> SE ()
 untilDo p body = do

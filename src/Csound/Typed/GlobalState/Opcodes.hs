@@ -160,7 +160,7 @@ event_i :: Monad m => Event -> DepT m ()
 event_i = eventBy "event_i" Ir
 
 eventBy :: Monad m => String -> Rate -> Event -> DepT m ()
-eventBy name rate a = depT_ $ opcs name [(Xr, repeat rate)] 
+eventBy name rate a = depT_ $ opcs name [(Xr, Sr : repeat rate)] 
     (str "i" : (prim (PrimInstrId $ eventInstrId a)) : (eventStart a) : (eventDur a) : (eventArgs a))
 
 appendChn :: E -> Event -> Event
