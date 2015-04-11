@@ -183,12 +183,12 @@ defineTabArgs size args = case args of
 
           getGen16 xs = case xs of
             _:durN:_:rest    -> durN : getGen16 rest
-            _                -> xs
+            _                -> []
 
           substGen16 durs xs = case (durs, xs) of 
             ([], as) -> as
             (_, [])  -> []
-            (d:ds, valN:_:typeN:rest)   -> valN : d : (typeN * d) : substGen16 ds rest
+            (d:ds, valN:_:typeN:rest)   -> valN : d : typeN : substGen16 ds rest
             (_, _)   -> xs
 
 -- | Skips normalization (sets table size to negative value)
