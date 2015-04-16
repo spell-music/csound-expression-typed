@@ -14,7 +14,7 @@ module Csound.Typed.GlobalState.GE(
     -- * Notes
     addNote,
     -- * GEN routines
-    saveGen,
+    saveGen, getNextGlobalGenId,
     -- * Sf2
     saveSf, sfTable,
     -- * Band-limited waves
@@ -82,6 +82,7 @@ instance MonadIO GE where
     
 data History = History
     { genMap            :: GenMap
+    , globalGenCounter  :: Int
     , stringMap         :: StringMap
     , sfMap             :: SfMap
     , midiMap           :: MidiMap GE
@@ -98,7 +99,7 @@ data History = History
     , guis              :: Guis }
 
 instance Default History where
-    def = History def def def def def def def def def def def (return ()) def def def
+    def = History def def def def def def def def def def def def (return ()) def def def
 
 data Msg = Msg
 data MidiAssign = MidiAssign MidiType Channel InstrId
@@ -150,6 +151,9 @@ setDurationForce = setTotalDur . ExpDur
 saveStr :: String -> GE E
 saveStr = fmap prim . onStringMap . newString
     where onStringMap = onHistory stringMap (\val h -> h{ stringMap = val })
+
+getNextGlobalGenId :: GE Int
+getNextGlobalGenId = onHistory globalGenCounter (\a h -> h{ globalGenCounter = a }) nextGlobalGenCounter
 
 saveGen :: Gen -> GE E
 saveGen = onGenMap . newGen

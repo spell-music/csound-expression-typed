@@ -3,7 +3,7 @@ module Csound.Typed.GlobalState.Elements(
     -- * Identifiers
     IdMap(..), saveId, newIdMapId,
     -- ** Gens
-    GenMap, newGen, newGenId,
+    GenMap, newGen, newGenId, nextGlobalGenCounter,
     -- Sf2
     SfFluid(..), SfSpec(..), SfMap, newSf, sfVar, renderSf,
     -- ** Band-limited waveforms
@@ -82,6 +82,11 @@ type StringMap = IdMap String
 
 newString :: String -> State StringMap Prim
 newString = fmap PrimInt . saveId
+
+-- gen counter
+
+nextGlobalGenCounter :: State Int Int
+nextGlobalGenCounter = state $ \s -> (s, s + 1)
 
 -- sf
 

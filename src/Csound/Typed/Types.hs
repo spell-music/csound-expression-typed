@@ -10,7 +10,10 @@ module Csound.Typed.Types(
     -- * Tuples
     module Csound.Typed.Types.Tuple,        
     -- * Events
-    module Csound.Typed.Types.Evt
+    module Csound.Typed.Types.Evt,
+
+    -- * Tab helpers
+    getNextGlobalGenId
 ) where
 
 import qualified Csound.Dynamic as D
@@ -20,7 +23,12 @@ import Csound.Typed.Types.Tuple
 import Csound.Typed.Types.Evt
 import Csound.Typed.Types.Lift
 
-import Csound.Typed.GlobalState(evalSE, SE)
+import Csound.Typed.GlobalState(evalSE, SE, geToSe)
+
+import qualified Csound.Typed.GlobalState as G(getNextGlobalGenId)
+
+getNextGlobalGenId :: SE Int
+getNextGlobalGenId = geToSe G.getNextGlobalGenId
 
 -- appends inits
 
