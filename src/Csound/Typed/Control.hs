@@ -5,6 +5,8 @@ module Csound.Typed.Control (
     module Csound.Typed.Control.SERef,
     -- * Global settings
     instr0, getIns, setDur,
+    -- * Misc
+    freshId,
     -- * Score
     module Csound.Typed.Control.Mix,
     -- * Midi
@@ -22,7 +24,6 @@ module Csound.Typed.Control (
 ) where
 
 import Csound.Typed.GlobalState.SE
-
 import Csound.Typed.Control.SERef
 
 import Csound.Typed.Control.Evt
@@ -64,3 +65,7 @@ setDur mdt as = toTuple $ do
     setDurationForce dt
     return vals
 
+
+-- | Gets new id.
+freshId :: SE D
+freshId = SE $ fmap fromE freeChn 

@@ -1,7 +1,7 @@
 module Csound.Typed.GlobalState.Opcodes(
     sprintf,
-    -- * channel opcodes
-    ChnRef(..), chnRefFromParg, chnRefAlloc, readChn, writeChn, 
+    -- * channel opcodes    
+    ChnRef(..), chnRefFromParg, chnRefAlloc, readChn, writeChn, freeChn,
     readChnEvtLoop,
     chnUpdateUdo, masterUpdateChnAlive, servantUpdateChnAlive,
     masterUpdateChnRetrig, servantUpdateChnRetrig,

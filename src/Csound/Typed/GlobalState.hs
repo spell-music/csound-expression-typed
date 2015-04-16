@@ -3,13 +3,13 @@ module Csound.Typed.GlobalState (
     module Csound.Typed.GlobalState.GE,
     module Csound.Typed.GlobalState.SE,
     module Csound.Typed.GlobalState.Instr,
-    module Csound.Typed.GlobalState.Cache,
-    -- * Reexports dynamic
+    module Csound.Typed.GlobalState.Cache,    
+    -- * Reexports dynamic    
     BandLimited(..), readBandLimited, renderBandLimited,
     Instrs(..), IdMap(..), getInstrIds,
-    getIn, chnUpdateUdo, renderGlobals, turnoff, turnoff2, exitnow,
+    getIn, chnUpdateUdo, renderGlobals, turnoff, turnoff2, exitnow, 
     oscListen, oscInit, oscSend,
-    chnSet, chnGet, 
+    chnSet, chnGet, freeChn,
     readChnEvtLoop,
     masterUpdateChnAlive,
     servantUpdateChnAlive,

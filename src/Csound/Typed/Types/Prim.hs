@@ -395,7 +395,7 @@ whens bodies el = case bodies of
         elseIfs as
         elseBegin 
         el
-        foldl1 (>>) $ replicate (1 + length bodies) ifEnd
+        foldl1 (>>) $ replicate (length bodies) ifEnd
     where elseIfs = mapM_ (\(p, body) -> elseBegin >> ifBegin p >> body)
 
 ifBegin :: BoolSig -> SE ()
