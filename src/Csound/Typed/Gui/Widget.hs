@@ -482,11 +482,11 @@ printk2 handle val = flPrintk2 val =<< refHandle handle
 -- set gui value
 
 flSetVal :: Sig -> Sig -> D -> SE ()
-flSetVal trig val handle = SE $ (depT_ =<<) $ lift $ f <$> unSig trig <*> unSig val <*> unD handle
+flSetVal trig val handle = SE $ (depT_ =<<) $ lift $ f <$> toGE trig <*> toGE val <*> toGE handle
     where f a b c = opcs "FLsetVal" [(Xr, [Kr, Kr, Ir])] [a, b, c]
 
 flPrintk2 :: Sig -> D -> SE ()
-flPrintk2 val handle = SE $ (depT_ =<<) $ lift $ f <$> unSig val <*> unD handle
+flPrintk2 val handle = SE $ (depT_ =<<) $ lift $ f <$> toGE val <*> toGE handle
     where f a b = opcs "FLprintk2" [(Xr, [Kr, Ir])] [a, b]
 
 -- | This opcode outputs a trigger signal that informs when any one of its k-rate 
@@ -496,7 +496,7 @@ flPrintk2 val handle = SE $ (depT_ =<<) $ lift $ f <$> unSig val <*> unD handle
 --
 -- doc: <http://www.csounds.com/manual/html/changed.html>
 changed :: [Sig] -> Sig
-changed = Sig . fmap f . mapM unSig
+changed = Sig . fmap f . mapM toGE
     where f = opcs "changed" [(Kr, repeat Kr)]
 
 

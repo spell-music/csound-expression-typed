@@ -7,6 +7,7 @@ import Csound.Dynamic
 import qualified Csound.Typed.GlobalState.Elements as C
 
 import Csound.Typed.Types.MixSco
+import Csound.Typed.Types.Prim
 import Csound.Typed.GlobalState.GE
 import Csound.Typed.GlobalState.SE
 import Csound.Typed.GlobalState.Options
@@ -74,12 +75,12 @@ saveEffectInstr arity eff = saveInstr $ setOuts =<< eff =<< getIns
 
 saveMixInstr :: Int -> CsdEventList M -> GE InstrId
 saveMixInstr arity a = do
-    setDuration $ csdEventListDur a
+    setDuration =<< toGE (csdEventListDur a)
     saveInstr $ SE $ C.sendOut arity =<< renderMixSco arity a
 
 saveMixInstr_ :: CsdEventList M -> GE (DepT GE ())
 saveMixInstr_ a = do
-    setDuration $ csdEventListDur a
+    setDuration =<< toGE (csdEventListDur a)
     return $ renderMixSco_ a
 
 saveMasterInstr :: Arity -> InsExp -> GE ()

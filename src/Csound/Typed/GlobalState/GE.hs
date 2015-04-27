@@ -92,7 +92,7 @@ data History = History
     , midiCtrls         :: [MidiCtrl]
     , totalDur          :: Maybe TotalDur
     , alwaysOnInstrs    :: [InstrId]
-    , notes             :: [(InstrId, CsdEvent Note)]
+    , notes             :: [(InstrId, CsdEvent)]
     , userInstr0        :: Dep ()
     , bandLimitedMap    :: BandLimitedMap
     , cache             :: Cache GE
@@ -119,7 +119,7 @@ renderMidiCtrl (MidiCtrl chno ctrlno val) = initc7 chno ctrlno val
         initc7 :: Monad m => E -> E -> E -> DepT m ()
         initc7 a b c = depT_ $ opcs "initc7" [(Xr, [Ir, Ir, Ir])] [a, b, c]
 
-data TotalDur = ExpDur E | NumDur Double | InfiniteDur
+data TotalDur = ExpDur E | InfiniteDur
 
 getTotalDurForTerminator :: GE E
 getTotalDurForTerminator = fmap (getTotalDurForTerminator' . totalDur) getHistory
@@ -127,23 +127,21 @@ getTotalDurForTerminator = fmap (getTotalDurForTerminator' . totalDur) getHistor
 pureGetTotalDurForF0 :: Maybe TotalDur -> Double
 pureGetTotalDurForF0 = toDouble . maybe InfiniteDur id  
     where
-        toDouble x = case x of
-            NumDur d    -> d
+        toDouble x = case x of            
             _           -> infiniteDur
  
 getTotalDurForTerminator' :: Maybe TotalDur -> E
 getTotalDurForTerminator' = toExpr . maybe InfiniteDur id
     where
-        toExpr x = case x of
-            NumDur d    -> double d
+        toExpr x = case x of            
             InfiniteDur -> infiniteDur
             ExpDur e    -> e            
 
 setDurationToInfinite :: GE ()
 setDurationToInfinite = setTotalDur InfiniteDur
 
-setDuration :: Double -> GE ()
-setDuration = setTotalDur . NumDur
+setDuration :: E -> GE ()
+setDuration = setTotalDur . ExpDur
 
 setDurationForce :: E -> GE ()
 setDurationForce = setTotalDur . ExpDur 
@@ -205,7 +203,7 @@ saveAlwaysOnInstr :: InstrId -> GE ()
 saveAlwaysOnInstr instrId = onAlwaysOnInstrs $ modify (instrId : )
     where onAlwaysOnInstrs = onHistory alwaysOnInstrs (\a h -> h { alwaysOnInstrs = a })
 
-addNote :: InstrId -> CsdEvent Note -> GE ()
+addNote :: InstrId -> CsdEvent -> GE ()
 addNote instrId evt = modifyHistory $ \h -> h { notes = (instrId, evt) : notes h }
 
 

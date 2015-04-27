@@ -1,8 +1,7 @@
 {-# Language FlexibleContexts #-}
 module Csound.Typed.Control.Evt(
-    trigs, scheds, schedHarps, retrigs, evtLoop, evtLoopOnce,
-    trigsBy, schedsBy, schedHarpsBy,
-    trigs_, scheds_,
+    sched, sched_, schedBy, schedHarp, schedHarpBy,
+    retrigs, evtLoop, evtLoopOnce    
 ) where
 
 import System.Mem.StableName
@@ -13,15 +12,49 @@ import Control.Applicative
 import Control.Monad
 import Control.Monad.IO.Class
 
+import qualified Temporal.Media as T(render, Event(..))
+
 import qualified Csound.Dynamic as C
 import qualified Csound.Typed.GlobalState.Elements as C
 
 import Csound.Typed.Types
 import Csound.Typed.GlobalState
 import Csound.Typed.Control.Instr
+import Csound.Typed.Control.Mix(Sco)
 
 import Csound.Typed.Control.SERef
 import Csound.Typed.Constants(infiniteDur)
+
+renderEvts :: Evt (Sco a) -> Evt [(D, D, a)]
+renderEvts = fmap (fmap unEvt . T.render)
+    where unEvt e = (T.eventStart e, T.eventDur e, T.eventContent e)
+
+sched :: (Arg a, Sigs b) => (a -> SE b) -> Evt (Sco a) -> b
+sched instr evts = apInstr0 $ do
+    key <- evtKey evts instr
+    withCache InfiniteDur getEvtKey saveEvtKey key $ do
+        cacheName <- liftIO $ C.makeCacheName instr
+        instrId <- saveSourceInstrCachedWithLivenessWatch cacheName (funArity instr) (insExp instr)
+        saveEvtInstr (arityOuts $ funArity instr) instrId (renderEvts evts)
+    where unEvt e = (T.eventStart e, T.eventDur e, T.eventContent e)
+
+-- | Triggers a procedure on the event stream.
+sched_ :: (Arg a) => (a -> SE ()) -> Evt (Sco a) -> SE ()
+sched_ instr evts = fromDep_ $ hideGEinDep $ do
+    key <- evtKey evts instr
+    withCache InfiniteDur getEvtProcKey saveEvtProcKey key $ do
+        cacheName <- liftIO $ C.makeCacheName instr
+        instrId <- saveSourceInstrCached_ cacheName (unitExp $ fmap (const unit) $ instr toArg)
+        return $ saveEvtInstr_ instrId (renderEvts evts)
+
+-- | A closure to trigger an instrument inside the body of another instrument.
+schedBy :: (Arg a, Sigs b, Arg c) => (a -> SE b) -> (c -> Evt (Sco a)) -> (c -> b)
+schedBy instr evts args = flip apInstr args $ do
+    key <- evtKey evts instr
+    withCache InfiniteDur getEvtKey saveEvtKey key $ do        
+        cacheName <- liftIO $ C.makeCacheName instr
+        instrId <- saveSourceInstrCachedWithLivenessWatch cacheName (funArity instr) (insExp instr)
+        saveEvtInstr (arityOuts $ funArity instr) instrId (renderEvts $ evts toArg)  
 
 -------------------------------------------------
 -- triggereing the events
@@ -244,8 +277,8 @@ schedsBy instr evts args = flip apInstr args $ do
 -- (event fires immediately) and duration is set to inifinite time. The note is 
 -- held while the instrument is producing something. If the instrument is silent
 -- for some seconds (specified in the first argument) then it's turned off.
-schedHarps :: (Arg a, Sigs b) => D -> (a -> SE b) -> Evt [a] -> b
-schedHarps turnOffTime instr evts = apInstr0 $ do
+schedHarp :: (Arg a, Sigs b) => D -> (a -> SE b) -> Evt [a] -> b
+schedHarp turnOffTime instr evts = apInstr0 $ do
     key <- evtKey evts instr
     withCache InfiniteDur getEvtKey saveEvtKey key $ do
         cacheName <- liftIO $ C.makeCacheName instr
@@ -254,8 +287,8 @@ schedHarps turnOffTime instr evts = apInstr0 $ do
     where phi a = (0, infiniteDur, a)
 
 -- | A closure to trigger an instrument inside the body of another instrument.
-schedHarpsBy :: (Arg a, Sigs b, Arg c) => D -> (a -> SE b) -> (c -> Evt [a]) -> (c -> b)
-schedHarpsBy turnOffTime instr evts args = flip apInstr args $ do
+schedHarpBy :: (Arg a, Sigs b, Arg c) => D -> (a -> SE b) -> (c -> Evt [a]) -> (c -> b)
+schedHarpBy turnOffTime instr evts args = flip apInstr args $ do
     key <- evtKey evts instr
     withCache InfiniteDur getEvtKey saveEvtKey key $ do
         cacheName <- liftIO $ C.makeCacheName instr
