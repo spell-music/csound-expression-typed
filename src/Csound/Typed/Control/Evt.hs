@@ -59,27 +59,6 @@ schedBy instr evts args = flip apInstr args $ do
 -------------------------------------------------
 -- triggereing the events
 
--- | Triggers an instrument with an event stream. The event stream
--- contains triples:
---
--- > (delay_after_event_is_fired, duration_of_the_event, argument_for_the_instrument)
-trigs :: (Arg a, Sigs b) => (a -> SE b) -> Evt [(D, D, a)] -> b
-trigs instr evts = apInstr0 $ do
-    key <- evtKey evts instr
-    withCache InfiniteDur getEvtKey saveEvtKey key $ do
-        cacheName <- liftIO $ C.makeCacheName instr
-        instrId <- saveSourceInstrCachedWithLivenessWatch cacheName (funArity instr) (insExp instr)
-        saveEvtInstr (arityOuts $ funArity instr) instrId evts
-
--- | A closure to trigger an instrument inside the body of another instrument.
-trigsBy :: (Arg a, Sigs b, Arg c) => (a -> SE b) -> (c -> Evt [(D, D, a)]) -> (c -> b)
-trigsBy instr evts args = flip apInstr args $ do
-    key <- evtKey evts instr
-    withCache InfiniteDur getEvtKey saveEvtKey key $ do        
-        cacheName <- liftIO $ C.makeCacheName instr
-        instrId <- saveSourceInstrCachedWithLivenessWatch cacheName (funArity instr) (insExp instr)
-        saveEvtInstr (arityOuts $ funArity instr) instrId (evts toArg)  
-
 saveEvtInstr :: Arg a => Int -> C.InstrId -> Evt [(D, D, a)] -> GE C.InstrId
 saveEvtInstr arity instrId evts = saveInstr $ do
     aliveCountRef <- newSERef (10 :: D)
@@ -253,25 +232,6 @@ saveEvtLoopInstr mustLoop loopLength maybeOffEvt arity instrId evtInstrId = save
         readServantEvt :: GE C.ChnRef -> SE Sig
         readServantEvt chnId = SE $ fmap fromE $ hideGEinDep $ fmap readChnEvtLoop chnId
 
--- | It's like the function @trigs@, but delay is set to zero.
-scheds :: (Arg a, Sigs b) => (a -> SE b) -> Evt [(D, a)] -> b
-scheds instr evts = apInstr0 $ do
-    key <- evtKey evts instr
-    withCache InfiniteDur getEvtKey saveEvtKey key $ do
-        cacheName <- liftIO $ C.makeCacheName instr
-        instrId <- saveSourceInstrCachedWithLivenessWatch cacheName (funArity instr) (insExp instr)
-        saveEvtInstr (arityOuts $ funArity instr) instrId (fmap (fmap phi) evts)  
-    where phi (a, b) = (0, a, b)
-     
--- | A closure to trigger an instrument inside the body of another instrument.
-schedsBy :: (Arg a, Sigs b, Arg c) => (a -> SE b) -> (c -> Evt [(D, a)]) -> (c -> b)
-schedsBy instr evts args = flip apInstr args $ do
-    key <- evtKey evts instr
-    withCache InfiniteDur getEvtKey saveEvtKey key $ do
-        cacheName <- liftIO $ C.makeCacheName instr
-        instrId <- saveSourceInstrCachedWithLivenessWatch cacheName (funArity instr) (insExp instr)
-        saveEvtInstr (arityOuts $ funArity instr) instrId (fmap (fmap phi) $ evts toArg)  
-    where phi (a, b) = (0, a, b)
 
 -- | An instrument is triggered with event stream and delay time is set to zero 
 -- (event fires immediately) and duration is set to inifinite time. The note is 
@@ -303,26 +263,6 @@ autoOff dt sigs = fmap toTuple $ fromDep $ hideGEinDep $ phi =<< fromTuple sigs
             dtE <- toGE dt
             return $ C.autoOff dtE x
 
------------------------------------------------------------------------
-
--- | Triggers a procedure on the event stream.
-trigs_ :: (Arg a) => (a -> SE ()) -> Evt [(D, D, a)] -> SE ()
-trigs_ instr evts = fromDep_ $ hideGEinDep $ do
-    key <- evtKey evts instr
-    withCache InfiniteDur getEvtProcKey saveEvtProcKey key $ do
-        cacheName <- liftIO $ C.makeCacheName instr
-        instrId <- saveSourceInstrCached_ cacheName (unitExp $ fmap (const unit) $ instr toArg)
-        return $ saveEvtInstr_ instrId evts
-
--- | Triggers a procedure on the event stream. A delay time is set to zero.
-scheds_ :: (Arg a) => (a -> SE ()) -> Evt [(D, a)] -> SE ()
-scheds_ instr evts = fromDep_ $ hideGEinDep $ do
-    key <- evtKey evts instr
-    withCache InfiniteDur getEvtProcKey saveEvtProcKey key $ do
-        cacheName <- liftIO $ C.makeCacheName instr
-        instrId <- saveSourceInstrCached_ cacheName (unitExp $ fmap (const unit) $ instr toArg)
-        return $ saveEvtInstr_ instrId $ fmap (fmap phi) evts
-    where phi (a, b) = (0, a, b)
 
 saveEvtInstr_ :: Arg a => C.InstrId -> Evt [(D, D, a)] -> Dep ()
 saveEvtInstr_ instrId evts = unSE $ runEvt evts $ \es -> fromDep_ $ mapM_ event es
