@@ -45,7 +45,7 @@ sco :: (Arg a, Sigs b) => (a -> SE b) -> Sco a -> Sco (Mix b)
 sco instr notes = wrapSco notes $ \events -> do
     events' <- traverse toNote events
     cacheName <- liftIO $ C.makeCacheName instr
-    instrId <- saveSourceInstrCached cacheName (funArity instr) (insExp instr)
+    instrId <- saveSourceInstrCachedWithLivenessWatch cacheName (funArity instr) (insExp instr)
     return $ Snd instrId events'
 
 -- | Invokes a procedure for the given bunch of events.
@@ -78,10 +78,6 @@ eff ef sigs = wrapSco sigs $ \events -> do
     return $ Eff instrId notes (arityIns $ funArity ef)
 
 -- | Renders a scores to the sound signals. we can use it inside the other instruments.
--- Warning: if we use a score that lasts for an hour in the note that lasts for 5 seconds
--- all the events would be generated, though we will hear only first five seconds.
--- So the semantics is good but implementation is inefficient for such a cases 
--- (consider event streams for such cases). 
 mix :: (Sigs a) => Sco (Mix a) -> a
 mix a = flip apInstr unit $ do
     key <- mixKey a

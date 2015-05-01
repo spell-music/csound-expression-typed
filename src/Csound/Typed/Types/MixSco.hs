@@ -3,12 +3,15 @@ module Csound.Typed.Types.MixSco(
     delayAndRescaleCsdEventListM, renderMixSco, renderMixSco_
 ) where
 
+import Control.Applicative
 import Control.Monad
 
-import Csound.Dynamic
+import Csound.Dynamic hiding (int)
 import Csound.Typed.GlobalState.Elements
+import Csound.Typed.GlobalState.Opcodes
 import Csound.Typed.GlobalState.GE
 import Csound.Typed.GlobalState.SE
+import Csound.Typed.Control.SERef
 import Csound.Typed.Types.Prim
 
 import qualified Temporal.Media as T
@@ -57,25 +60,33 @@ rescaleCsdEventM (T.Event start dur evt) = T.Event start dur (phi evt)
 
 renderMixSco :: Int -> CsdEventList M -> Dep [E]
 renderMixSco arity evts = do
-    chnId <- chnRefAlloc arity
-    go chnId evts
+    chnId <- chnRefAlloc arity  
+    aliveCountRef <- unSE $ newSERef (10 :: D)  
+    go aliveCountRef chnId evts    
     readChn chnId
     where 
-        go :: ChnRef -> CsdEventList M -> Dep ()
-        go outId xs = mapM_ (onEvent outId) $ csdEventListNotes xs
+        go :: SERef D -> ChnRef -> CsdEventList M -> Dep ()
+        go aliveCountRef outId xs = do
+            mapM_ (onEvent aliveCountRef outId) notes
+            unSE $ writeSERef aliveCountRef $ int $ 2 * length notes
+            aliveCount <- unSE $ readSERef aliveCountRef
+            hideGEinDep $ liftA2 masterUpdateChnAlive (return chnId) $ toGE aliveCount 
+            where 
+                notes = csdEventListNotes xs
+                chnId = outId
 
-        onEvent :: ChnRef -> (D, D, M) -> Dep ()
-        onEvent outId (start, dur, x) = case x of
-            Snd instrId es          -> onSnd instrId outId es
-            Eff instrId es arityIn  -> onEff instrId start dur outId es arityIn
+        onEvent :: SERef D -> ChnRef -> (D, D, M) -> Dep ()
+        onEvent aliveCountRef outId (start, dur, x) = case x of
+            Snd instrId es          -> onSnd aliveCountRef instrId outId es
+            Eff instrId es arityIn  -> onEff aliveCountRef instrId start dur outId es arityIn
 
-        onSnd instrId outId es = forM_ (csdEventListNotes es) $ \(start, dur, args) -> 
+        onSnd _ instrId outId es = forM_ (csdEventListNotes es) $ \(start, dur, args) -> 
             mkEvent instrId start dur (args ++ [chnRefId outId])
 
-        onEff instrId start dur outId es arityIn = do
+        onEff aliveCountRef instrId start dur outId es arityIn = do
             inId <- chnRefAlloc arityIn
             mkEvent instrId start dur [chnRefId inId, chnRefId outId]            
-            go inId es
+            go aliveCountRef inId es
 
 renderMixSco_ :: CsdEventList M -> Dep ()
 renderMixSco_ evts = mapM_ onEvent $ csdEventListNotes evts

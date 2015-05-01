@@ -83,6 +83,8 @@ saveEvtInstr arity instrId evts = saveInstr $ do
         event chnId (start, dur, args) = hideGEinDep $ fmap C.event $ 
             C.Event instrId <$> toGE start <*> toGE dur <*> (fmap (++ [C.chnRefId chnId]) $ toNote args) 
             
+-- | Retriggers an instrument every time an event happens. The note
+-- is held until the next event happens.
 retrigs :: (Arg a, Sigs b) => (a -> SE b) -> Evt [a] -> b
 retrigs instr evts = apInstr0 $ do
     key <- evtKey evts instr

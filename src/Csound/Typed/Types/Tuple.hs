@@ -38,7 +38,8 @@ import Data.Boolean
 
 import Csound.Dynamic
 import Csound.Typed.Types.Prim
-import Csound.Typed.GlobalState
+import Csound.Typed.GlobalState.GE
+import Csound.Typed.GlobalState.SE
 import Csound.Typed.Types.TupleHelpers
 
 -- | A tuple of Csound values.

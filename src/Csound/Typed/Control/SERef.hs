@@ -3,11 +3,10 @@ module Csound.Typed.Control.SERef where
 import Control.DeepSeq(deepseq)
 
 import Control.Monad
-import Control.Monad.Trans.Class
 import Csound.Dynamic hiding (newLocalVars)
 
 import Csound.Typed.Types.Tuple
-import Csound.Typed.GlobalState
+import Csound.Typed.GlobalState.SE
 
 -- | It describes a reference to mutable values.
 newtype SERef a = SERef [Var]
