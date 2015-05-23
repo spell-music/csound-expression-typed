@@ -1,4 +1,5 @@
 {-# Language FlexibleContexts #-}
+{-# Language TypeFamilies #-}
 module Csound.Typed.Control.Evt(
     sched, sched_, schedBy, schedHarp, schedHarpBy,
     retrigs, evtLoop, evtLoopOnce    
@@ -216,7 +217,7 @@ saveEvtLoopInstr mustLoop loopLength maybeOffEvt arity instrId evtInstrId = save
         audioEvent = fireEventFor eventForAudioInstr
         evtEvent   = fireEventFor eventForEvtInstr
 
-        startEvtInstr chnId currentRetrig = C.event $ eventForEvtInstr chnId currentRetrig
+--        startEvtInstr chnId currentRetrig = C.event $ eventForEvtInstr chnId currentRetrig
 
         initStartInstrs mchnId = fromDep_ $ hideGEinDep $ do
             chnId <- mchnId
