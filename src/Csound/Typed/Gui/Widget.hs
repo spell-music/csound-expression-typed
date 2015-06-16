@@ -6,14 +6,14 @@ module Csound.Typed.Gui.Widget(
     -- * Types
     Input, Output, Inner,
     noInput, noOutput, noInner,
-    Widget, widget, Source, source, Sink, sink, Display, display, SinkSource, sinkSource,
+    Widget, widget, Source, source, Sink, sink, Display, display, SinkSource, sinkSource, sourceSlice, sinkSlice,
     mapSource, mapGuiSource, mhor, mver, msca,
 
     -- * Widgets
     count, countSig, joy, knob, roller, slider, sliderBank, numeric, meter, box,
     button, butBank, butBankSig, butBank1, butBankSig1, toggle, toggleSig,
     setNumeric, 
-    setToggle, setToggleSig,
+    setToggle, setToggleSig, setKnob, setSlider,
     -- * Transformers
     setTitle,
     -- * Keyboard    
@@ -452,6 +452,12 @@ setToggle name initVal = sinkSource $ do
     let evtOuts a = outs =<< stepper 0 (fmap sig a)
     return (g, evtOuts, snaps ins)
 
+setKnob :: String -> ValSpan -> Double -> SinkSource Sig
+setKnob name sp v0 = setLabelSnkSource name $ singleInOut setVal' (Just v0) $ Knob sp
+
+setSlider :: String -> ValSpan -> Double -> SinkSource Sig
+setSlider name sp v0 = setLabelSnkSource name $ singleInOut setVal' (Just v0) $ Slider sp
+
 -------------------------------------------------------------
 -- keyboard
 
@@ -478,6 +484,10 @@ setVal handle val = flSetVal (changed [val]) val =<< refHandle handle
 printk2 :: GuiHandle -> Sig -> SE ()
 printk2 handle val = flPrintk2 val =<< refHandle handle
 
+setVal' :: GuiHandle -> Sig -> SE ()
+setVal' handle val = flSetVal 1 val =<< refHandle handle
+
+
 -------------------------------------------------------------
 -- set gui value
 
@@ -499,6 +509,11 @@ changed :: [Sig] -> Sig
 changed = Sig . fmap f . mapM toGE
     where f = opcs "changed" [(Kr, repeat Kr)]
 
+-----------------------------------------------------
 
+sourceSlice :: SinkSource a -> Source a
+sourceSlice = fmap (\(gui, _, a) -> (gui, a))
 
+sinkSlice :: SinkSource a -> Sink a
+sinkSlice = fmap (\(gui, a, _) -> (gui, a))
 
