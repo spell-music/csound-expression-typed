@@ -238,19 +238,26 @@ linseg = opcs "linseg" [(Kr, repeat Ir)]
 
 -- ares oscilikt xamp, xcps, kfn [, iphs] [, istor]
 -- kres oscilikt kamp, kcps, kfn [, iphs] [, istor]
-oscilikt :: E -> E -> E -> E
-oscilikt amp cps fn = opcs "oscilikt" 
+oscilikt :: E -> E -> E -> Maybe E -> E
+oscilikt amp cps fn mphase = opcs "oscilikt" 
     [ (Ar, [Xr, Xr, Kr, Ir, Ir])
     , (Kr, [Kr, Kr, Kr, Ir, Ir])]     
-    [amp, cps, fn]
+    (case mphase of
+        Nothing  -> [amp, cps, fn]
+        Just phs -> [amp, cps, fn, phs]
+    )
 
 -- ares oscili xamp, xcps, ifn [, iphs]
 -- kres oscili kamp, kcps, ifn [, iphs]
-oscili :: E -> E -> E -> E
-oscili amp cps fn = opcs "oscili"
+oscili :: E -> E -> E -> Maybe E -> E
+oscili amp cps fn mphase = opcs "oscili"
     [ (Ar, [Xr, Xr, Ir, Ir, Ir])
     , (Kr, [Kr, Kr, Ir, Ir, Ir])]     
-    [amp, cps, fn]
+    (case mphase of
+        Nothing  -> [amp, cps, fn]
+        Just phs -> [amp, cps, fn, phs]
+    )
+    
 
 -- kfn vco2ft kcps, iwave [, inyx]
 vco2ft :: E -> E -> E

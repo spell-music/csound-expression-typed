@@ -9,7 +9,7 @@ module Csound.Typed.GlobalState.Elements(
     -- ** Band-limited waveforms
     BandLimited(..), BandLimitedMap, 
     saveBandLimited, renderBandLimited,
-    readBandLimited, readBandLimitedConstCps,
+    readBandLimited,
     -- ** String arguments
     StringMap, newString,
     -- * Midi
@@ -187,11 +187,8 @@ renderBandLimited genMap blMap = case M.toList blMap of
 
         toDummy = writeVar dummyVar
 
-readBandLimited :: Int -> E -> E
-readBandLimited n cps = oscilikt 1 cps (vco2ft cps (int n))
-
-readBandLimitedConstCps :: Int -> E -> E
-readBandLimitedConstCps n cps = oscili 1 cps (vco2ift cps (int n))
+readBandLimited :: Maybe E -> Int -> E -> E
+readBandLimited mphase n cps = oscilikt 1 cps (vco2ft cps (int n)) mphase
 
 ----------------------------------------------------------
 -- Midi
