@@ -6,7 +6,7 @@
 module Csound.Typed.Types.Tuple(
     -- ** Tuple
     Tuple(..), TupleMethods, makeTupleMethods, 
-    fromTuple, toTuple, tupleArity, tupleRates, defTuple,
+    fromTuple, toTuple, tupleArity, tupleRates, defTuple, mapTuple,
 
     Sig2, Sig3, Sig4, Sig5, Sig6, Sig8,
 
@@ -67,6 +67,9 @@ tupleRates = tupleRates_ tupleMethods
 
 defTuple :: Tuple a => a
 defTuple = defTuple_ tupleMethods
+
+mapTuple :: Tuple a => (E -> E) -> a -> a
+mapTuple f a = toTuple (fmap (fmap f) $ fromTuple a)
 
 -- | Defines instance of type class 'Tuple' for a new type in terms of an already defined one.
 makeTupleMethods :: (Tuple a) => (a -> b) -> (b -> a) -> TupleMethods b

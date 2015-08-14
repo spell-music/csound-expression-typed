@@ -100,11 +100,13 @@ saveMidiInstr midiType channel arity instr = do
 saveMidiMap :: GE ()
 saveMidiMap = do
     m <- fmap midiMap getHistory
-    mapM_ (\(C.MidiKey midiType channel, instrExpr) -> saveMidiInstr_ midiType channel (SE instrExpr)) $ toList m
+    mapM_ (\(C.MidiKey midiType channel, instrExpr) -> saveMidiInstr_ midiType channel (SE . instrExpr)) $ toList m
 
-saveMidiInstr_ :: C.MidiType -> C.Channel -> UnitExp -> GE ()
+saveMidiInstr_ :: C.MidiType -> C.Channel -> (InstrId -> UnitExp) -> GE ()
 saveMidiInstr_ midiType channel instr = do
-    instrId <- onInstr . C.saveInstr =<< execSE instr
+    instrId <- onInstr C.newInstrId
+    onInstr . C.saveInstrById instrId =<< execSE (instr instrId)
+    -- instrId <- onInstr . C.saveInstr =<< execSE instr
     saveMidi $ MidiAssign midiType channel instrId   
 
 saveIns0 :: Int -> [Rate] -> SE [E] -> GE [E]

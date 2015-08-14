@@ -11,31 +11,50 @@ import System.Mem.StableName
 import Control.Applicative
 import Control.Monad
 import Control.Monad.IO.Class
+
+import Csound.Dynamic
+
 import Csound.Typed.Types
 import Csound.Typed.GlobalState
 import Csound.Typed.Control.Instr
 import Csound.Typed.Control.SERef
 
+import qualified Csound.Typed.GlobalState.Opcodes as C(midiVolumeFactor)
+
 -- | Triggers a midi-instrument (aka Csound's massign) for all channels. 
 -- It's useful to test a single instrument.
 midi :: (Num a, Sigs a) => (Msg -> SE a) -> SE a
-midi = fromProcMidi midi_
+midi = fromProcMidi midiWithInstrId_
 
 -- | Triggers a midi-instrument (aka Csound's massign) on the specified channel. 
 midin :: (Num a, Sigs a) => Channel -> (Msg -> SE a) -> SE a
-midin n = fromProcMidi (midin_ n)
+midin n = fromProcMidi (midinWithInstrId_ n)
 
 -- | Triggers a midi-instrument (aka Csound's pgmassign) on the specified programm bank. 
 pgmidi :: (Num a, Sigs a) => Maybe Int -> Channel -> (Msg -> SE a) -> SE a
-pgmidi mchn n = fromProcMidi (pgmidi_ mchn n)
+pgmidi mchn n = fromProcMidi (pgmidiWithInstrId_ mchn n)
 
-fromProcMidi :: (Num a, Sigs a) => ((Msg -> SE ()) -> SE ()) -> (Msg -> SE a) -> SE a
+fromProcMidi :: (Num a, Sigs a) => ((InstrId -> Msg -> SE ()) -> SE ()) -> (Msg -> SE a) -> SE a
 fromProcMidi procMidi f = do
     ref <- newGlobalSERef 0
-    procMidi (mixSERef ref <=< f)
+    procMidi (\instrId -> mixSERef ref . scaleMidiVolumeFactor instrId <=< f)
     res <- readSERef ref
     writeSERef ref 0
     return res
+
+-----------------------------------------------------------------
+
+-- | Triggers a midi-procedure (aka Csound's massign) for all channels. 
+midiWithInstrId_ :: (InstrId -> Msg -> SE ()) -> SE ()
+midiWithInstrId_ = midinWithInstrId_ 0
+
+-- | Triggers a midi-procedure (aka Csound's pgmassign) on the given channel. 
+midinWithInstrId_ :: Channel -> (InstrId -> Msg -> SE ()) -> SE ()
+midinWithInstrId_ chn instr = genMidi_ Massign chn instr
+
+-- | Triggers a midi-procedure (aka Csound's pgmassign) on the given programm bank. 
+pgmidiWithInstrId_ :: Maybe Int -> Channel -> (InstrId -> Msg -> SE ()) -> SE ()
+pgmidiWithInstrId_ mchn chn instr = genMidi_ (Pgmassign mchn) chn instr
 
 -----------------------------------------------------------------
 
@@ -45,14 +64,14 @@ midi_ = midin_ 0
 
 -- | Triggers a midi-procedure (aka Csound's pgmassign) on the given channel. 
 midin_ :: Channel -> (Msg -> SE ()) -> SE ()
-midin_ = genMidi_ Massign
+midin_ chn instr = genMidi_ Massign chn (const instr)
 
 -- | Triggers a midi-procedure (aka Csound's pgmassign) on the given programm bank. 
 pgmidi_ :: Maybe Int -> Channel -> (Msg -> SE ()) -> SE ()
-pgmidi_ mchn = genMidi_ (Pgmassign mchn)
+pgmidi_ mchn chn instr = genMidi_ (Pgmassign mchn) chn (const instr)
 
-genMidi_ :: MidiType -> Channel -> (Msg -> SE ()) -> SE ()
-genMidi_ midiType chn instr = geToSe $ saveToMidiInstr midiType chn (unSE $ instr Msg)
+genMidi_ :: MidiType -> Channel -> (InstrId -> Msg -> SE ()) -> SE ()
+genMidi_ midiType chn instr = geToSe $ saveToMidiInstr midiType chn (\instrId -> unSE $ instr instrId Msg)
 
 -----------------------------------------------------------------
 -- midi ctrls
@@ -61,3 +80,9 @@ initMidiCtrl :: D -> D -> D -> SE ()
 initMidiCtrl chno ctrlno val = geToSe $ 
     saveMidiCtrl =<< (MidiCtrl <$> toGE chno <*> toGE ctrlno <*> toGE val)
 
+
+-----------------------------------------------------------------
+-- midi volume factor
+
+scaleMidiVolumeFactor :: Sigs a => InstrId -> a -> a
+scaleMidiVolumeFactor instrId = mapTuple (C.midiVolumeFactor instrId * )

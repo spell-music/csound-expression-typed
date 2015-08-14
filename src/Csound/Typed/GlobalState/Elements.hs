@@ -18,7 +18,7 @@ module Csound.Typed.GlobalState.Elements(
     Globals(..), newPersistentGlobalVar, newClearableGlobalVar, 
     renderGlobals,
     -- * Instruments
-    Instrs(..), saveInstr, CacheName, makeCacheName, saveCachedInstr, getInstrIds,
+    Instrs(..), newInstrId, saveInstrById, saveInstr, CacheName, makeCacheName, saveCachedInstr, getInstrIds,
     -- * Src
     InstrBody, getIn, sendOut, sendChn, sendGlobal, chnPargId,
     Event(..),
@@ -29,6 +29,7 @@ module Csound.Typed.GlobalState.Elements(
 
 import Control.Monad.Trans.State.Strict
 import Control.Monad(zipWithM_)
+import Control.Applicative(liftA2)
 import Data.Default
 import qualified Data.Map as M
 
@@ -201,10 +202,10 @@ data MidiType = Massign | Pgmassign (Maybe Int)
 data MidiKey = MidiKey MidiType Channel
     deriving (Show, Eq, Ord)
 
-type MidiMap m = M.Map MidiKey (DepT m ())
+type MidiMap m = M.Map MidiKey (InstrId -> DepT m ())
 
-saveMidiInstr :: Monad m => MidiType -> Channel -> DepT m () -> MidiMap m -> MidiMap m
-saveMidiInstr ty chn body = M.insertWith (flip (>>)) (MidiKey ty chn) body
+saveMidiInstr :: Monad m => MidiType -> Channel -> (InstrId -> DepT m ()) -> MidiMap m -> MidiMap m
+saveMidiInstr ty chn body = M.insertWith (liftA2 $ flip (>>)) (MidiKey ty chn) body
 
 -- global variables
 
@@ -279,12 +280,22 @@ saveCachedInstr name body = state $ \s ->
                             , instrsContent = (intInstrId newId, body) : instrsContent s }
             in  (intInstrId newId, s1)
 
-saveInstr :: InstrBody -> State Instrs InstrId
-saveInstr body = state $ \s ->
+newInstrId :: State Instrs InstrId
+newInstrId = state $ \s ->
     let newId   = instrsNewId s
-        s1      = s { instrsNewId   = succ newId
-                    , instrsContent = (intInstrId newId, body) : instrsContent s }
+        s1      = s { instrsNewId = succ newId }    
     in  (intInstrId newId, s1)
+
+saveInstrById :: InstrId -> InstrBody -> State Instrs ()
+saveInstrById instrId body = state $ \s -> 
+    let s1 = s { instrsContent = (instrId, body) : instrsContent s }
+    in  ((), s1)
+
+saveInstr :: InstrBody -> State Instrs InstrId
+saveInstr body = do
+    newId <- newInstrId
+    saveInstrById newId body
+    return newId
 
 -----------------------------------------------------------------
 -- sound sources

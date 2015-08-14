@@ -21,7 +21,9 @@ module Csound.Typed.GlobalState.Opcodes(
     -- * Fluid
     fluidEngine, fluidLoad, fluidProgramSelect,
     -- * Soundfonts
-    sfSetList
+    sfSetList,
+    -- * Midi
+    midiVolumeFactor
 ) where
 
 import Control.Monad(zipWithM_, forM_)
@@ -333,3 +335,15 @@ sfSetList fileName presets = do
     sfplist sf
     forM_ presets $ \(bank, prog, index) -> sfpreset bank prog sf index
     
+-----------------------------------------------------------
+-- midi volume factor (normalize by number of notes)
+
+midiVolumeFactor :: InstrId -> E
+midiVolumeFactor idx = flip port 0.0015 $ ifB (n ==* 0) 1 (recip n)
+    where n = sqrt (active idx)
+
+active :: InstrId -> E    
+active instrId = opcs "active" [(Kr, [Ir])] [instrIdE instrId]
+
+port :: E -> E -> E
+port a b = opcs "port" [(Kr, [Kr, Ir])] [a, b]

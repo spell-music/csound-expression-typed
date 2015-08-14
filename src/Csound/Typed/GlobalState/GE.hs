@@ -179,7 +179,7 @@ saveMidi :: MidiAssign -> GE ()
 saveMidi ma = onMidis $ modify (ma: )
     where onMidis = onHistory midis (\a h -> h { midis = a })
 
-saveToMidiInstr :: MidiType -> Channel -> Dep () -> GE ()
+saveToMidiInstr :: MidiType -> Channel -> (InstrId -> Dep ()) -> GE ()
 saveToMidiInstr ty chn expr = onMidiMap (saveMidiInstr ty chn expr)
     where onMidiMap = modifyHistoryField midiMap (\a h -> h { midiMap = a })
 
