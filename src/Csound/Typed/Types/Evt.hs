@@ -153,29 +153,23 @@ stepper v0 evt = do
 -- | Executes actions synchronized with global tempo (in Hz).
 -- 
 -- > runEvtSync tempoCps evt proc
-sync :: (Default a, Tuple a) => D -> Evt a -> Evt a
-sync dt evt = Evt $ \bam -> do
-    initGlobalTime <- times
-    refCounter <- newSERef $ frac' $ initGlobalTime * dt
+sync :: (Default a, Tuple a) => Sig -> Evt a -> Evt a
+sync dt evt = Evt $ \bam -> do    
     refVal     <- newSERef def
     refFire    <- newSERef (0 :: D)
 
     runEvt evt $ \a -> do
         writeSERef refVal  a
-        writeSERef refFire 1
-
-    updCounter <- readSERef refCounter
-    writeSERef refCounter (updCounter - 1 / getControlRate)
-
-    counter <- readSERef refCounter
+        writeSERef refFire 1     
+    
     fire    <- readSERef refFire
-    when1 (sig counter <=* 0 &&* sig fire ==* 1) $ do
+    when1 (metro dt  ==* 1 &&* sig fire ==* 1) $ do
         val <- readSERef refVal
         bam val
-        writeSERef refFire 0
-        
-    when1 (sig counter <=* 0) $ do
-        writeSERef refCounter (1 / dt)
-    where        
-        times = fmap D $ fromDep C.times
+        writeSERef refFire 0   
+    where
+        metro :: Sig -> Sig
+        metro asig = fromGE $ fmap C.metro $ toGE asig
+
+       
 

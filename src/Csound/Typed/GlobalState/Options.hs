@@ -46,7 +46,7 @@ instance Monoid Options where
         , csdTabFi          = csdTabFi a <|> csdTabFi b }
 
 defGain :: Options -> Double
-defGain = maybe 0.5 id . csdGain
+defGain = maybe 0.8 id . csdGain
 
 defSampleRate :: Options -> Int
 defSampleRate = maybe 44100 id . csdSampleRate

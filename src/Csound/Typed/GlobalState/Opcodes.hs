@@ -16,6 +16,8 @@ module Csound.Typed.GlobalState.Opcodes(
     oscInit, oscListen, oscSend,
     -- * channels
     chnGet, chnSet,
+    -- * metro
+    metro,
     -- * times
     times,
     -- * Fluid
@@ -297,6 +299,12 @@ chnGet r chn = depT $ opcs "chnget" [(r, [Sr])] [chn]
 
 chnSet :: Monad m => Rate -> E -> E -> DepT m ()
 chnSet r val chn = depT_ $ opcs "chnset" [(Xr, [r, Sr])] [val, chn]
+
+-----------------------------------------------------------
+-- metro
+
+metro :: E -> E
+metro a = opcs "metro" [(Kr, [Kr])] [a]
 
 -----------------------------------------------------------
 -- times
