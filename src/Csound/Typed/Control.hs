@@ -2,7 +2,7 @@ module Csound.Typed.Control (
     -- * SE
     module Csound.Typed.GlobalState.SE,
     -- ** SE reference
-    module Csound.Typed.Control.SERef,
+    module Csound.Typed.Control.Ref,
     -- * Global settings
     instr0, getIns, setDur,
     -- * Misc
@@ -24,7 +24,7 @@ module Csound.Typed.Control (
 ) where
 
 import Csound.Typed.GlobalState.SE
-import Csound.Typed.Control.SERef
+import Csound.Typed.Control.Ref
 
 import Csound.Typed.Control.Evt
 import Csound.Typed.Control.Mix

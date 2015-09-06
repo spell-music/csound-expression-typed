@@ -25,7 +25,7 @@ Library
   Ghc-Options:    -Wall
   Build-Depends:
         base >= 4, base < 5, ghc-prim, containers, transformers >= 0.3, Boolean >= 0.1.0, colour >= 2.0, data-default, deepseq,
-        wl-pprint, stable-maps >= 0.0.3.3, csound-expression-dynamic >= 0.1.4.3, temporal-media >= 0.6.0
+        wl-pprint, csound-expression-dynamic >= 0.1.4.3, temporal-media >= 0.6.0
   Hs-Source-Dirs:      src/
   Exposed-Modules:
     Csound.Typed
@@ -46,8 +46,7 @@ Library
     Csound.Typed.GlobalState.Options
     Csound.Typed.GlobalState.GE
     Csound.Typed.GlobalState.SE
-    Csound.Typed.GlobalState.Instr
-    Csound.Typed.GlobalState.Cache
+    Csound.Typed.GlobalState.Instr    
     Csound.Typed.GlobalState.Elements
     Csound.Typed.GlobalState.Opcodes
 
@@ -61,7 +60,7 @@ Library
     Csound.Typed.Control.Sf2
     Csound.Typed.Control.Osc
     Csound.Typed.Control.Channel
-    Csound.Typed.Control.SERef
+    Csound.Typed.Control.Ref
     Csound.Typed.Control.Instr
 
     Csound.Typed.Gui.Gui

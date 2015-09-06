@@ -18,7 +18,7 @@ module Csound.Typed.GlobalState.Elements(
     Globals(..), newPersistentGlobalVar, newClearableGlobalVar, 
     renderGlobals,
     -- * Instruments
-    Instrs(..), newInstrId, saveInstrById, saveInstr, CacheName, makeCacheName, saveCachedInstr, getInstrIds,
+    Instrs(..), newInstrId, saveInstrById, saveInstr, getInstrIds,
     -- * Src
     InstrBody, getIn, sendOut, sendChn, sendGlobal, chnPargId,
     Event(..),
@@ -32,9 +32,6 @@ import Control.Monad(zipWithM_)
 import Control.Applicative(liftA2)
 import Data.Default
 import qualified Data.Map as M
-
-import qualified System.Mem.StableName.Dynamic as DM
-import qualified System.Mem.StableName.Dynamic.Map as DM
 
 import Csound.Dynamic.Types
 import Csound.Dynamic.Build
@@ -251,34 +248,18 @@ renderGlobals a = (initAll, clear)
 -- instrs
 
 data Instrs = Instrs
-    { instrsCache   :: DM.Map InstrId
-    , instrsNewId   :: Int
+    { instrsNewId   :: Int
     , instrsContent :: [(InstrId, InstrBody)]
     }
 
 instance Default Instrs where
-    def = Instrs DM.empty 18 []
-
-type CacheName = DM.DynamicStableName
-
-makeCacheName :: a -> IO CacheName
-makeCacheName = DM.makeDynamicStableName 
+    def = Instrs 18 []
 
 getInstrIds :: Instrs -> [InstrId]
 getInstrIds = fmap fst . instrsContent
 
 -----------------------------------------------------------------
 --
-saveCachedInstr :: CacheName -> InstrBody -> State Instrs InstrId 
-saveCachedInstr name body = state $ \s -> 
-    case DM.lookup name $ instrsCache s of
-        Just n  -> (n, s)
-        Nothing -> 
-            let newId   = instrsNewId s
-                s1      = s { instrsCache   = DM.insert name (intInstrId newId) $ instrsCache s
-                            , instrsNewId   = succ newId
-                            , instrsContent = (intInstrId newId, body) : instrsContent s }
-            in  (intInstrId newId, s1)
 
 newInstrId :: State Instrs InstrId
 newInstrId = state $ \s ->

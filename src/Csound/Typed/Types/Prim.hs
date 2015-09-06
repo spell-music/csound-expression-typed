@@ -27,6 +27,8 @@ module Csound.Typed.Types.Prim(
     when1, whens, untilDo, whileDo, boolSig
 ) where
 
+import Prelude hiding ((<*))
+
 import Control.Applicative hiding ((<*))
 import Control.Monad
 import Control.Monad.Trans.Class

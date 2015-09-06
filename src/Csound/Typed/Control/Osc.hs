@@ -11,7 +11,7 @@ import Csound.Typed.Types
 import Csound.Typed.GlobalState hiding (oscInit, oscListen, oscSend)
 import qualified Csound.Typed.GlobalState as C(oscInit, oscListen, oscSend)
 
-import Csound.Typed.Control.SERef
+import Csound.Typed.Control.Ref
 
 
 newtype OscRef = OscRef { unOscRef :: D }
@@ -36,9 +36,9 @@ type OscHost = String
 initOsc :: OscPort -> SE OscRef
 initOsc port = do
     oscRef <- fmap fromGE $ fromDep $ C.oscInit (fromIntegral port)
-    varRef <- newGlobalSERef (0 :: D)
-    writeSERef varRef oscRef
-    ihandle <- readSERef varRef
+    varRef <- newGlobalRef (0 :: D)
+    writeRef varRef oscRef
+    ihandle <- readRef varRef
     return $ OscRef ihandle
 
 -- | Listens for the OSC-messages. The first argument is OSC-reference.
@@ -59,25 +59,25 @@ initOsc port = do
 listenOsc :: forall a . Tuple a => OscRef -> OscAddress -> OscType -> Evt a
 listenOsc oscRef oscAddr oscType = Evt $ \bam -> do
     (readCond, writeCond) <- sensorsSE (0 :: Sig)
-    resRef <- newSERef (defTuple :: a)
+    resRef <- newRef (defTuple :: a)
     writeCond =<< listen resRef
     readCond >>= (\cond -> whileDo (cond ==* 1) $ do
-        bam =<< readSERef resRef
+        bam =<< readRef resRef
         writeCond =<< listen resRef)
     where
-        listen :: Tuple a => SERef a -> SE Sig
+        listen :: Tuple a => Ref a -> SE Sig
         listen ref = csdOscListen ref oscRef oscAddr oscType
 
-        csdOscListen :: Tuple a => SERef a -> OscRef -> OscAddress -> OscType -> SE Sig
+        csdOscListen :: Tuple a => Ref a -> OscRef -> OscAddress -> OscType -> SE Sig
         csdOscListen resRef oscHandle addr ty = do
-            args <- readSERef resRef
+            args <- readRef resRef
             res  <- fmap fromGE $ fromDep $ hideGEinDep $ do 
                 expArgs <- fromTuple args
                 expOscHandle <- toGE $ unOscRef oscHandle
                 expAddr <- toGE $ text addr
                 expOscType <- toGE $ text ty
                 return $ C.oscListen $ expOscHandle : expAddr : expOscType : expArgs
-            writeSERef resRef args
+            writeRef resRef args
             return res
 
 -- | Sends OSC-messages. It takes in a name of the host computer 
