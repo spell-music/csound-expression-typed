@@ -24,7 +24,8 @@ module Csound.Typed.Types.Prim(
     quot', rem', div', mod', ceil', floor', round', int', frac',
    
     -- ** logic funs
-    when1, whens, untilDo, whileDo, boolSig
+    when1, whens, untilDo, whileDo, boolSig,
+    equalsTo, notEqualsTo, lessThan, greaterThan, lessThanEquals, greaterThanEquals
 ) where
 
 import Prelude hiding ((<*))
@@ -593,6 +594,26 @@ boolSig :: BoolD -> BoolSig
 boolSig x = case x of
     PrimBoolD b -> PrimBoolSig b
     BoolD a     -> BoolSig a
+
+infix  4  `equalsTo`, `notEqualsTo`, `lessThan`, `lessThanEquals`, `greaterThanEquals`, `greaterThan`
+
+equalsTo :: EqB a => a -> a -> BooleanOf a
+equalsTo = (==*)
+
+notEqualsTo :: EqB a => a -> a -> BooleanOf a
+notEqualsTo = (/=*)
+
+lessThan :: OrdB a => a -> a -> BooleanOf a
+lessThan = (<*) 
+
+greaterThan :: OrdB a => a -> a -> BooleanOf a
+greaterThan = (>*)
+
+lessThanEquals :: OrdB a => a -> a -> BooleanOf a
+lessThanEquals = (<=*)
+
+greaterThanEquals :: OrdB a => a -> a -> BooleanOf a
+greaterThanEquals = (>=*)
 
 ----------------------------------------------
 

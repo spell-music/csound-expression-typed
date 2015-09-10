@@ -143,9 +143,9 @@ evtToBool evt = do
 -- | Converts events to signals.
 stepper :: Tuple a => a -> Evt a -> SE a
 stepper v0 evt = do
-    (readSt, writeSt) <- sensorsSE v0
-    runEvt evt $ \a -> writeSt a
-    readSt 
+    ref <- newGlobalRef v0
+    runEvt evt $ \a -> writeRef ref a
+    readRef ref
 
 -------------------------------------------------------------
 -- synchronization
