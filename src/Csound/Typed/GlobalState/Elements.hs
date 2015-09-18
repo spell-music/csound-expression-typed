@@ -33,8 +33,8 @@ import Control.Applicative(liftA2)
 import Data.Default
 import qualified Data.Map as M
 
-import qualified System.Mem.StableName.Dynamic as DM
-import qualified System.Mem.StableName.Dynamic.Map as DM
+import qualified Csound.Typed.Lib.StableMaps.Dynamic as DM
+import qualified Csound.Typed.Lib.StableMaps.Dynamic.Map as DM
 
 import Csound.Dynamic.Types
 import Csound.Dynamic.Build
