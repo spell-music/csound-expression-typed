@@ -11,6 +11,7 @@ module Csound.Typed.GlobalState.Options (
 ) where
 
 import Control.Applicative
+import Data.Monoid
 import Data.Default
 import qualified Data.IntMap as IM
 

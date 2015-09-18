@@ -10,7 +10,7 @@ module Csound.Typed.GlobalState.GE(
     saveAlwaysOnInstr, onInstr, saveUserInstr0, getSysExpr,
     -- * Total duration
     TotalDur(..), pureGetTotalDurForF0, getTotalDurForTerminator, 
-    setDurationForce, setDuration, setDurationToInfinite,
+    setDurationForce, setDuration, setDurationToInfinite,    
     -- * Notes
     addNote,
     -- * GEN routines
@@ -21,6 +21,8 @@ module Csound.Typed.GlobalState.GE(
     saveBandLimitedWave,
     -- * Strings
     saveStr,
+    -- * Cache
+    GetCache, SetCache, withCache,
     -- * Guis
     newGuiHandle, saveGuiRoot, saveDefKeybdPanel, appendToGui, 
     newGuiVar, getPanels, guiHandleToVar,
@@ -44,6 +46,7 @@ import Control.Monad.Trans.Reader
 import Csound.Dynamic 
 
 import Csound.Typed.GlobalState.Options
+import Csound.Typed.GlobalState.Cache
 import Csound.Typed.GlobalState.Elements
 import Csound.Typed.Constants(infiniteDur)
 
@@ -91,11 +94,12 @@ data History = History
     , alwaysOnInstrs    :: [InstrId]
     , notes             :: [(InstrId, CsdEvent)]
     , userInstr0        :: Dep ()
-    , bandLimitedMap    :: BandLimitedMap    
+    , bandLimitedMap    :: BandLimitedMap
+    , cache             :: Cache GE
     , guis              :: Guis }
 
 instance Default History where
-    def = History def def def def def def def def def def def def (return ()) def def
+    def = History def def def def def def def def def def def def (return ()) def def def
 
 data Msg = Msg
 data MidiAssign = MidiAssign MidiType Channel InstrId
@@ -251,6 +255,33 @@ onInstr = onHistory instrs (\a h -> h { instrs = a })
 
 onGlobals :: UpdField Globals a
 onGlobals = onHistory globals (\a h -> h { globals = a })
+
+----------------------------------------------------------------------
+-- cache
+
+-- midi functions
+
+type GetCache a b = a -> Cache GE -> Maybe b
+
+fromCache :: GetCache a b -> a -> GE (Maybe b)
+fromCache f key = withHistory $ f key . cache
+
+type SetCache a b = a -> b -> Cache GE -> Cache GE
+
+toCache :: SetCache a b -> a -> b -> GE () 
+toCache f key val = modifyHistory $ \h -> h { cache = f key val (cache h) }
+
+withCache :: TotalDur -> GetCache key val -> SetCache key val -> key -> GE val -> GE val
+withCache dur lookupResult saveResult key getResult = do    
+    ma <- fromCache lookupResult key
+    res <- case ma of
+        Just a      -> return a
+        Nothing     -> do
+            r <- getResult
+            toCache saveResult key r
+            return r
+    setTotalDur dur
+    return res
 
 --------------------------------------------------------
 -- guis

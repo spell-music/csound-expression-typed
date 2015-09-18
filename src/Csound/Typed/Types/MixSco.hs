@@ -11,7 +11,7 @@ import Csound.Typed.GlobalState.Elements
 import Csound.Typed.GlobalState.Opcodes
 import Csound.Typed.GlobalState.GE
 import Csound.Typed.GlobalState.SE
-import Csound.Typed.Control.Ref
+import Csound.Typed.Control.SERef
 import Csound.Typed.Types.Prim
 
 import qualified Temporal.Media as T
@@ -61,21 +61,21 @@ rescaleCsdEventM (T.Event start dur evt) = T.Event start dur (phi evt)
 renderMixSco :: Int -> CsdEventList M -> Dep [E]
 renderMixSco arity evts = do
     chnId <- chnRefAlloc arity  
-    aliveCountRef <- unSE $ newRef (10 :: D)  
+    aliveCountRef <- unSE $ newSERef (10 :: D)  
     go aliveCountRef chnId evts    
     readChn chnId
     where 
-        go :: Ref D -> ChnRef -> CsdEventList M -> Dep ()
+        go :: SERef D -> ChnRef -> CsdEventList M -> Dep ()
         go aliveCountRef outId xs = do
             mapM_ (onEvent aliveCountRef outId) notes
-            unSE $ writeRef aliveCountRef $ int $ 2 * length notes
-            aliveCount <- unSE $ readRef aliveCountRef
+            unSE $ writeSERef aliveCountRef $ int $ 2 * length notes
+            aliveCount <- unSE $ readSERef aliveCountRef
             hideGEinDep $ liftA2 masterUpdateChnAlive (return chnId) $ toGE aliveCount 
             where 
                 notes = csdEventListNotes xs
                 chnId = outId
 
-        onEvent :: Ref D -> ChnRef -> (D, D, M) -> Dep ()
+        onEvent :: SERef D -> ChnRef -> (D, D, M) -> Dep ()
         onEvent aliveCountRef outId (start, dur, x) = case x of
             Snd instrId es          -> onSnd aliveCountRef instrId outId es
             Eff instrId es arityIn  -> onEff aliveCountRef instrId start dur outId es arityIn

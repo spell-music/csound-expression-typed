@@ -13,7 +13,7 @@ import Data.Boolean
 import Csound.Typed.Types.Prim
 import Csound.Typed.Types.Tuple
 import Csound.Typed.GlobalState
-import Csound.Typed.Control.Ref
+import Csound.Typed.Control.SERef
 
 import qualified Csound.Typed.GlobalState.Opcodes as C
 
@@ -134,10 +134,10 @@ type instance Snap (a, b, c, d, e, f) = (Snap a, Snap b, Snap c, Snap d, Snap e,
 -- an event happens and zero otherwise.
 evtToBool :: Evt a -> SE BoolSig
 evtToBool evt = do
-    var <- newRef (double 0)
-    writeRef var (double 0)
-    runEvt evt $ const $ writeRef var (double 1)
-    asig <- readRef var
+    var <- newSERef (double 0)
+    writeSERef var (double 0)
+    runEvt evt $ const $ writeSERef var (double 1)
+    asig <- readSERef var
     return $ boolSig $ asig ==* (double 1)
 
 -- | Converts events to signals.
@@ -155,18 +155,18 @@ stepper v0 evt = do
 -- > runEvtSync tempoCps evt proc
 sync :: (Default a, Tuple a) => Sig -> Evt a -> Evt a
 sync dt evt = Evt $ \bam -> do    
-    refVal     <- newRef def
-    refFire    <- newRef (0 :: D)
+    refVal     <- newSERef def
+    refFire    <- newSERef (0 :: D)
 
     runEvt evt $ \a -> do
-        writeRef refVal  a
-        writeRef refFire 1     
+        writeSERef refVal  a
+        writeSERef refFire 1     
     
-    fire    <- readRef refFire
+    fire    <- readSERef refFire
     when1 (metro dt  ==* 1 &&* sig fire ==* 1) $ do
-        val <- readRef refVal
+        val <- readSERef refVal
         bam val
-        writeRef refFire 0   
+        writeSERef refFire 0   
     where
         metro :: Sig -> Sig
         metro asig = fromGE $ fmap C.metro $ toGE asig

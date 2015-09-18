@@ -28,9 +28,7 @@ module Csound.Typed.GlobalState.Opcodes(
     midiVolumeFactor
 ) where
 
-
 import Prelude hiding ((<*))
-
 import Control.Monad(zipWithM_, forM_)
 import Data.Boolean
 

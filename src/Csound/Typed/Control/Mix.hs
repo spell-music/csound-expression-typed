@@ -9,6 +9,8 @@ module Csound.Typed.Control.Mix(
 import Control.Applicative
 import Control.Monad.IO.Class
 import Data.Traversable
+import System.Mem.StableName
+
 import Temporal.Media
 
 import Csound.Dynamic hiding (Instr, Sco, str)
@@ -41,15 +43,17 @@ wrapSco notes getContent = singleCsdEvent (0, csdEventListDur evts, Mix $ getCon
 -- > res = sco instrument scores 
 sco :: (Arg a, Sigs b) => (a -> SE b) -> Sco a -> Sco (Mix b)
 sco instr notes = wrapSco notes $ \events -> do
-    events' <- traverse toNote events    
-    instrId <- saveSourceInstrWithLivenessWatch (funArity instr) (insExp instr)
+    events' <- traverse toNote events
+    cacheName <- liftIO $ C.makeCacheName instr
+    instrId <- saveSourceInstrCachedWithLivenessWatch cacheName (funArity instr) (insExp instr)
     return $ Snd instrId events'
 
 -- | Invokes a procedure for the given bunch of events.
 sco_ :: (Arg a) => (a -> SE ()) -> Sco a -> Sco (Mix Unit)
 sco_ instr notes = wrapSco notes $ \events -> do
-    events' <- traverse toNote events    
-    instrId <- saveSourceInstr_ (unitExp $ fmap (const unit) $ instr toArg)
+    events' <- traverse toNote events
+    cacheName <- liftIO $ C.makeCacheName instr
+    instrId <- saveSourceInstrCached_ cacheName (unitExp $ fmap (const unit) $ instr toArg)
     return $ Snd instrId events'
 
 -- | Applies an effect to the sound. Effect is applied to the sound on the give track. 
@@ -75,23 +79,29 @@ eff ef sigs = wrapSco sigs $ \events -> do
 
 -- | Renders a scores to the sound signals. we can use it inside the other instruments.
 mix :: (Sigs a) => Sco (Mix a) -> a
-mix a = flip apInstr unit $ do    
-    setDuration =<< (toGE $ dur a)
-    saveMixInstr (mixArity a) =<< toEventList a'
+mix a = flip apInstr unit $ do
+    key <- mixKey a
+    durE <- toGE $ dur a
+    withCache (ExpDur durE) getMixKey saveMixKey key $ 
+        saveMixInstr (mixArity a) =<< toEventList a'
     where a' = toCsdEventList a
 
 -- | Imitates a closure for a bunch of notes to be played within another instrument. 
 mixBy :: (Arg a, Sigs b) => (a -> Sco (Mix b)) -> (a -> b)
-mixBy evts args = flip apInstr args $ do    
-    setDuration =<< (toGE $ dur evts')
-    saveMixInstr (mixArityFun evts) =<< (toEventList evts')
+mixBy evts args = flip apInstr args $ do
+    key <- mixKey evts
+    durE <- toGE $ dur evts'
+    withCache (ExpDur durE) getMixKey saveMixKey key $ 
+        saveMixInstr (mixArityFun evts) =<< (toEventList evts')
     where evts' = toCsdEventList $ evts toArg
 
 -- | Converts a bunch of procedures scheduled with scores to a single procedure.
 mix_ :: Sco (Mix Unit) -> SE ()
-mix_ a = fromDep_ $ hideGEinDep $ do    
-    setDuration =<< (toGE $ dur a)
-    saveMixInstr_ =<< toEventList a'
+mix_ a = fromDep_ $ hideGEinDep $ do
+    key <- mixKey a
+    durE <- toGE $ dur a
+    withCache (ExpDur durE) getMixProcKey saveMixProcKey key $
+        saveMixInstr_ =<< toEventList a'
     where a' = toCsdEventList a
 
 -- | Imitates a closure for a bunch of procedures to be played within another instrument. 
@@ -99,6 +109,9 @@ mixBy_ :: (Arg a) => (a -> Sco (Mix Unit)) -> (a -> SE ())
 mixBy_ evts args = mix_ $ evts args
 
 ----------------------------------------------------------
+
+mixKey :: a -> GE MixKey
+mixKey = liftIO . fmap (MixKey . hashStableName) . makeStableName
 
 toEventList :: Sco (Mix a) -> GE (CsdEventList M)
 toEventList evts = fmap delayAndRescaleCsdEventListM $ traverse unMix $ evts    
