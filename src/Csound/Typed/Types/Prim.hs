@@ -28,6 +28,8 @@ module Csound.Typed.Types.Prim(
     equalsTo, notEqualsTo, lessThan, greaterThan, lessThanEquals, greaterThanEquals
 ) where
 
+import Prelude hiding ((<*))
+
 import Control.Applicative hiding ((<*))
 import Control.Monad
 import Control.Monad.Trans.Class

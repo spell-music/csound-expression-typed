@@ -6,6 +6,7 @@ module Csound.Typed.Gui.BoxModel(
     appendContext, cascade, boundingRect, zeroRect
 ) where
 
+import Control.Monad
 import Control.Monad.Trans.State.Strict
 import Data.Default
 import Data.Monoid
@@ -54,6 +55,10 @@ data Scene ctx a
     | Ver Offset [Scene ctx a]
     | Context ctx (Scene ctx a)
     deriving (Show, Functor)
+
+instance Applicative (Scene ctx) where
+    pure = return
+    (<*>) = ap
 
 instance Monad (Scene ctx) where
     return = Prim
