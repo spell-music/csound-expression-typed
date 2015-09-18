@@ -148,14 +148,16 @@ evtLoopGen mustLoop maybeOffEvt instrs evts = apInstr0 $ do
             ref <- newRef 0
             zipWithM_ (f ref n) (fmap (sig . int) [0 .. ]) as
             readRef ref
-            where                 
+            where 
+                f :: Tuple a => Ref a -> Sig -> Sig -> SE a -> SE ()
                 f ref n ix a = when1 (n ==* ix) $ writeRef ref =<< a
 
         toSingleEvt :: [Evt Unit] -> SE ()
         toSingleEvt evts = do
             let n = mod' (fromE $ getRetrigVal 4) (sig $ int $ length evts)
             zipWithM_ (f n) (fmap (sig . int) [0 .. ]) evts
-            where                 
+            where 
+                f :: Sig -> Sig -> Evt Unit -> SE ()
                 f n ix evt = when1 (n ==* ix) $ evtLoopInstr evt
 
 evtLoopInstr :: Evt Unit -> SE ()
