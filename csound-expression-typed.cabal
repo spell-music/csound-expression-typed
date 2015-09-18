@@ -61,7 +61,7 @@ Library
     Csound.Typed.Control.Sf2
     Csound.Typed.Control.Osc
     Csound.Typed.Control.Channel
-    Csound.Typed.Control.SERef
+    Csound.Typed.Control.Ref
     Csound.Typed.Control.Instr
 
     Csound.Typed.Gui.Gui

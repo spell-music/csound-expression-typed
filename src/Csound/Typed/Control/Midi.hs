@@ -17,7 +17,7 @@ import Csound.Dynamic
 import Csound.Typed.Types
 import Csound.Typed.GlobalState
 import Csound.Typed.Control.Instr
-import Csound.Typed.Control.SERef
+import Csound.Typed.Control.Ref
 
 import qualified Csound.Typed.GlobalState.Opcodes as C(midiVolumeFactor)
 
@@ -36,10 +36,10 @@ pgmidi mchn n = fromProcMidi (pgmidiWithInstrId_ mchn n)
 
 fromProcMidi :: (Num a, Sigs a) => ((InstrId -> Msg -> SE ()) -> SE ()) -> (Msg -> SE a) -> SE a
 fromProcMidi procMidi f = do
-    ref <- newGlobalSERef 0
-    procMidi (\instrId -> mixSERef ref . scaleMidiVolumeFactor instrId <=< f)
-    res <- readSERef ref
-    writeSERef ref 0
+    ref <- newGlobalRef 0
+    procMidi (\instrId -> mixRef ref . scaleMidiVolumeFactor instrId <=< f)
+    res <- readRef ref
+    writeRef ref 0
     return res
 
 -----------------------------------------------------------------
