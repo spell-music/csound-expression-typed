@@ -18,7 +18,7 @@ module Csound.Typed.GlobalState.Elements(
     Globals(..), newPersistentGlobalVar, newClearableGlobalVar, 
     renderGlobals,
     -- * Instruments
-    Instrs(..), newInstrId, saveInstrById, saveInstr, CacheName, makeCacheName, saveCachedInstr, getInstrIds,
+    Instrs(..), saveInstr, getInstrIds, -- newInstrId, saveInstrById, saveInstr, CacheName, makeCacheName, saveCachedInstr, getInstrIds,
     -- * Src
     InstrBody, getIn, sendOut, sendChn, sendGlobal, chnPargId,
     Event(..),
@@ -26,15 +26,15 @@ module Csound.Typed.GlobalState.Elements(
     subinstr, subinstr_, event_i, event, safeOut, autoOff, changed
 ) where
 
+import Data.Hashable
 
 import Control.Monad.Trans.State.Strict
 import Control.Monad(zipWithM_)
 import Control.Applicative(liftA2)
 import Data.Default
 import qualified Data.Map as M
+import qualified Data.IntMap as IM
 
-import qualified Csound.Typed.Lib.StableMaps.Dynamic as DM
-import qualified Csound.Typed.Lib.StableMaps.Dynamic.Map as DM
 
 import Csound.Dynamic.Types
 import Csound.Dynamic.Build
@@ -202,10 +202,10 @@ data MidiType = Massign | Pgmassign (Maybe Int)
 data MidiKey = MidiKey MidiType Channel
     deriving (Show, Eq, Ord)
 
-type MidiMap m = M.Map MidiKey (InstrId -> DepT m ())
+type MidiMap m = M.Map MidiKey (DepT m ())
 
-saveMidiInstr :: Monad m => MidiType -> Channel -> (InstrId -> DepT m ()) -> MidiMap m -> MidiMap m
-saveMidiInstr ty chn body = M.insertWith (liftA2 $ flip (>>)) (MidiKey ty chn) body
+saveMidiInstr :: Monad m => MidiType -> Channel -> DepT m () -> MidiMap m -> MidiMap m
+saveMidiInstr ty chn body = M.insertWith (flip (>>)) (MidiKey ty chn) body
 
 -- global variables
 
@@ -251,31 +251,46 @@ renderGlobals a = (initAll, clear)
 -- instrs
 
 data Instrs = Instrs
-    { instrsCache   :: DM.Map InstrId
+    { instrsCache   :: IM.IntMap InstrId
     , instrsNewId   :: Int
     , instrsContent :: [(InstrId, InstrBody)]
     }
 
 instance Default Instrs where
-    def = Instrs DM.empty 18 []
+    def = Instrs IM.empty 18 []
 
-type CacheName = DM.DynamicStableName
+type CacheName = Int
 
-makeCacheName :: a -> IO CacheName
-makeCacheName = DM.makeDynamicStableName 
+makeCacheName :: Hashable a => a -> CacheName
+makeCacheName = hash
 
 getInstrIds :: Instrs -> [InstrId]
 getInstrIds = fmap fst . instrsContent
 
 -----------------------------------------------------------------
 --
-saveCachedInstr :: CacheName -> InstrBody -> State Instrs InstrId 
+
+
+saveInstr :: InstrBody -> State Instrs InstrId
+saveInstr body = state $ \s -> 
+    let h = hash body
+    in  case IM.lookup h $ instrsCache s of
+            Just  n -> (n, s)
+            Nothing -> 
+                let newId = instrsNewId s
+                    s1    = s { instrsCache   = IM.insert h (intInstrId newId) $ instrsCache s
+                              , instrsNewId   = succ newId
+                              , instrsContent = (intInstrId newId, body) : instrsContent s }
+                in  (intInstrId newId, s1)
+
+{-
+saveCachedInstr :: InstrBody -> State Instrs InstrId 
 saveCachedInstr name body = state $ \s -> 
-    case DM.lookup name $ instrsCache s of
+    case IM.lookup name $ instrsCache s of
         Just n  -> (n, s)
         Nothing -> 
             let newId   = instrsNewId s
-                s1      = s { instrsCache   = DM.insert name (intInstrId newId) $ instrsCache s
+                s1      = s { instrsCache   = IM.insert name (intInstrId newId) $ instrsCache s
                             , instrsNewId   = succ newId
                             , instrsContent = (intInstrId newId, body) : instrsContent s }
             in  (intInstrId newId, s1)
@@ -296,6 +311,7 @@ saveInstr body = do
     newId <- newInstrId
     saveInstrById newId body
     return newId
+-}
 
 -----------------------------------------------------------------
 -- sound sources

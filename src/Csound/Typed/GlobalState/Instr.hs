@@ -26,45 +26,42 @@ type UnitExp = SE ()
 saveInstr :: SE () -> GE InstrId
 saveInstr a = onInstr . C.saveInstr =<< execSE a
 
-saveCachedInstr :: C.CacheName -> SE () -> GE InstrId
-saveCachedInstr cacheName a = onInstr . C.saveCachedInstr cacheName =<< execSE a
-
 livenessWatch :: Arity -> SE ()
 livenessWatch arity = fromDep_ $ servantUpdateChnAlive (C.chnPargId $ arityIns arity)
 
 retrigWatch :: Arity -> SE ()
 retrigWatch arity = fromDep_ $ servantUpdateChnRetrig (C.chnPargId $ arityIns arity)
 
-saveSourceInstrCachedWithLivenessWatch :: C.CacheName -> Arity -> InsExp -> GE InstrId
-saveSourceInstrCachedWithLivenessWatch cacheName arity instr = saveCachedInstr cacheName $ do
+saveSourceInstrCachedWithLivenessWatch :: Arity -> InsExp -> GE InstrId
+saveSourceInstrCachedWithLivenessWatch arity instr = saveInstr $ do
     toOut =<< instr
     livenessWatch arity 
     where toOut = SE . C.sendChn (arityIns arity) (arityOuts arity)
 
-saveSourceInstrCachedWithLivenessWatchAndRetrig :: C.CacheName -> Arity -> InsExp -> GE InstrId
-saveSourceInstrCachedWithLivenessWatchAndRetrig cacheName arity instr = saveCachedInstr cacheName $ do
+saveSourceInstrCachedWithLivenessWatchAndRetrig :: Arity -> InsExp -> GE InstrId
+saveSourceInstrCachedWithLivenessWatchAndRetrig arity instr = saveInstr $ do
     toOut =<< instr
     retrigWatch arity
     livenessWatch arity    
     where toOut = SE . C.sendChn (arityIns arity) (arityOuts arity)
 
-saveSourceInstrCachedWithLivenessWatchAndRetrigAndEvtLoop :: C.CacheName -> Arity -> InsExp -> UnitExp -> GE (InstrId, InstrId)
-saveSourceInstrCachedWithLivenessWatchAndRetrigAndEvtLoop cacheName arity instr evtInstr = do 
-    instrId <- saveSourceInstrCachedWithLivenessWatchAndRetrig cacheName arity instr
+saveSourceInstrCachedWithLivenessWatchAndRetrigAndEvtLoop :: Arity -> InsExp -> UnitExp -> GE (InstrId, InstrId)
+saveSourceInstrCachedWithLivenessWatchAndRetrigAndEvtLoop arity instr evtInstr = do 
+    instrId <- saveSourceInstrCachedWithLivenessWatchAndRetrig arity instr
     evtInstrId <- saveInstr (evtInstr >> retrigWatch evtInstrArity >> livenessWatch evtInstrArity)
     return (instrId, evtInstrId)
     where 
         evtInstrArity = Arity 0 0
         
-saveSourceInstrCached :: C.CacheName -> Arity -> InsExp -> GE InstrId
-saveSourceInstrCached cacheName arity instr = saveCachedInstr cacheName $ toOut =<< instr
+saveSourceInstrCached :: Arity -> InsExp -> GE InstrId
+saveSourceInstrCached arity instr = saveInstr $ toOut =<< instr
     where toOut = SE . C.sendChn (arityIns arity) (arityOuts arity)
 
-saveSourceInstrCached_ :: C.CacheName -> UnitExp -> GE InstrId
-saveSourceInstrCached_ cacheName instr = saveCachedInstr cacheName instr
+saveSourceInstrCached_ :: UnitExp -> GE InstrId
+saveSourceInstrCached_ instr = saveInstr instr
 
-saveSourceInstrCachedWithLivenessWatch_ :: C.CacheName -> Arity -> UnitExp -> GE InstrId
-saveSourceInstrCachedWithLivenessWatch_ cacheName arity instr = saveCachedInstr cacheName $ 
+saveSourceInstrCachedWithLivenessWatch_ :: Arity -> UnitExp -> GE InstrId
+saveSourceInstrCachedWithLivenessWatch_ arity instr = saveInstr $ 
     instr >> livenessWatch arity
 
 saveEffectInstr :: Arity -> EffExp -> GE InstrId
@@ -100,13 +97,11 @@ saveMidiInstr midiType channel arity instr = do
 saveMidiMap :: GE ()
 saveMidiMap = do
     m <- fmap midiMap getHistory
-    mapM_ (\(C.MidiKey midiType channel, instrExpr) -> saveMidiInstr_ midiType channel (SE . instrExpr)) $ toList m
+    mapM_ (\(C.MidiKey midiType channel, instrExpr) -> saveMidiInstr_ midiType channel (SE instrExpr)) $ toList m
 
-saveMidiInstr_ :: C.MidiType -> C.Channel -> (InstrId -> UnitExp) -> GE ()
-saveMidiInstr_ midiType channel instr = do
-    instrId <- onInstr C.newInstrId
-    onInstr . C.saveInstrById instrId =<< execSE (instr instrId)
-    -- instrId <- onInstr . C.saveInstr =<< execSE instr
+saveMidiInstr_ :: C.MidiType -> C.Channel -> UnitExp -> GE ()
+saveMidiInstr_ midiType channel instr = do    
+    instrId <- saveInstr instr
     saveMidi $ MidiAssign midiType channel instrId   
 
 saveIns0 :: Int -> [Rate] -> SE [E] -> GE [E]

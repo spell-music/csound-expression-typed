@@ -34,10 +34,10 @@ midin n = fromProcMidi (midinWithInstrId_ n)
 pgmidi :: (Num a, Sigs a) => Maybe Int -> Channel -> (Msg -> SE a) -> SE a
 pgmidi mchn n = fromProcMidi (pgmidiWithInstrId_ mchn n)
 
-fromProcMidi :: (Num a, Sigs a) => ((InstrId -> Msg -> SE ()) -> SE ()) -> (Msg -> SE a) -> SE a
+fromProcMidi :: (Num a, Sigs a) => ((Msg -> SE ()) -> SE ()) -> (Msg -> SE a) -> SE a
 fromProcMidi procMidi f = do
     ref <- newGlobalRef 0
-    procMidi (\instrId -> mixRef ref . scaleMidiVolumeFactor instrId <=< f)
+    procMidi (mixRef ref . scaleMidiVolumeFactor <=< f)
     res <- readRef ref
     writeRef ref 0
     return res
@@ -45,15 +45,15 @@ fromProcMidi procMidi f = do
 -----------------------------------------------------------------
 
 -- | Triggers a midi-procedure (aka Csound's massign) for all channels. 
-midiWithInstrId_ :: (InstrId -> Msg -> SE ()) -> SE ()
+midiWithInstrId_ :: (Msg -> SE ()) -> SE ()
 midiWithInstrId_ = midinWithInstrId_ 0
 
 -- | Triggers a midi-procedure (aka Csound's pgmassign) on the given channel. 
-midinWithInstrId_ :: Channel -> (InstrId -> Msg -> SE ()) -> SE ()
+midinWithInstrId_ :: Channel -> (Msg -> SE ()) -> SE ()
 midinWithInstrId_ chn instr = genMidi_ Massign chn instr
 
 -- | Triggers a midi-procedure (aka Csound's pgmassign) on the given programm bank. 
-pgmidiWithInstrId_ :: Maybe Int -> Channel -> (InstrId -> Msg -> SE ()) -> SE ()
+pgmidiWithInstrId_ :: Maybe Int -> Channel -> (Msg -> SE ()) -> SE ()
 pgmidiWithInstrId_ mchn chn instr = genMidi_ (Pgmassign mchn) chn instr
 
 -----------------------------------------------------------------
@@ -64,14 +64,14 @@ midi_ = midin_ 0
 
 -- | Triggers a midi-procedure (aka Csound's pgmassign) on the given channel. 
 midin_ :: Channel -> (Msg -> SE ()) -> SE ()
-midin_ chn instr = genMidi_ Massign chn (const instr)
+midin_ chn instr = genMidi_ Massign chn instr
 
 -- | Triggers a midi-procedure (aka Csound's pgmassign) on the given programm bank. 
 pgmidi_ :: Maybe Int -> Channel -> (Msg -> SE ()) -> SE ()
-pgmidi_ mchn chn instr = genMidi_ (Pgmassign mchn) chn (const instr)
+pgmidi_ mchn chn instr = genMidi_ (Pgmassign mchn) chn instr
 
-genMidi_ :: MidiType -> Channel -> (InstrId -> Msg -> SE ()) -> SE ()
-genMidi_ midiType chn instr = geToSe $ saveToMidiInstr midiType chn (\instrId -> unSE $ instr instrId Msg)
+genMidi_ :: MidiType -> Channel -> (Msg -> SE ()) -> SE ()
+genMidi_ midiType chn instr = geToSe $ saveToMidiInstr midiType chn (unSE $ instr Msg)
 
 -----------------------------------------------------------------
 -- midi ctrls
@@ -84,5 +84,5 @@ initMidiCtrl chno ctrlno val = geToSe $
 -----------------------------------------------------------------
 -- midi volume factor
 
-scaleMidiVolumeFactor :: Sigs a => InstrId -> a -> a
-scaleMidiVolumeFactor instrId = mapTuple (C.midiVolumeFactor instrId * )
+scaleMidiVolumeFactor :: Sigs a => a -> a
+scaleMidiVolumeFactor = mapTuple (C.midiVolumeFactor (pn 1) * )

@@ -43,17 +43,15 @@ wrapSco notes getContent = singleCsdEvent (0, csdEventListDur evts, Mix $ getCon
 -- > res = sco instrument scores 
 sco :: (Arg a, Sigs b) => (a -> SE b) -> Sco a -> Sco (Mix b)
 sco instr notes = wrapSco notes $ \events -> do
-    events' <- traverse toNote events
-    cacheName <- liftIO $ C.makeCacheName instr
-    instrId <- saveSourceInstrCachedWithLivenessWatch cacheName (funArity instr) (insExp instr)
+    events' <- traverse toNote events    
+    instrId <- saveSourceInstrCachedWithLivenessWatch (funArity instr) (insExp instr)
     return $ Snd instrId events'
 
 -- | Invokes a procedure for the given bunch of events.
 sco_ :: (Arg a) => (a -> SE ()) -> Sco a -> Sco (Mix Unit)
 sco_ instr notes = wrapSco notes $ \events -> do
-    events' <- traverse toNote events
-    cacheName <- liftIO $ C.makeCacheName instr
-    instrId <- saveSourceInstrCached_ cacheName (unitExp $ fmap (const unit) $ instr toArg)
+    events' <- traverse toNote events    
+    instrId <- saveSourceInstrCached_ (unitExp $ fmap (const unit) $ instr toArg)
     return $ Snd instrId events'
 
 -- | Applies an effect to the sound. Effect is applied to the sound on the give track. 

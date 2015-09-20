@@ -30,31 +30,22 @@ renderEvts = fmap (fmap unEvt . T.render)
     where unEvt e = (T.eventStart e, T.eventDur e, T.eventContent e)
 
 sched :: (Arg a, Sigs b) => (a -> SE b) -> Evt (Sco a) -> b
-sched instr evts = apInstr0 $ do
-    key <- evtKey evts instr
-    withCache InfiniteDur getEvtKey saveEvtKey key $ do
-        cacheName <- liftIO $ C.makeCacheName instr
-        instrId <- saveSourceInstrCachedWithLivenessWatch cacheName (funArity instr) (insExp instr)
-        saveEvtInstr (arityOuts $ funArity instr) instrId (renderEvts evts)
+sched instr evts = apInstr0 $ do    
+    instrId <- saveSourceInstrCachedWithLivenessWatch (funArity instr) (insExp instr)
+    saveEvtInstr (arityOuts $ funArity instr) instrId (renderEvts evts)
     where unEvt e = (T.eventStart e, T.eventDur e, T.eventContent e)
 
 -- | Triggers a procedure on the event stream.
 sched_ :: (Arg a) => (a -> SE ()) -> Evt (Sco a) -> SE ()
 sched_ instr evts = fromDep_ $ hideGEinDep $ do
-    key <- evtKey evts instr
-    withCache InfiniteDur getEvtProcKey saveEvtProcKey key $ do
-        cacheName <- liftIO $ C.makeCacheName instr
-        instrId <- saveSourceInstrCached_ cacheName (unitExp $ fmap (const unit) $ instr toArg)
-        return $ saveEvtInstr_ instrId (renderEvts evts)
+    instrId <- saveSourceInstrCached_ (unitExp $ fmap (const unit) $ instr toArg)
+    return $ saveEvtInstr_ instrId (renderEvts evts)
 
 -- | A closure to trigger an instrument inside the body of another instrument.
 schedBy :: (Arg a, Sigs b, Arg c) => (a -> SE b) -> (c -> Evt (Sco a)) -> (c -> b)
 schedBy instr evts args = flip apInstr args $ do
-    key <- evtKey evts instr
-    withCache InfiniteDur getEvtKey saveEvtKey key $ do        
-        cacheName <- liftIO $ C.makeCacheName instr
-        instrId <- saveSourceInstrCachedWithLivenessWatch cacheName (funArity instr) (insExp instr)
-        saveEvtInstr (arityOuts $ funArity instr) instrId (renderEvts $ evts toArg)  
+    instrId <- saveSourceInstrCachedWithLivenessWatch (funArity instr) (insExp instr)
+    saveEvtInstr (arityOuts $ funArity instr) instrId (renderEvts $ evts toArg)  
 
 -------------------------------------------------
 -- triggereing the events
@@ -87,11 +78,8 @@ saveEvtInstr arity instrId evts = saveInstr $ do
 -- is held until the next event happens.
 retrigs :: (Arg a, Sigs b) => (a -> SE b) -> Evt [a] -> b
 retrigs instr evts = apInstr0 $ do
-    key <- evtKey evts instr
-    withCache InfiniteDur getEvtKey saveEvtKey key $ do
-        cacheName <- liftIO $ C.makeCacheName instr
-        instrId <- saveSourceInstrCachedWithLivenessWatchAndRetrig cacheName (funArity instr) (insExp instr)
-        saveRetrigEvtInstr (arityOuts $ funArity instr) instrId evts
+    instrId <- saveSourceInstrCachedWithLivenessWatchAndRetrig (funArity instr) (insExp instr)
+    saveRetrigEvtInstr (arityOuts $ funArity instr) instrId evts
    
 saveRetrigEvtInstr :: Arg a => Int -> C.InstrId -> Evt [a] -> GE C.InstrId
 saveRetrigEvtInstr arity instrId evts = saveInstr $ do
@@ -130,11 +118,8 @@ evtLoopOnce = evtLoopGen False
 
 evtLoopGen :: (Num a, Tuple a, Sigs a) => Bool -> Maybe (Evt Unit) -> [SE a] -> [Evt Unit] -> a
 evtLoopGen mustLoop maybeOffEvt instrs evts = apInstr0 $ do
-    key <- evtKey evts instr
-    withCache InfiniteDur getEvtKey saveEvtKey key $ do
-        cacheName <- liftIO $ C.makeCacheName instr        
-        (instrId, evtInstrId) <- saveSourceInstrCachedWithLivenessWatchAndRetrigAndEvtLoop cacheName (constArity instr) (insExp $ toInstrExp instr) (toSingleEvt evts)
-        saveEvtLoopInstr mustLoop loopLength maybeOffEvt (arityOuts $ constArity instr) instrId evtInstrId
+    (instrId, evtInstrId) <- saveSourceInstrCachedWithLivenessWatchAndRetrigAndEvtLoop (constArity instr) (insExp $ toInstrExp instr) (toSingleEvt evts)
+    saveEvtLoopInstr mustLoop loopLength maybeOffEvt (arityOuts $ constArity instr) instrId evtInstrId
     where         
         loopLength = int $ lcm (length instrs) (length evts)
         instr = toSingleInstr instrs
@@ -243,21 +228,15 @@ saveEvtLoopInstr mustLoop loopLength maybeOffEvt arity instrId evtInstrId = save
 -- for some seconds (specified in the first argument) then it's turned off.
 schedHarp :: (Arg a, Sigs b) => D -> (a -> SE b) -> Evt [a] -> b
 schedHarp turnOffTime instr evts = apInstr0 $ do
-    key <- evtKey evts instr
-    withCache InfiniteDur getEvtKey saveEvtKey key $ do
-        cacheName <- liftIO $ C.makeCacheName instr
-        instrId <- saveSourceInstrCachedWithLivenessWatch cacheName (funArity instr) (insExp $ (autoOff turnOffTime =<< ) . instr)
-        saveEvtInstr (arityOuts $ funArity instr) instrId (fmap (fmap phi) evts)
+    instrId <- saveSourceInstrCachedWithLivenessWatch (funArity instr) (insExp $ (autoOff turnOffTime =<< ) . instr)
+    saveEvtInstr (arityOuts $ funArity instr) instrId (fmap (fmap phi) evts)
     where phi a = (0, infiniteDur, a)
 
 -- | A closure to trigger an instrument inside the body of another instrument.
 schedHarpBy :: (Arg a, Sigs b, Arg c) => D -> (a -> SE b) -> (c -> Evt [a]) -> (c -> b)
 schedHarpBy turnOffTime instr evts args = flip apInstr args $ do
-    key <- evtKey evts instr
-    withCache InfiniteDur getEvtKey saveEvtKey key $ do
-        cacheName <- liftIO $ C.makeCacheName instr
-        instrId <- saveSourceInstrCachedWithLivenessWatch cacheName (funArity instr) (insExp $ (autoOff turnOffTime =<< ) . instr)
-        saveEvtInstr (arityOuts $ funArity instr) instrId (fmap (fmap phi) $ evts toArg)
+    instrId <- saveSourceInstrCachedWithLivenessWatch (funArity instr) (insExp $ (autoOff turnOffTime =<< ) . instr)
+    saveEvtInstr (arityOuts $ funArity instr) instrId (fmap (fmap phi) $ evts toArg)
     where phi a = (0, infiniteDur, a)
 
 autoOff :: Sigs a => D -> a -> SE a
