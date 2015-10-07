@@ -13,6 +13,17 @@ Maintainer:    <anton.kholomiov@gmail.com>
 
 Description:   
 
+Data-Files :
+    data/hrtf-44100-left.dat
+    data/hrtf-44100-right.dat
+
+    data/hrtf-48000-left.dat
+    data/hrtf-48000-right.dat
+
+    data/hrtf-96000-left.dat
+    data/hrtf-96000-right.dat
+    
+
 Homepage:        https://github.com/anton-k/csound-expression-typed
 Bug-Reports:     https://github.com/anton-k/csound-expression-typed/issues
 
