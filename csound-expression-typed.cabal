@@ -22,7 +22,7 @@ Data-Files :
 
     data/hrtf-96000-left.dat
     data/hrtf-96000-right.dat
-    
+
 
 Homepage:        https://github.com/anton-k/csound-expression-typed
 Bug-Reports:     https://github.com/anton-k/csound-expression-typed/issues
@@ -80,8 +80,11 @@ Library
     Csound.Typed.Gui.BoxModel
 
     Csound.Typed.Constants
+    Csound.Typed.Misc
 
     Csound.Typed.Lib.StableMaps.Dynamic
     Csound.Typed.Lib.StableMaps.Dynamic.Map
+
+    Paths_csound_expression_typed
 
   Default-Language: Haskell2010

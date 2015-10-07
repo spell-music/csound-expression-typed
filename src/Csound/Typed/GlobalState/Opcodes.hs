@@ -25,7 +25,9 @@ module Csound.Typed.GlobalState.Opcodes(
     -- * Soundfonts
     sfSetList,
     -- * Midi
-    midiVolumeFactor
+    midiVolumeFactor,
+    -- * Hrtf Pan
+    hrtfmove, hrtfstat
 ) where
 
 import Prelude hiding ((<*))
@@ -356,3 +358,14 @@ active instrId = opcs "active" [(Kr, [Ir])] [instrId]
 
 port :: E -> E -> E
 port a b = opcs "port" [(Kr, [Kr, Ir])] [a, b]
+
+-----------------------------------------------------------
+
+getPair mout = (a, b)
+    where [a, b] = mout 2
+
+hrtfmove :: E -> E -> E -> E -> E -> E -> E -> E -> (E, E)
+hrtfmove a1 a2 a3 a4 a5 a6 a7 a8 = getPair $ mopcs "hrtfmove2" ([Ar, Ar], [Ar, Kr, Kr, Ir, Ir, Ir, Ir, Ir]) [a1, a2, a3, a4, a5, a6, a7, a8]
+
+hrtfstat :: E -> E -> E -> E -> E -> E -> E -> (E, E)
+hrtfstat a1 a2 a3 a4 a5 a6 a7 = getPair $ mopcs "hrtfstat" ([Ar, Ar], [Ar, Ir, Ir, Ir, Ir, Ir, Ir]) [a1, a2, a3, a4, a5, a6, a7]

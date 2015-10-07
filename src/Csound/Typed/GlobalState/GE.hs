@@ -1,3 +1,4 @@
+{-# Language TupleSections #-}
 module Csound.Typed.GlobalState.GE(
     GE, Dep, History(..), withOptions, withHistory, getOptions, evalGE, execGE,
     getHistory, putHistory,
@@ -28,8 +29,12 @@ module Csound.Typed.GlobalState.GE(
     newGuiVar, getPanels, guiHandleToVar,
     guiInstrExp,
     listenKeyEvt, Key(..), KeyEvt(..), Guis(..),
-    getKeyEventListener
+    getKeyEventListener,
+    -- * Hrtf pan
+    simpleHrtfmove, simpleHrtfstat
 ) where
+
+import Paths_csound_expression_typed
 
 import Control.Applicative
 import Control.Monad
@@ -49,6 +54,7 @@ import Csound.Typed.GlobalState.Options
 import Csound.Typed.GlobalState.Cache
 import Csound.Typed.GlobalState.Elements
 import Csound.Typed.Constants(infiniteDur)
+import Csound.Typed.GlobalState.Opcodes(hrtfmove, hrtfstat)
 
 import Csound.Typed.Gui.Gui(Panel(..), Win(..), GuiNode, GuiHandle(..), restoreTree, guiMap, mapGuiOnPanel, defText)
 
@@ -482,3 +488,25 @@ getKeyEventListener = do
             return $ Just (Instr keyEventInstrId body)
 
 
+-----------------------------------------------
+-- head pan
+
+simpleHrtfmove :: E -> E -> E -> E -> E ->  E -> GE (E, E)
+simpleHrtfmove a1 a2 a3 a4 a5 a6 = do
+    (left, right) <- getHrtfFiles
+    return $ hrtfmove a1 a2 a3 left right a4 a5 a6
+
+simpleHrtfstat :: E -> E -> E -> E -> E -> GE (E, E)
+simpleHrtfstat a1 a2 a3 a4 a5 = do
+    (left, right) <- getHrtfFiles
+    return $ hrtfstat a1 a2 a3 left right a4 a5
+
+getHrtfFiles :: GE (E, E)
+getHrtfFiles = do
+    sr <- fmap defSampleRate getOptions
+    (left, right) <- liftIO $ hrtfFileNames sr
+    return (str left, str right)
+
+hrtfFileNames :: Int -> IO (String, String)
+hrtfFileNames sr = liftA2 (,) (getDataFileName (name "left" sr)) (getDataFileName (name "right" sr))
+    where name dir n = concat ["data/hrtf-", show n, "-", dir, ".dat"]

@@ -30,7 +30,6 @@ import Data.Hashable
 
 import Control.Monad.Trans.State.Strict
 import Control.Monad(zipWithM_)
-import Control.Applicative(liftA2)
 import Data.Default
 import qualified Data.Map as M
 import qualified Data.IntMap as IM
