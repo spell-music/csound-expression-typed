@@ -27,7 +27,9 @@ module Csound.Typed.GlobalState.Opcodes(
     -- * Midi
     midiVolumeFactor,
     -- * Hrtf Pan
-    hrtfmove, hrtfstat
+    hrtfmove, hrtfstat,
+    -- * Read tables
+    tableK, tableI
 ) where
 
 import Prelude hiding ((<*))
@@ -369,3 +371,15 @@ hrtfmove a1 a2 a3 a4 a5 a6 a7 a8 = getPair $ mopcs "hrtfmove2" ([Ar, Ar], [Ar, K
 
 hrtfstat :: E -> E -> E -> E -> E -> E -> E -> (E, E)
 hrtfstat a1 a2 a3 a4 a5 a6 a7 = getPair $ mopcs "hrtfstat" ([Ar, Ar], [Ar, Ir, Ir, Ir, Ir, Ir, Ir]) [a1, a2, a3, a4, a5, a6, a7]
+
+
+-----------------------------------------------------------
+-- read tables
+
+tableK :: E -> E -> E
+tableK a1 a2 = opcs "table" [(Kr, [Kr, Ir])] [a1, a2]
+
+tableI :: E -> E -> E
+tableI a1 a2 = opcs "table" [(Ir, [Ir, Ir])] [a1, a2]
+
+

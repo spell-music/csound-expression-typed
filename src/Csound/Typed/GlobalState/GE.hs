@@ -15,7 +15,7 @@ module Csound.Typed.GlobalState.GE(
     -- * Notes
     addNote,
     -- * GEN routines
-    saveGen, getNextGlobalGenId,
+    saveGen, saveTabs, getNextGlobalGenId,
     -- * Sf2
     saveSf, sfTable,
     -- * Band-limited waves
@@ -161,7 +161,11 @@ getNextGlobalGenId = onHistory globalGenCounter (\a h -> h{ globalGenCounter = a
 
 saveGen :: Gen -> GE E
 saveGen = onGenMap . newGen
-    where onGenMap = onHistory genMap (\val h -> h{ genMap = val })
+
+onGenMap = onHistory genMap (\val h -> h{ genMap = val })
+
+saveTabs :: [Gen] -> GE E
+saveTabs = onGenMap . newTabOfGens
 
 onSfMap :: State SfMap a -> GE a
 onSfMap = onHistory sfMap (\val h -> h{ sfMap = val })

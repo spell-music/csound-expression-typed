@@ -7,6 +7,7 @@ module Csound.Typed.Types.Prim(
     preTab, TabSize(..), TabArgs(..), updateTabSize,
     fromPreTab, getPreTabUnsafe, skipNorm, forceNorm,
     nsamp, ftlen, ftchnls, ftsr, ftcps,
+    TabList, tabList, fromTabList, fromTabListD,
 
     -- ** constructors
     double, int, text, 
@@ -44,6 +45,7 @@ import qualified Csound.Dynamic as D(double, int, str, ifBegin, ifEnd, elseBegin
 import Csound.Typed.GlobalState.GE
 import Csound.Typed.GlobalState.SE
 import Csound.Typed.GlobalState.Options
+import Csound.Typed.GlobalState.Opcodes(tableK, tableI)
 
 -- | Signals
 data Sig  
@@ -237,6 +239,33 @@ updateTabSize phi x = case x of
     Tab _ -> error "you can change size only for primitive tables (made with gen-routines)"
     TabPre a -> TabPre $ a{ preTabSize = phi $ preTabSize a }
 
+
+----------------------------------------------------------------------------
+-- Tab of tabs
+
+-- | Container list of tables 
+data TabList = TabList { unTabList :: GE E }
+
+tabList :: [Tab] -> TabList
+tabList xs = TabList $ saveTabs =<< mapM fromPreTab (getPreTabs xs)
+    where 
+        getPreTabs xs = case xs of
+            []            -> []
+            Tab    _ : as -> getPreTabs as
+            TabPre a : as -> a : getPreTabs as
+
+fromTabList :: TabList -> Sig -> Tab
+fromTabList ts knd = Tab $ do
+    ets  <- toGE ts
+    eknd <- toGE knd
+    return $ tableK eknd ets
+
+fromTabListD :: TabList -> D -> Tab
+fromTabListD ts ind = Tab $ do
+    ets  <- toGE ts
+    eind <- toGE ind
+    return $ tableI eind ets
+
 -------------------------------------------------------------------------------
 -- constructors
 
@@ -320,6 +349,8 @@ instance Val D      where
 instance Val Str    where { fromGE = Str    ; toGE = unStr  }
 instance Val Spec   where { fromGE = Spec   ; toGE = unSpec }
 instance Val Wspec  where { fromGE = Wspec  ; toGE = unWspec}
+
+instance Val TabList where { fromGE = TabList; toGE = unTabList }
 
 instance Val Tab where 
     fromGE = Tab 

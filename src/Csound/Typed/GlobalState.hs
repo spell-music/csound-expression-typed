@@ -10,6 +10,7 @@ module Csound.Typed.GlobalState (
     getIn, chnUpdateUdo, renderGlobals, turnoff, turnoff2, exitnow, 
     oscListen, oscInit, oscSend,
     chnSet, chnGet, freeChn,
+    tableK, tableI,
     readChnEvtLoop,
     masterUpdateChnAlive,
     servantUpdateChnAlive,
