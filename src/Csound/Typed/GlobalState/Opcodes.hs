@@ -352,7 +352,7 @@ sfSetList fileName presets = do
 -- midi volume factor (normalize by number of notes)
 
 midiVolumeFactor :: E -> E
-midiVolumeFactor idx = flip port 0.0015 $ ifB (n ==* 0) 1 (recip n)
+midiVolumeFactor idx = flip port 0.0065 $ ifB (n ==* 0) 1 (recip n)
     where n = sqrt (active idx)
 
 active :: E -> E    
