@@ -78,7 +78,7 @@ panelBy = genPanelBy False
 -- | Renders the GUI elements on the window. We can specify the window title
 -- and rectangle of the window. Panesls are sensitive to keyboard events.
 keyPanelBy :: String -> Maybe Rect -> Gui -> SE ()
-keyPanelBy = genPanelBy False
+keyPanelBy = genPanelBy True
 
 genPanelBy :: Bool -> String -> Maybe Rect -> Gui -> SE ()
 genPanelBy isKeybd title mrect gui = geToSe $ saveGuiRoot $ Single (Win title mrect gui) isKeybd
