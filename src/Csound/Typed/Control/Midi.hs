@@ -85,4 +85,4 @@ initMidiCtrl chno ctrlno val = geToSe $
 -- midi volume factor
 
 scaleMidiVolumeFactor :: Sigs a => a -> a
-scaleMidiVolumeFactor = mapTuple (C.midiVolumeFactor (pn 1) * )
+scaleMidiVolumeFactor = mapTuple (setRate Ir (C.midiVolumeFactor (pn 1)) * )
