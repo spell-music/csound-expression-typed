@@ -34,6 +34,7 @@ import Data.Default
 import qualified Data.Map as M
 import qualified Data.IntMap as IM
 
+import qualified Csound.Typed.GlobalState.Opcodes as C(midiVolumeFactor)
 
 import Csound.Dynamic.Types
 import Csound.Dynamic.Build
@@ -359,12 +360,12 @@ sendGlobal arityOuts sigs = do
     return (fmap readOnlyVar vars, zipWithM_ (appendVarBy (+)) vars sigs)
 
 sendChn :: Monad m => Int -> Int -> [E] -> DepT m ()
-sendChn arityIns arityOuts sigs = writeChn (chnRefFromParg (chnPargId arityIns) arityOuts) sigs
+sendChn arityIns arityOuts sigs = writeChn (chnRefFromParg (chnPargId arityIns) arityOuts) (fmap scaleVolumeFactor sigs)
 
 chnPargId :: Int -> Int
 chnPargId arityIns = 4 + arityIns
 
+scaleVolumeFactor :: E -> E
+scaleVolumeFactor = (setRate Ir (C.midiVolumeFactor (pn 1)) * )
+
 -- guis
-
-
-

@@ -351,12 +351,18 @@ sfSetList fileName presets = do
 -----------------------------------------------------------
 -- midi volume factor (normalize by number of notes)
 
+-- if we use the scaling at I-rate we don't need to use portamento.
+-- If we want to scale with signal the portamento is must
 midiVolumeFactor :: E -> E
-midiVolumeFactor idx = flip port 0.0065 $ ifB (n ==* 0) 1 (recip n)
-    where n = sqrt (active idx)
+midiVolumeFactor idx = flip port 0.015 $ ifB (n <* 2) 1 (recip sqrtN)
+    where sqrtN = sqrt n
+          n     = active idx
 
 active :: E -> E    
-active instrId = opcs "active" [(Kr, [Ir])] [instrId]
+active instrId = opcs "active" [(Kr, [Ir]), (Ir, [Ir])] [instrId]
+
+activeIr :: E -> E    
+activeIr instrId = opcs "active" [(Ir, [Ir])] [instrId]
 
 port :: E -> E -> E
 port a b = opcs "port" [(Kr, [Kr, Ir])] [a, b]
