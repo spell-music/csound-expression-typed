@@ -18,6 +18,7 @@ import qualified Data.IntMap as IM
 import Csound.Dynamic hiding (csdFlags)
 import Csound.Typed.Types
 import Csound.Typed.GlobalState
+import Csound.Typed.GlobalState.Elements(NamedInstrs(..))
 import Csound.Typed.GlobalState.Options
 import Csound.Typed.Control.Instr
 import Csound.Typed.Control(getIns)
@@ -71,7 +72,8 @@ renderHistory mnchnls_i nchnls opt = do
     expr3 <- guiInstrExp 
     saveAlwaysOnInstr =<< saveInstr (SE expr3)    
     hist2 <- getHistory
-    let orc = Orc instr0 (maybeAppend keyEventListener $ fmap (uncurry Instr) $ instrsContent $ instrs hist2)   
+    let namedIntruments = fmap (\(name, body) -> Instr (InstrLabel name) body) $ unNamedInstrs $ namedInstrs hist2
+    let orc = Orc instr0 ((namedIntruments ++ ) $ maybeAppend keyEventListener $ fmap (uncurry Instr) $ instrsContent $ instrs hist2)   
     hist3 <- getHistory 
     let flags   = reactOnMidi hist3 $ csdFlags opt
         sco     = Sco (Just $ pureGetTotalDurForF0 $ totalDur hist3) 

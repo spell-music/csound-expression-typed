@@ -114,4 +114,3 @@ terminatorInstr :: GE (SE ())
 terminatorInstr = do
     ids <- fmap (getInstrIds . instrs) getHistory
     return $ fromDep_ $ (mapM_ turnoff2 $ fmap instrIdE ids) >> exitnow
-

@@ -11,6 +11,8 @@ module Csound.Typed.Control (
     module Csound.Typed.Control.Mix,
     -- * Midi
     module Csound.Typed.Control.Midi,
+    -- * Named instruments (API)
+    module Csound.Typed.Control.Api,
     -- * OSC
     module Csound.Typed.Control.Osc,
     -- * Channel
@@ -29,6 +31,7 @@ import Csound.Typed.Control.Ref
 import Csound.Typed.Control.Evt
 import Csound.Typed.Control.Mix
 import Csound.Typed.Control.Midi
+import Csound.Typed.Control.Api
 import Csound.Typed.Control.Osc
 import Csound.Typed.Control.Channel
 import Csound.Typed.Control.Sf2

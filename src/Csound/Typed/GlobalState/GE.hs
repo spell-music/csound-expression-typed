@@ -9,6 +9,8 @@ module Csound.Typed.GlobalState.GE(
     MidiCtrl(..), saveMidiCtrl, renderMidiCtrl,
     -- * Instruments
     saveAlwaysOnInstr, onInstr, saveUserInstr0, getSysExpr,
+    -- * Named instruments
+    saveNamedInstr,
     -- * Total duration
     TotalDur(..), pureGetTotalDurForF0, getTotalDurForTerminator, 
     setDurationForce, setDuration, setDurationToInfinite,    
@@ -52,11 +54,13 @@ import Csound.Dynamic
 
 import Csound.Typed.GlobalState.Options
 import Csound.Typed.GlobalState.Cache
-import Csound.Typed.GlobalState.Elements
+import Csound.Typed.GlobalState.Elements hiding(saveNamedInstr)
 import Csound.Typed.Constants(infiniteDur)
-import Csound.Typed.GlobalState.Opcodes(hrtfmove, hrtfstat)
+import Csound.Typed.GlobalState.Opcodes(hrtfmove, hrtfstat, primInstrId)
 
 import Csound.Typed.Gui.Gui(Panel(..), Win(..), GuiNode, GuiHandle(..), restoreTree, guiMap, mapGuiOnPanel, defText)
+
+import qualified Csound.Typed.GlobalState.Elements as E(saveNamedInstr)
 
 type Dep a = DepT GE a
 
@@ -94,6 +98,7 @@ data History = History
     , midiMap           :: MidiMap GE
     , globals           :: Globals
     , instrs            :: Instrs
+    , namedInstrs       :: NamedInstrs
     , midis             :: [MidiAssign]
     , midiCtrls         :: [MidiCtrl]
     , totalDur          :: Maybe TotalDur
@@ -105,7 +110,7 @@ data History = History
     , guis              :: Guis }
 
 instance Default History where
-    def = History def def def def def def def def def def def def (return ()) def def def
+    def = History def def def def def def def def def def def def def (return ()) def def def
 
 data Msg = Msg
 data MidiAssign = MidiAssign MidiType Channel InstrId
@@ -205,7 +210,7 @@ getSysExpr :: InstrId -> GE (Dep ())
 getSysExpr terminatorInstrId = do
     e1 <- withHistory $ clearGlobals . globals
     dt <- getTotalDurForTerminator
-    let e2 = event_i $ Event terminatorInstrId dt 0.01 [] 
+    let e2 = event_i $ Event (primInstrId terminatorInstrId) dt 0.01 [] 
     return $ e1 >> e2
     where clearGlobals = snd . renderGlobals
 
@@ -215,9 +220,6 @@ saveAlwaysOnInstr instrId = onAlwaysOnInstrs $ modify (instrId : )
 
 addNote :: InstrId -> CsdEvent -> GE ()
 addNote instrId evt = modifyHistory $ \h -> h { notes = (instrId, evt) : notes h }
-
-
-
 
 {-
 setMasterInstrId :: InstrId -> GE ()
@@ -265,6 +267,13 @@ onInstr = onHistory instrs (\a h -> h { instrs = a })
 
 onGlobals :: UpdField Globals a
 onGlobals = onHistory globals (\a h -> h { globals = a })
+
+----------------------------------------------------------------------
+-- named instruments
+
+saveNamedInstr :: String -> InstrBody -> GE ()
+saveNamedInstr name body = onNamedInstrs $ E.saveNamedInstr name body
+    where onNamedInstrs = onHistory namedInstrs (\a h -> h { namedInstrs = a })
 
 ----------------------------------------------------------------------
 -- cache

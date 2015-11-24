@@ -19,6 +19,7 @@ import qualified Csound.Typed.GlobalState.Elements as C
 
 import Csound.Typed.Types
 import Csound.Typed.GlobalState
+import Csound.Typed.GlobalState.Opcodes(primInstrId)
 import Csound.Typed.Control.Instr
 import Csound.Typed.Control.Mix(Sco)
 
@@ -72,7 +73,7 @@ saveEvtInstr arity instrId evts = saveInstr $ do
     
         event :: Arg a => C.ChnRef -> (D, D, a) -> Dep ()
         event chnId (start, dur, args) = hideGEinDep $ fmap C.event $ 
-            C.Event instrId <$> toGE start <*> toGE dur <*> (fmap (++ [C.chnRefId chnId]) $ toNote args) 
+            C.Event (primInstrId instrId) <$> toGE start <*> toGE dur <*> (fmap (++ [C.chnRefId chnId]) $ toNote args) 
             
 -- | Retriggers an instrument every time an event happens. The note
 -- is held until the next event happens.
@@ -108,7 +109,7 @@ saveRetrigEvtInstr arity instrId evts = saveInstr $ do
         event :: Arg a => C.ChnRef -> D -> a -> Dep ()
         event chnId currentRetrig args = hideGEinDep $ fmap C.event $ do
             currentRetrigExp <- toGE currentRetrig
-            C.Event instrId 0 infiniteDur <$> (fmap (++ [C.chnRefId chnId, currentRetrigExp]) $ toNote args) 
+            C.Event (primInstrId instrId) 0 infiniteDur <$> (fmap (++ [C.chnRefId chnId, currentRetrigExp]) $ toNote args) 
 
 evtLoop :: (Num a, Tuple a, Sigs a) => Maybe (Evt Unit) -> [SE a] -> [Evt Unit] -> a
 evtLoop = evtLoopGen True
@@ -216,7 +217,7 @@ saveEvtLoopInstr mustLoop loopLength maybeOffEvt arity instrId evtInstrId = save
         eventForAudioInstr = eventFor instrId
 
         eventFor idx chnId currentRetrig = 
-            C.Event idx 0 infiniteDur [C.chnRefId chnId, currentRetrig] 
+            C.Event (primInstrId idx) 0 infiniteDur [C.chnRefId chnId, currentRetrig] 
 
         readServantEvt :: GE C.ChnRef -> SE Sig
         readServantEvt chnId = SE $ fmap fromE $ hideGEinDep $ fmap readChnEvtLoop chnId
@@ -249,7 +250,7 @@ autoOff dt sigs = fmap toTuple $ fromDep $ hideGEinDep $ phi =<< fromTuple sigs
 
 saveEvtInstr_ :: Arg a => C.InstrId -> Evt [(D, D, a)] -> Dep ()
 saveEvtInstr_ instrId evts = unSE $ runEvt evts $ \es -> fromDep_ $ mapM_ event es
-    where event (start, dur, args) = hideGEinDep $ fmap C.event $ C.Event instrId <$> toGE start <*> toGE dur <*> toNote args
+    where event (start, dur, args) = hideGEinDep $ fmap C.event $ C.Event (primInstrId instrId) <$> toGE start <*> toGE dur <*> toNote args
 
 -------------------------------------------------------------------
 

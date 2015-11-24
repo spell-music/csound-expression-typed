@@ -19,6 +19,8 @@ module Csound.Typed.GlobalState.Elements(
     renderGlobals,
     -- * Instruments
     Instrs(..), saveInstr, getInstrIds, -- newInstrId, saveInstrById, saveInstr, CacheName, makeCacheName, saveCachedInstr, getInstrIds,
+    -- * Named instruments
+    NamedInstrs(..), saveNamedInstr,
     -- * Src
     InstrBody, getIn, sendOut, sendChn, sendGlobal, chnPargId,
     Event(..),
@@ -265,9 +267,6 @@ instance Default Instrs where
 
 type CacheName = Int
 
-makeCacheName :: Hashable a => a -> CacheName
-makeCacheName = hash
-
 getInstrIds :: Instrs -> [InstrId]
 getInstrIds = fmap fst . instrsContent
 
@@ -318,6 +317,17 @@ saveInstr body = do
 -}
 
 -----------------------------------------------------------------
+-- named instrs
+
+newtype NamedInstrs = NamedInstrs { unNamedInstrs :: [(String, InstrBody)] }
+
+instance Default NamedInstrs where
+    def = NamedInstrs []
+
+saveNamedInstr :: String -> InstrBody -> State NamedInstrs ()
+saveNamedInstr name body = state $ \(NamedInstrs xs) -> ((), NamedInstrs $ (name, body) : xs)
+
+-----------------------------------------------------------------
 -- sound sources
 
 getIn :: Monad m => Int -> DepT m [E]
@@ -360,12 +370,12 @@ sendGlobal arityOuts sigs = do
     return (fmap readOnlyVar vars, zipWithM_ (appendVarBy (+)) vars sigs)
 
 sendChn :: Monad m => Int -> Int -> [E] -> DepT m ()
-sendChn arityIns arityOuts sigs = writeChn (chnRefFromParg (chnPargId arityIns) arityOuts) (fmap scaleVolumeFactor sigs)
+sendChn arityIns arityOuts sigs = writeChn (chnRefFromParg (chnPargId arityIns) arityOuts) sigs
 
 chnPargId :: Int -> Int
 chnPargId arityIns = 4 + arityIns
 
-scaleVolumeFactor :: E -> E
-scaleVolumeFactor = (setRate Ir (C.midiVolumeFactor (pn 1)) * )
+-- scaleVolumeFactor :: E -> E
+-- scaleVolumeFactor = (setRate Ir (C.midiVolumeFactor (pn 1)) * )
 
 -- guis

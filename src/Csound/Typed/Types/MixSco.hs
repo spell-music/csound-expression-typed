@@ -108,4 +108,4 @@ mkEvent :: InstrId -> D -> D -> [E] -> Dep ()
 mkEvent instrId startD durD args =  hideGEinDep $ do
         start <- toGE startD
         dur   <- toGE durD
-        return $ event_i $ Event instrId start dur args
+        return $ event_i $ Event (primInstrId instrId) start dur args

@@ -7,7 +7,7 @@ module Csound.Typed.GlobalState.Opcodes(
     masterUpdateChnRetrig, servantUpdateChnRetrig,
     servantUpdateChnEvtLoop, getRetrigVal,
     -- * trigger an instrument
-    Event(..), event, event_i, appendChn, subinstr, subinstr_, changed, diff, delay1,
+    Event(..), event, eventi, event_i, appendChn, subinstr, subinstr_, changed, diff, delay1, primInstrId,
     -- * output
     out, outs, safeOut, autoOff, turnoff, turnoff2, exitnow,
     -- * vco2
@@ -156,8 +156,11 @@ freeChn = depT $ opcs chnUpdateOpcodeName [(Ir, [])] []
 
 -- trigger
 
+primInstrId :: InstrId -> E
+primInstrId = prim . PrimInstrId
+
 data Event = Event
-    { eventInstrId  :: InstrId
+    { eventInstrId  :: E
     , eventStart    :: E
     , eventDur      :: E
     , eventArgs     :: [E] }
@@ -165,12 +168,15 @@ data Event = Event
 event :: Monad m => Event -> DepT m ()
 event = eventBy "event" Kr
 
+eventi :: Monad m => Event -> DepT m ()
+eventi = eventBy "event" Ir
+
 event_i :: Monad m => Event -> DepT m ()
 event_i = eventBy "event_i" Ir
 
 eventBy :: Monad m => String -> Rate -> Event -> DepT m ()
 eventBy name rate a = depT_ $ opcs name [(Xr, Sr : repeat rate)] 
-    (str "i" : (prim (PrimInstrId $ eventInstrId a)) : (eventStart a) : (eventDur a) : (eventArgs a))
+    (str "i" : (eventInstrId a) : (eventStart a) : (eventDur a) : (eventArgs a))
 
 appendChn :: E -> Event -> Event
 appendChn chn a = a { eventArgs = eventArgs a ++ [chn] }

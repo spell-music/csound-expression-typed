@@ -61,3 +61,10 @@ globalSensorsSE :: Tuple a => a -> SE (SE a, a -> SE ())
 globalSensorsSE a = do
     ref <- newRef a
     return $ (readRef ref, writeRef ref)
+
+-- | Allocates a new clearable global mutable value and initializes it with value. 
+-- A reference can contain a tuple of variables.
+-- The variable is set to zero at the end of every iteration.
+-- It's useful for accumulation of audio values from several instruments.
+newClearableGlobalRef :: Tuple a => a -> SE (Ref a)
+newClearableGlobalRef t = fmap Ref $ newClearableGlobalVars (tupleRates t) (fromTuple t) 

@@ -2,7 +2,7 @@ module Csound.Typed.GlobalState.SE(
     SE(..), LocalHistory(..), 
     runSE, execSE, evalSE, execGEinSE, hideGEinDep, 
     fromDep, fromDep_, geToSe,
-    newLocalVar, newLocalVars, newGlobalVars
+    newLocalVar, newLocalVars, newGlobalVars, newClearableGlobalVars
 ) where
 
 import Control.Applicative
@@ -12,7 +12,7 @@ import Control.Monad.Trans.Class
 import Csound.Dynamic hiding (newLocalVar, newLocalVars)
 import qualified Csound.Dynamic as D(newLocalVar, newLocalVars)
 import Csound.Typed.GlobalState.GE
-import Csound.Typed.GlobalState.Elements(newPersistentGlobalVar)
+import Csound.Typed.GlobalState.Elements(newPersistentGlobalVar, newClearableGlobalVar)
 
 -- | The Csound's @IO@-monad. All values that produce side effects are wrapped
 -- in the @SE@-monad.
@@ -75,4 +75,6 @@ newGlobalVars :: [Rate] -> GE [E] -> SE [Var]
 newGlobalVars rs vs = geToSe $ zipWithM f rs =<< vs
     where f r v = onGlobals $ newPersistentGlobalVar r v
 
-
+newClearableGlobalVars :: [Rate] -> GE [E] -> SE [Var]
+newClearableGlobalVars rs vs = geToSe $ zipWithM f rs =<< vs
+    where f r v = onGlobals $ newClearableGlobalVar r v
