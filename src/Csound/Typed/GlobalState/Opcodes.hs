@@ -29,7 +29,11 @@ module Csound.Typed.GlobalState.Opcodes(
     -- * Hrtf Pan
     hrtfmove, hrtfstat,
     -- * Read tables
-    tableK, tableI
+    tableK, tableI,
+    -- * Portamento
+    port,
+    -- * Rate convertion
+    downsamp
 ) where
 
 import Prelude hiding ((<*))
@@ -372,6 +376,9 @@ activeIr instrId = opcs "active" [(Ir, [Ir])] [instrId]
 
 port :: E -> E -> E
 port a b = opcs "portk" [(Kr, [Kr, Ir])] [a, b]
+
+downsamp :: E -> E
+downsamp a = opcs "downsamp" [(Kr, [Ar])] [a]
 
 -----------------------------------------------------------
 

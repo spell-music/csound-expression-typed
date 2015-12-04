@@ -15,7 +15,7 @@ module Csound.Typed.GlobalState.Elements(
     -- * Midi
     MidiType(..), Channel, MidiMap, MidiKey(..), saveMidiInstr,
     -- * Global variables
-    Globals(..), newPersistentGlobalVar, newClearableGlobalVar, 
+    Globals(..), newPersistentGlobalVar, newClearableGlobalVar,     
     renderGlobals,
     -- * Instruments
     Instrs(..), saveInstr, getInstrIds, -- newInstrId, saveInstrById, saveInstr, CacheName, makeCacheName, saveCachedInstr, getInstrIds,
@@ -25,9 +25,13 @@ module Csound.Typed.GlobalState.Elements(
     InstrBody, getIn, sendOut, sendChn, sendGlobal, chnPargId,
     Event(..),
     ChnRef(..), chnRefFromParg, chnRefAlloc, readChn, writeChn, chnUpdateUdo,
-    subinstr, subinstr_, event_i, event, safeOut, autoOff, changed
+    subinstr, subinstr_, event_i, event, safeOut, autoOff, changed,
+    -- * Udo plugins
+    UdoPlugin, addUdoPlugin, getUdoPluginNames,
+    tabQueuePlugin, tabQueue2Plugin    
 ) where
 
+import Data.List
 import Data.Hashable
 
 import Control.Monad.Trans.State.Strict
@@ -379,3 +383,19 @@ chnPargId arityIns = 4 + arityIns
 -- scaleVolumeFactor = (setRate Ir (C.midiVolumeFactor (pn 1)) * )
 
 -- guis
+
+
+--------------------------------------------------------
+-- Udo plugins 
+
+newtype UdoPlugin  = UdoPlugin { unUdoPlugin :: String }
+
+tabQueuePlugin  = UdoPlugin "tabQueue"
+tabQueue2Plugin = UdoPlugin "tabQueue2"
+
+addUdoPlugin :: UdoPlugin -> State [UdoPlugin] ()
+addUdoPlugin a = modify (a :)
+
+getUdoPluginNames :: [UdoPlugin] -> [String]
+getUdoPluginNames xs = nub (fmap unUdoPlugin xs)
+

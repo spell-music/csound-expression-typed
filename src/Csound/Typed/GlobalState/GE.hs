@@ -33,7 +33,9 @@ module Csound.Typed.GlobalState.GE(
     listenKeyEvt, Key(..), KeyEvt(..), Guis(..),
     getKeyEventListener,
     -- * Hrtf pan
-    simpleHrtfmove, simpleHrtfstat
+    simpleHrtfmove, simpleHrtfstat,
+    -- * Udo plugins
+    addUdoPlugin, renderUdoPlugins    
 ) where
 
 import Paths_csound_expression_typed
@@ -54,13 +56,13 @@ import Csound.Dynamic
 
 import Csound.Typed.GlobalState.Options
 import Csound.Typed.GlobalState.Cache
-import Csound.Typed.GlobalState.Elements hiding(saveNamedInstr)
+import Csound.Typed.GlobalState.Elements hiding(saveNamedInstr, addUdoPlugin)
 import Csound.Typed.Constants(infiniteDur)
 import Csound.Typed.GlobalState.Opcodes(hrtfmove, hrtfstat, primInstrId)
 
 import Csound.Typed.Gui.Gui(Panel(..), Win(..), GuiNode, GuiHandle(..), restoreTree, guiMap, mapGuiOnPanel, defText)
 
-import qualified Csound.Typed.GlobalState.Elements as E(saveNamedInstr)
+import qualified Csound.Typed.GlobalState.Elements as E(saveNamedInstr, addUdoPlugin)
 
 type Dep a = DepT GE a
 
@@ -92,12 +94,13 @@ instance MonadIO GE where
     
 data History = History
     { genMap            :: GenMap
-    , globalGenCounter  :: Int
+    , globalGenCounter  :: Int    
     , stringMap         :: StringMap
     , sfMap             :: SfMap
     , midiMap           :: MidiMap GE
     , globals           :: Globals
     , instrs            :: Instrs
+    , udoPlugins        :: [UdoPlugin]
     , namedInstrs       :: NamedInstrs
     , midis             :: [MidiAssign]
     , midiCtrls         :: [MidiCtrl]
@@ -110,7 +113,7 @@ data History = History
     , guis              :: Guis }
 
 instance Default History where
-    def = History def def def def def def def def def def def def def (return ()) def def def
+    def = History def def def def def def def def def def def def def def (return ()) def def def
 
 data Msg = Msg
 data MidiAssign = MidiAssign MidiType Channel InstrId
@@ -523,3 +526,21 @@ getHrtfFiles = do
 hrtfFileNames :: Int -> IO (String, String)
 hrtfFileNames sr = liftA2 (,) (getDataFileName (name "left" sr)) (getDataFileName (name "right" sr))
     where name dir n = concat ["data/hrtf-", show n, "-", dir, ".dat"]
+
+-----------------------------------------------
+-- udo plugins
+
+addUdoPlugin :: UdoPlugin -> GE ()
+addUdoPlugin p = onUdo (E.addUdoPlugin p)
+    where onUdo = onHistory udoPlugins (\val h -> h{ udoPlugins = val })
+
+renderUdoPlugins :: History -> IO String 
+renderUdoPlugins h = fmap concat $ mapM getUdoPluginBody $ getUdoPluginNames $ udoPlugins h
+
+getUdoPluginBody :: String -> IO String
+getUdoPluginBody name = readFile =<< getDataFileName filename
+    where filename = concat ["data/opcodes/", name, ".udo"]
+
+
+
+

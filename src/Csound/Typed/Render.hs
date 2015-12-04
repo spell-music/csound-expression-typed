@@ -11,9 +11,11 @@ import qualified Data.Map as M
 import Data.Default
 import Data.Maybe
 import Data.Tuple
+import Data.Monoid
 import Data.Ord
 import Data.List(sortBy, groupBy)
 import qualified Data.IntMap as IM
+import Control.Monad.IO.Class
 
 import Csound.Dynamic hiding (csdFlags)
 import Csound.Typed.Types
@@ -72,9 +74,10 @@ renderHistory mnchnls_i nchnls opt = do
     expr3 <- guiInstrExp 
     saveAlwaysOnInstr =<< saveInstr (SE expr3)    
     hist2 <- getHistory
+    udos <- execDepT =<< (fmap verbatim $ liftIO $ renderUdoPlugins hist2)
     let namedIntruments = fmap (\(name, body) -> Instr (InstrLabel name) body) $ unNamedInstrs $ namedInstrs hist2
-    let orc = Orc instr0 ((namedIntruments ++ ) $ maybeAppend keyEventListener $ fmap (uncurry Instr) $ instrsContent $ instrs hist2)   
-    hist3 <- getHistory 
+    let orc = Orc (instr0 <> udos) ((namedIntruments ++ ) $ maybeAppend keyEventListener $ fmap (uncurry Instr) $ instrsContent $ instrs hist2)   
+    hist3 <- getHistory     
     let flags   = reactOnMidi hist3 $ csdFlags opt
         sco     = Sco (Just $ pureGetTotalDurForF0 $ totalDur hist3) 
                       (renderGens $ genMap hist3) $

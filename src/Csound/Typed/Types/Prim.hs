@@ -7,7 +7,7 @@ module Csound.Typed.Types.Prim(
     preTab, TabSize(..), TabArgs(..), updateTabSize,
     fromPreTab, getPreTabUnsafe, skipNorm, forceNorm,
     nsamp, ftlen, ftchnls, ftsr, ftcps,
-    TabList, tabList, fromTabList, fromTabListD,
+    TabList, tabList, fromTabList, fromTabListD,   
 
     -- ** constructors
     double, int, text, 
@@ -265,6 +265,7 @@ fromTabListD ts ind = Tab $ do
     ets  <- toGE ts
     eind <- toGE ind
     return $ tableI eind ets
+
 
 -------------------------------------------------------------------------------
 -- constructors

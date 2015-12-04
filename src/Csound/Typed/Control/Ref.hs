@@ -1,12 +1,18 @@
-module Csound.Typed.Control.Ref where
+module Csound.Typed.Control.Ref(
+    Ref, writeRef, readRef, newRef, mixRef, modifyRef, sensorsSE, newGlobalRef,
+    globalSensorsSE, newClearableGlobalRef, newTab, newGlobalTab
+) where
 
 import Control.DeepSeq(deepseq)
 
 import Control.Monad
+import Control.Monad.Trans.Class
 import Csound.Dynamic hiding (newLocalVars)
 
+import Csound.Typed.Types.Prim
 import Csound.Typed.Types.Tuple
 import Csound.Typed.GlobalState.SE
+import Csound.Typed.GlobalState.GE
 
 -- | It describes a reference to mutable values.
 newtype Ref a = Ref [Var]
@@ -68,3 +74,55 @@ globalSensorsSE a = do
 -- It's useful for accumulation of audio values from several instruments.
 newClearableGlobalRef :: Tuple a => a -> SE (Ref a)
 newClearableGlobalRef t = fmap Ref $ newClearableGlobalVars (tupleRates t) (fromTuple t) 
+
+-------------------------------------------------------------------------------
+-- writable tables
+
+-- | Creates a new table. The Tab could be used while the instrument
+-- is playing. When the instrument is retriggered the new tab is allocated.
+--
+-- > newTab size
+newTab :: D -> SE Tab
+newTab size = ftgentmp 0 0 size 7 0 [size, 0]
+
+-- | Creates a new global table. 
+-- It's generated only once. It's persisted between instrument calls.
+--
+-- > newGlobalTab identifier size
+newGlobalTab :: D -> SE Tab
+newGlobalTab size = do  
+    identifier <- geToSe $ getNextGlobalGenId
+    ref <- newGlobalRef (0 :: D)        
+    tabId <- ftgenonce 0 (Csound.Typed.Types.Prim.int identifier) size 7 0 [size, 0]
+    writeRef ref (fromGE $ toGE tabId)
+    fmap (fromGE . toGE) $ readRef ref
+
+-----------------------------------------------------------------------
+-- some opcodes that I have to define upfront
+
+
+-- | 
+-- Generate a function table from within an instrument definition, without duplication of data.
+--
+-- Enables the creation of function tables entirely inside 
+--       instrument definitions, without any duplication of data.
+--
+-- > ifno  ftgenonce  ip1, ip2dummy, isize, igen, iarga, iargb, ...
+--
+-- csound doc: <http://www.csounds.com/manual/html/ftgenonce.html>
+ftgenonce ::  D -> D -> D -> D -> D -> [D] -> SE Tab
+ftgenonce b1 b2 b3 b4 b5 b6 = fmap ( Tab . return) $ SE $ (depT =<<) $ lift $ f <$> unD b1 <*> unD b2 <*> unD b3 <*> unD b4 <*> unD b5 <*> mapM unD b6
+    where f a1 a2 a3 a4 a5 a6 = opcs "ftgenonce" [(Ir,(repeat Ir))] ([a1,a2,a3,a4,a5] ++ a6)
+
+-- | 
+-- Generate a score function table from within the orchestra, which is deleted at the end of the note.
+--
+-- Generate a score function table from within the orchestra,
+--     which is optionally deleted at the end of the note.
+--
+-- > ifno  ftgentmp  ip1, ip2dummy, isize, igen, iarga, iargb, ...
+--
+-- csound doc: <http://www.csounds.com/manual/html/ftgentmp.html>
+ftgentmp ::  D -> D -> D -> D -> D -> [D] -> SE Tab
+ftgentmp b1 b2 b3 b4 b5 b6 = fmap ( Tab . return) $ SE $ (depT =<<) $ lift $ f <$> unD b1 <*> unD b2 <*> unD b3 <*> unD b4 <*> unD b5 <*> mapM unD b6
+    where f a1 a2 a3 a4 a5 a6 = opcs "ftgentmp" [(Ir,(repeat Ir))] ([a1,a2,a3,a4,a5] ++ a6)

@@ -23,6 +23,9 @@ Data-Files :
     data/hrtf-96000-left.dat
     data/hrtf-96000-right.dat
 
+    data/opcodes/tabQueue.udo
+    data/opcodes/tabQueue2.udo
+
 
 Homepage:        https://github.com/anton-k/csound-expression-typed
 Bug-Reports:     https://github.com/anton-k/csound-expression-typed/issues
@@ -85,6 +88,8 @@ Library
 
     Csound.Typed.Lib.StableMaps.Dynamic
     Csound.Typed.Lib.StableMaps.Dynamic.Map
+
+    Csound.Typed.Plugins.TabQueue
 
     Paths_csound_expression_typed
 
