@@ -18,6 +18,7 @@ module Csound.Typed.GlobalState.GE(
     addNote,
     -- * GEN routines
     saveGen, saveTabs, getNextGlobalGenId,
+    saveWriteGen, saveWriteTab,
     -- * Sf2
     saveSf, sfTable,
     -- * Band-limited waves
@@ -94,6 +95,7 @@ instance MonadIO GE where
     
 data History = History
     { genMap            :: GenMap
+    , writeGenMap       :: WriteGenMap
     , globalGenCounter  :: Int    
     , stringMap         :: StringMap
     , sfMap             :: SfMap
@@ -113,7 +115,7 @@ data History = History
     , guis              :: Guis }
 
 instance Default History where
-    def = History def def def def def def def def def def def def def def (return ()) def def def
+    def = History def def def def def def def def def def def def def def def (return ()) def def def
 
 data Msg = Msg
 data MidiAssign = MidiAssign MidiType Channel InstrId
@@ -171,6 +173,14 @@ saveGen :: Gen -> GE E
 saveGen = onGenMap . newGen
 
 onGenMap = onHistory genMap (\val h -> h{ genMap = val })
+
+saveWriteGen :: Gen -> GE E
+saveWriteGen = onWriteGenMap . newWriteGen
+
+saveWriteTab :: Int -> GE E
+saveWriteTab = onWriteGenMap . newWriteTab
+
+onWriteGenMap = onHistory writeGenMap (\val h -> h{ writeGenMap = val })
 
 saveTabs :: [Gen] -> GE E
 saveTabs = onGenMap . newTabOfGens

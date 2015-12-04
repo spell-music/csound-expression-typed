@@ -4,6 +4,7 @@ module Csound.Typed.GlobalState.Elements(
     IdMap(..), saveId, newIdMapId,
     -- ** Gens
     GenMap, newGen, newGenId, nextGlobalGenCounter, newTabOfGens,
+    WriteGenMap, newWriteGen, newWriteTab,
     -- Sf2
     SfFluid(..), SfSpec(..), SfMap, newSf, sfVar, renderSf,
     -- ** Band-limited waveforms
@@ -78,14 +79,58 @@ newIdMapId = state $ \s ->
 type GenMap = IdMap Gen
 
 newGen :: Gen -> State GenMap E
-newGen = fmap int . saveId
+newGen = fmap int . saveGenId
 
 newTabOfGens :: [Gen] -> State GenMap E
-newTabOfGens = fmap int . (saveId . intTab =<<) . mapM saveId
+newTabOfGens = fmap int . (saveGenId . intTab =<<) . mapM saveGenId
     where intTab ns = Gen (length ns) (-2) (fmap fromIntegral ns) Nothing
 
+saveGenId :: Ord a => a -> State (IdMap a) Int
+saveGenId a = state $ \s -> 
+    case M.lookup a (idMapContent s) of
+        Nothing -> 
+            let newId = nextReadOnlyTableId $ idMapNewId s
+                s1    = s{ idMapContent = M.insert a newId (idMapContent s)
+                         , idMapNewId = nextReadOnlyTableId newId }    
+            in  (newId, s1)
+        Just n  -> (n, s)
+
 newGenId :: State GenMap Int
-newGenId = newIdMapId
+newGenId = state $ \s -> 
+    let newId = idMapNewId s
+        s1 = s { idMapNewId = nextReadOnlyTableId newId } 
+    in  (newId, s1)
+
+-- writeable gens
+
+type WriteGenMap = [(Int, Gen)]
+
+newWriteGen :: Gen -> State WriteGenMap E
+newWriteGen = fmap int . saveWriteGenId
+
+newWriteTab :: Int -> State WriteGenMap E
+newWriteTab = newWriteGen . fromSize 
+    where fromSize n = Gen n 2 (replicate n 0) Nothing
+
+saveWriteGenId :: Gen -> State WriteGenMap Int
+saveWriteGenId a = state $ \s -> case s of
+    []         -> (initId, [(initId, a)])
+    (i,_):rest ->   let newId = nextWriteTableId i 
+                    in (newId, (newId, a) : s)
+    where 
+        initId = tableWriteStep
+
+tableWriteStep :: Int
+tableWriteStep = 10
+
+nextReadOnlyTableId :: Int -> Int
+nextReadOnlyTableId x 
+    | y `mod` tableWriteStep == 0 = y + 1
+    | otherwise                   = y  
+    where y = x + 1
+
+nextWriteTableId :: Int -> Int
+nextWriteTableId x = tableWriteStep + x
 
 -- strings
 

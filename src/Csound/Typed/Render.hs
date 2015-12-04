@@ -80,11 +80,11 @@ renderHistory mnchnls_i nchnls opt = do
     hist3 <- getHistory     
     let flags   = reactOnMidi hist3 $ csdFlags opt
         sco     = Sco (Just $ pureGetTotalDurForF0 $ totalDur hist3) 
-                      (renderGens $ genMap hist3) $
+                      (renderGens (genMap hist3) (writeGenMap hist3)) $
                       ((fmap alwaysOn $ alwaysOnInstrs hist3) ++ (getNoteEvents $ notes hist3))
     return $ Csd flags orc sco
     where
-        renderGens = fmap swap . M.toList . idMapContent        
+        renderGens gens writeGens = (fmap swap $ M.toList $ idMapContent  gens) ++ writeGens
         maybeAppend ma = maybe id (:) ma 
         getNoteEvents = fmap $ \(instrId, evt) -> (instrId, [evt])
 

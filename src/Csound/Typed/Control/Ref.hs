@@ -1,5 +1,6 @@
 module Csound.Typed.Control.Ref(
     Ref, writeRef, readRef, newRef, mixRef, modifyRef, sensorsSE, newGlobalRef,
+    newCtrlRef, newGlobalCtrlRef,
     globalSensorsSE, newClearableGlobalRef, newTab, newGlobalTab
 ) where
 
@@ -38,6 +39,18 @@ readRef (Ref vars) = SE $ fmap (toTuple . return) $ mapM readVar vars
 newRef :: Tuple a => a -> SE (Ref a)
 newRef t = fmap Ref $ newLocalVars (tupleRates t) (fromTuple t)    
    
+-- | Allocates a new local (it is visible within the instrument) mutable value and initializes it with value. 
+-- A reference can contain a tuple of variables.
+-- It contains control signals (k-rate) and constants for numbers (i-rates).
+newCtrlRef :: Tuple a => a -> SE (Ref a)
+newCtrlRef t = fmap Ref $ newLocalVars (fmap toCtrlRate $ tupleRates t) (fromTuple t) 
+    where 
+        
+toCtrlRate x = case x of 
+    Ar -> Kr
+    Kr -> Ir
+    _  -> x
+
 -- | Adds the given signal to the value that is contained in the
 -- reference.
 mixRef :: (Num a, Tuple a) => Ref a -> a -> SE ()
@@ -60,6 +73,12 @@ sensorsSE a = do
 -- A reference can contain a tuple of variables.
 newGlobalRef :: Tuple a => a -> SE (Ref a)
 newGlobalRef t = fmap Ref $ newGlobalVars (tupleRates t) (fromTuple t)    
+
+-- | Allocates a new global mutable value and initializes it with value. 
+-- A reference can contain a tuple of variables.
+-- It contains control signals (k-rate) and constants for numbers (i-rates).
+newGlobalCtrlRef :: Tuple a => a -> SE (Ref a)
+newGlobalCtrlRef t = fmap Ref $ newGlobalVars (fmap toCtrlRate $ tupleRates t) (fromTuple t)   
 
 -- | An alias for the function @newRef@. It returns not the reference
 -- to mutable value but a pair of reader and writer functions.
@@ -89,13 +108,18 @@ newTab size = ftgentmp 0 0 size 7 0 [size, 0]
 -- It's generated only once. It's persisted between instrument calls.
 --
 -- > newGlobalTab identifier size
-newGlobalTab :: D -> SE Tab
-newGlobalTab size = do  
+newGlobalTab :: Int -> SE Tab
+newGlobalTab size = do 
+    ref <- newGlobalCtrlRef ((fromGE $ saveWriteTab size) :: D)
+    fmap (fromGE . toGE) $ readRef ref
+
+{-
     identifier <- geToSe $ getNextGlobalGenId
     ref <- newGlobalRef (0 :: D)        
     tabId <- ftgenonce 0 (Csound.Typed.Types.Prim.int identifier) size 7 0 [size, 0]
     writeRef ref (fromGE $ toGE tabId)
     fmap (fromGE . toGE) $ readRef ref
+-}
 
 -----------------------------------------------------------------------
 -- some opcodes that I have to define upfront
