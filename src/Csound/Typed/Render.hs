@@ -67,16 +67,16 @@ renderHistory :: Maybe Int -> Int -> Options -> GE Csd
 renderHistory mnchnls_i nchnls opt = do
     keyEventListener <- getKeyEventListener
     hist1 <- getHistory
-    instr0 <- execDepT $ getInstr0 mnchnls_i nchnls opt hist1    
+    udos <- fmap verbatim $ liftIO $ renderUdoPlugins hist1
+    instr0 <- execDepT $ getInstr0 mnchnls_i nchnls opt udos hist1    
     terminatorInstrId <- saveInstr =<< terminatorInstr
     expr2 <- getSysExpr terminatorInstrId 
     saveAlwaysOnInstr =<< saveInstr (SE expr2)
     expr3 <- guiInstrExp 
     saveAlwaysOnInstr =<< saveInstr (SE expr3)    
-    hist2 <- getHistory
-    udos <- execDepT =<< (fmap verbatim $ liftIO $ renderUdoPlugins hist2)
+    hist2 <- getHistory    
     let namedIntruments = fmap (\(name, body) -> Instr (InstrLabel name) body) $ unNamedInstrs $ namedInstrs hist2
-    let orc = Orc (instr0 <> udos) ((namedIntruments ++ ) $ maybeAppend keyEventListener $ fmap (uncurry Instr) $ instrsContent $ instrs hist2)   
+    let orc = Orc instr0 ((namedIntruments ++ ) $ maybeAppend keyEventListener $ fmap (uncurry Instr) $ instrsContent $ instrs hist2)   
     hist3 <- getHistory     
     let flags   = reactOnMidi hist3 $ csdFlags opt
         sco     = Sco (Just $ pureGetTotalDurForF0 $ totalDur hist3) 
@@ -88,8 +88,8 @@ renderHistory mnchnls_i nchnls opt = do
         maybeAppend ma = maybe id (:) ma 
         getNoteEvents = fmap $ \(instrId, evt) -> (instrId, [evt])
 
-getInstr0 :: Maybe Int -> Int -> Options -> History -> Dep ()
-getInstr0 mnchnls_i nchnls opt hist = do
+getInstr0 :: Maybe Int -> Int -> Options -> Dep () -> History -> Dep ()
+getInstr0 mnchnls_i nchnls opt udos hist = do
     globalConstants
     midiAssigns
     midiInitCtrls
@@ -97,6 +97,7 @@ getInstr0 mnchnls_i nchnls opt hist = do
     renderBandLimited (genMap hist) (bandLimitedMap hist)
     userInstr0 hist
     chnUpdateUdo
+    udos
     sf2
     guiStmt $ getPanels hist
     where

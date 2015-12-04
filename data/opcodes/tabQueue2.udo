@@ -32,7 +32,7 @@ until iCount > iLast do
 od
 endop
 
-opcode TabQueue2_HasElement, k, i
+opcode TabQueue2_HasElements, k, i
 itab xin
 knd = 0
 kk tab knd, itab

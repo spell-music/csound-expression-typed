@@ -31,10 +31,11 @@ tabQueue2_delete tab pch = SE $ (depT_ =<<) $ lift $ do
     f <$> toGE tab <*> toGE pch
     where f tab pch = opcs "TabQueue2_Delete" [(Xr, [Ir, Ir])] [tab, pch]
 
-tabQueue2_hasElements :: D -> BoolSig
+-- | Queue is not empty
+tabQueue2_hasElements :: Tab -> BoolSig
 tabQueue2_hasElements = (==* 1) . tabQueue2_hasElements'
 
-tabQueue2_hasElements' :: D -> Sig
+tabQueue2_hasElements' :: Tab -> Sig
 tabQueue2_hasElements' tab = fromGE $ do
     addUdoPlugin E.tabQueue2Plugin
     f <$> toGE tab
