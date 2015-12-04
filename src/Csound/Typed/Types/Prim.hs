@@ -26,7 +26,8 @@ module Csound.Typed.Types.Prim(
    
     -- ** logic funs
     when1, whens, untilDo, whileDo, boolSig,
-    equalsTo, notEqualsTo, lessThan, greaterThan, lessThanEquals, greaterThanEquals
+    equalsTo, notEqualsTo, lessThan, greaterThan, lessThanEquals, greaterThanEquals,
+    whenD1, whenDs, untilDoD, whileDoD, untilBeginD
 ) where
 
 import Prelude hiding ((<*))
@@ -603,6 +604,32 @@ ifEnd = fromDep_ D.ifEnd
 elseBegin :: SE ()
 elseBegin = fromDep_ D.elseBegin
 
+-- | Invokes the given procedure if the boolean signal is true.
+whenD1 :: BoolD -> SE () -> SE ()
+whenD1 xp body = case xp of
+    PrimBoolD p -> if p then body else return ()
+    _             -> do
+        ifBeginD xp
+        body
+        ifEnd
+
+-- | The chain of @when1@s. Tests all the conditions in sequence
+-- if everything is false it invokes the procedure given in the second argument.
+whenDs :: [(BoolD, SE ())] -> SE () -> SE ()
+whenDs bodies el = case bodies of
+    []   -> el
+    a:as -> do
+        ifBeginD (fst a)
+        snd a
+        elseIfs as
+        elseBegin 
+        el
+        foldl1 (>>) $ replicate (length bodies) ifEnd
+    where elseIfs = mapM_ (\(p, body) -> elseBegin >> ifBeginD p >> body)
+
+ifBeginD :: BoolD -> SE ()
+ifBeginD a = fromDep_ $ D.ifBegin =<< lift (toGE a)
+
 -- elseIfBegin :: BoolSig -> SE ()
 -- elseIfBegin a = fromDep_ $ D.elseIfBegin =<< lift (toGE a)
 
@@ -620,6 +647,18 @@ untilBegin a = fromDep_ $ D.untilBegin =<< lift (toGE a)
 
 untilEnd :: SE ()
 untilEnd = fromDep_ D.untilEnd
+
+untilDoD :: BoolD -> SE () -> SE ()
+untilDoD p body = do
+    untilBeginD p
+    body
+    untilEnd
+
+whileDoD :: BoolD -> SE () -> SE ()
+whileDoD p = untilDoD (notB p) 
+
+untilBeginD :: BoolD -> SE ()
+untilBeginD a = fromDep_ $ D.untilBegin =<< lift (toGE a)
 
 -- | Creates a constant boolean signal.
 boolSig :: BoolD -> BoolSig
