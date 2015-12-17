@@ -106,6 +106,8 @@ instance Tuple Tab   where tupleMethods = primTupleMethods Kr
 instance Tuple Str   where tupleMethods = primTupleMethods Sr
 instance Tuple Spec  where tupleMethods = primTupleMethods Fr
 
+instance Tuple TabList where tupleMethods = primTupleMethods Kr
+
 instance (Tuple a, Tuple b) => Tuple (a, b) where    
     tupleMethods = TupleMethods fromTuple' toTuple' tupleArity' tupleRates' defTuple'
         where 
@@ -180,6 +182,7 @@ instance Arg Unit
 instance Arg D
 instance Arg Str
 instance Arg Tab
+instance Arg TabList
 
 instance (Arg a, Arg b) => Arg (a, b)
 instance (Arg a, Arg b, Arg c) => Arg (a, b, c)

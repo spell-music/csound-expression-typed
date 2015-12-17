@@ -267,7 +267,6 @@ fromTabListD ts ind = Tab $ do
     eind <- toGE ind
     return $ tableI eind ets
 
-
 -------------------------------------------------------------------------------
 -- constructors
 
@@ -409,6 +408,8 @@ instance Default D      where def = 0
 instance Default Tab    where def = fromE 0
 instance Default Str    where def = text ""
 instance Default Spec   where def = fromE 0 
+
+instance Default TabList where def = fromE 0
 
 -------------------------------------------------------------------------------
 -- monoid
