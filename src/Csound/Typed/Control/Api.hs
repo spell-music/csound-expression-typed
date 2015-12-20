@@ -30,6 +30,11 @@ trigByName_ name instr = geToSe $ saveNamedInstr name =<< (execSE $ instr toArg)
 
 -- | Creates an instrument that can be triggered by name with Csound API.
 -- The arguments are determined from the structure of the input for the instrument.
+-- If we have a tuple of arguments: @(D, D, Tab)@
+-- The would be rendered to instrument arguments that strts from @p4@.
+-- @p1@ is the name of teh instrument, @p2@ is the start time of the note, 
+-- @p3@ is the duration of the note. Then @p4@ and @p5@ are going to be doubles and @p6@
+-- is an integer that denotes a functional table.
 trigByName  :: (Arg a, Sigs b) => String -> (a -> SE b) -> SE b
 trigByName name instr = do
     ref <- newClearableGlobalRef 0
@@ -37,6 +42,9 @@ trigByName name instr = do
     readRef ref    
     where go ref x = mixRef ref =<< instr x
 
+
+-- | It behaves just like the function @trigByNameMidi@. Only it doesn't produce an audio
+-- signal. It performs some procedure on note on and stops doing the precedure on note off.
 trigByNameMidi_ :: forall a . Arg a => String -> ((D, D, a) -> SE ()) -> SE ()
 trigByNameMidi_ name instr = do
     instrId <- geToSe $ saveInstr (instr toArg)
@@ -55,21 +63,32 @@ trigByNameMidi_ name instr = do
                         eventi (Event (negate instrIdExpr) 0 0 args)
                     turnoff
 
--- | Creates an instrument that behaves much like a midi instrument but can be triggered
--- with Csound API. The input is a tuple of:
+-- | Creates an instrument that can be triggered by name with Csound API.
 --
--- > (pitchKey, volumeKey, miscArguments)
+-- It's intended to be used like a midi instrument. It simulates a simplified midi protocol.
+-- We can trigger notes:
 --
--- But when we use it with Csound API we should pass another argument (as the first argument or p4):
+-- > i "givenName" 1 pitchKey volumeKey auxParams     -- note on
+-- > i "givenName" 0 pitchKey volumeKey auxParams     -- note off
 --
--- > i "name" time duration note_on_off pitch volume arg1 arg2 arg3
+-- The arguments are
 --
--- where @note_on_off_flag@ equals to 1 if it's note on message and equals to zero 
--- if it's a note off message.
--- @pitchKey@  and @volumeKey@ are standard midi integer numbers (0 to 127).
--- The fourth argument is for some auxilliary parameters.
+-- > trigByNameMidi name instrument
 --
--- With Csound API we can send messages 
+-- The instrument takes a triplet of @(pitchKey, volumeKey, auxilliaryTuple)@.
+-- The order does matter. Please don't pass the @volumeKey@ as the first argument.
+-- The instrument expects the pitch key to be a first argument. 
+
+-- Under the hood
+-- it creates held notes that are indexed by pitch. If you know the Csound it creates
+-- the notes with indexes:
+--
+-- > i 18.pitchKey
+--
+-- Here the 18 is some generated integer index. And then on receiving a note a note off message for the specific key the
+-- Csound procedure invokes:
+--
+-- > turnoff 18.pitchKey
 trigByNameMidi  :: (Arg a, Sigs b) => String -> ((D, D, a) -> SE b) -> SE b
 trigByNameMidi name instr = do
     ref <- newClearableGlobalRef 0
@@ -108,31 +127,6 @@ trigByNameMidiCbk name noteOn noteOff =
             whenD1 (noteFlag ==* 0) $ noteOff (pch, vol)
             SE turnoff
 
-{-
-namedMonoMsg :: D -> D -> String -> SE (Sig, Sig)
-namedMonoMsg portTime relTime name = do
-    ref <- newGlobalRef (0, 0, 0)  
-    tab <- newGlobalTab 16  
-    trigByName_ name (go tab ref)
-    (pchKey, volKey, status) <- readRef ref
-    let resStatus = ifB (downsamp' status ==* 0) 0 1
-    return (port' (downsamp' volKey) portTime * port' resStatus relTime,  port' (downsamp' pchKey) portTime)
-    where
-        go :: Tab -> Ref (Sig, Sig, Sig) -> (D, D, D) -> SE ()
-        go pitchTab ref (noteFlag, pch, vol) = do
-            (_, volOld, status) <- readRef ref
-            when1 (sig noteFlag ==* 1) $ do    
-                tabw (sig pch) status pitchTab
-                writeRef ref (sig pch, sig vol, status + 1)
-            when1 (sig noteFlag ==* 0) $ do
-                when1 (status ==* 0) $ do
-                    writeRef ref (sig pch, volOld, status - 1)
-                when1 (status >* 0) $ do
-                    let pchOld = tab (status - 1) pitchTab
-                    writeRef ref (pchOld, volOld, status - 1)
-
-            fromDep_ turnoff
--}
 port' :: Sig -> D -> Sig
 port' a b = fromGE $ do
     a' <- toGE a
