@@ -287,9 +287,14 @@ vco2ift cps iwave = opcs "vco2ift" [(Kr, [Ir, Ir, Ir])] [cps, iwave]
 
 ftgen :: E -> Gen -> E
 ftgen n g = opcs "ftgen" [(Ir, repeat Ir)]
-    $ [n, 0, int $ genSize g, int $ genId g]
+    $ [n, 0, int $ genSize g, genIdE $ genId g]
     ++ (maybe [] (return . str) $ genFile g)
     ++ (fmap double $ genArgs g)
+
+genIdE :: GenId -> E
+genIdE genId = case genId of
+    IntGenId n -> int n
+    StringGenId a -> str a
 
 vco2init :: [E] -> E
 vco2init = opcs "vco2init" [(Ir, repeat Ir)]

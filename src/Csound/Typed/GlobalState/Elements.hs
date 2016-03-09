@@ -41,8 +41,6 @@ import Data.Default
 import qualified Data.Map as M
 import qualified Data.IntMap as IM
 
-import qualified Csound.Typed.GlobalState.Opcodes as C(midiVolumeFactor)
-
 import Csound.Dynamic.Types
 import Csound.Dynamic.Build
 import Csound.Dynamic.Build.Numeric()
@@ -83,7 +81,7 @@ newGen = fmap int . saveGenId
 
 newTabOfGens :: [Gen] -> State GenMap E
 newTabOfGens = fmap int . (saveGenId . intTab =<<) . mapM saveGenId
-    where intTab ns = Gen (length ns) (-2) (fmap fromIntegral ns) Nothing
+    where intTab ns = Gen (length ns) (IntGenId (-2)) (fmap fromIntegral ns) Nothing
 
 saveGenId :: Ord a => a -> State (IdMap a) Int
 saveGenId a = state $ \s -> 
@@ -110,12 +108,12 @@ newWriteGen = fmap int . saveWriteGenId
 
 newWriteTab :: Int -> State WriteGenMap E
 newWriteTab = newWriteGen . fromSize 
-    where fromSize n = Gen n 2 (replicate n 0) Nothing
+    where fromSize n = Gen n (IntGenId 2) (replicate n 0) Nothing
 
 saveWriteGenId :: Gen -> State WriteGenMap Int
 saveWriteGenId a = state $ \s -> case s of
     []         -> (initId, [(initId, a)])
-    (i,_):rest ->   let newId = nextWriteTableId i 
+    (i,_):_    ->   let newId = nextWriteTableId i 
                     in (newId, (newId, a) : s)
     where 
         initId = tableWriteStep
@@ -313,8 +311,6 @@ data Instrs = Instrs
 
 instance Default Instrs where
     def = Instrs IM.empty 18 []
-
-type CacheName = Int
 
 getInstrIds :: Instrs -> [InstrId]
 getInstrIds = fmap fst . instrsContent

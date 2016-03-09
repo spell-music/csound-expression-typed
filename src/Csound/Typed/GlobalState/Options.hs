@@ -1,18 +1,23 @@
 module Csound.Typed.GlobalState.Options (
     Options(..),
     defGain, defSampleRate, defBlockSize, defTabFi,
-    -- ** Table fidelity
+    -- * Table fidelity
     TabFi(..), fineFi, coarseFi,
-    -- *** Gen identifiers
+    -- ** Gen identifiers
     -- | Low level Csound integer identifiers for tables. These names can be used in the function 'Csound.Base.fineFi'
+    -- *** Integer identifiers
     idWavs, idMp3s, idDoubles, idSines, idSines3, idSines2,
     idPartials, idSines4, idBuzzes, idConsts, idLins, idCubes,
-    idExps, idSplines, idStartEnds,  idPolys, idChebs1, idChebs2, idBessels, idWins
+    idExps, idSplines, idStartEnds,  idPolys, idChebs1, idChebs2, idBessels, idWins,
+    -- *** String identifiers
+    idPadsynth, idTanh, idExp, idSone, idFarey, idWave
 ) where
 
 import Control.Applicative
 import Data.Default
+
 import qualified Data.IntMap as IM
+import qualified Data.Map    as M
 
 import Csound.Dynamic hiding (csdFlags)
 
@@ -59,10 +64,13 @@ defTabFi = maybe def id . csdTabFi
 -- | Table size fidelity (how many points in the table by default).
 data TabFi = TabFi
     { tabFiBase   :: Int
-    , tabFiGens   :: IM.IntMap Int }
+    , tabFiGens   :: IM.IntMap Int
+    , tabNamedFiGens :: M.Map String Int }
 
 instance Default TabFi where
-    def = fineFi 13 [(idLins, 11), (idExps, 11), (idConsts, 9), (idSplines, 11), (idStartEnds, 12)]
+    def = fineFi 13 
+                [(idLins, 11), (idExps, 11), (idConsts, 9), (idSplines, 11), (idStartEnds, 12)] 
+                [(idPadsynth, 18), (idSone, 14), (idTanh, 13), (idExp, 13)]
         
 
 -- | Sets different table size for different GEN-routines. 
@@ -77,8 +85,8 @@ instance Default TabFi where
 --   given GEN-routine.
 --
 -- with this function we can set lower table sizes for tables that are usually used in the envelopes.
-fineFi :: Int -> [(Int, Int)] -> TabFi
-fineFi n xs = TabFi n (IM.fromList xs)
+fineFi :: Int -> [(Int, Int)] -> [(String, Int)] -> TabFi
+fineFi n xs ys = TabFi n (IM.fromList xs) (M.fromList ys)
 
 -- | Sets the same table size for all tables. 
 --
@@ -86,7 +94,7 @@ fineFi n xs = TabFi n (IM.fromList xs)
 --
 -- where @n@  is a degree of 2. For example, @n = 10@ sets size to 1024 points for all tables by default.
 coarseFi :: Int -> TabFi
-coarseFi n = TabFi n IM.empty
+coarseFi n = TabFi n IM.empty M.empty
 
 idWavs, idMp3s, idDoubles, idSines, idSines3, idSines2,
     idPartials, idSines4, idBuzzes, idConsts, idLins, idCubes,
@@ -115,4 +123,15 @@ idChebs2 = 14
 idBessels = 12
 idWins = 20
 idMp3s = 49
+
+-- Identifiers for named GEN-routines
+
+idPadsynth, idTanh, idExp, idSone, idFarey, idWave :: String
+
+idPadsynth = "padsynth"
+idTanh     = "tanh"
+idExp      = "exp"
+idSone     = "sone"
+idFarey    = "farey"
+idWave     = "wave"
 

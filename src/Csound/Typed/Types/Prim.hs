@@ -4,7 +4,7 @@ module Csound.Typed.Types.Prim(
     BoolSig(..), unBoolSig, BoolD(..), unBoolD, Unit(..), unit, Val(..), hideGE, SigOrD,
 
     -- ** Tables
-    preTab, TabSize(..), TabArgs(..), updateTabSize,
+    preTab, preStringTab, TabSize(..), TabArgs(..), updateTabSize,
     fromPreTab, getPreTabUnsafe, skipNorm, forceNorm,
     nsamp, ftlen, ftchnls, ftsr, ftcps,
     TabList, tabList, fromTabList, fromTabListD,   
@@ -36,7 +36,8 @@ import Control.Applicative hiding ((<*))
 import Control.Monad
 import Control.Monad.Trans.Class
 import Data.Monoid
-import qualified Data.IntMap as IM
+import qualified Data.IntMap    as IM
+import qualified Data.Map       as M
 
 import Data.Default
 import Data.Boolean
@@ -122,11 +123,14 @@ data Tab
     | TabPre PreTab
 
 preTab :: TabSize -> Int -> TabArgs -> Tab
-preTab size gen args = TabPre $ PreTab size gen args
+preTab size gen args = TabPre $ PreTab size (IntGenId gen) args
+
+preStringTab :: TabSize -> String -> TabArgs -> Tab
+preStringTab size gen args = TabPre $ PreTab size (StringGenId gen) args
 
 data PreTab = PreTab
     { preTabSize    :: TabSize
-    , preTabGen     :: Int
+    , preTabGen     :: GenId
     , preTabArgs    :: TabArgs }
 
 -- Table size.
@@ -171,7 +175,9 @@ fromPreTab a = withOptions $ \opt -> go (defTabFi opt) a
                   (args, file) = defineTabArgs size (preTabArgs tab)
 
 getTabSizeBase :: TabFi -> PreTab -> Int
-getTabSizeBase tf tab = IM.findWithDefault (tabFiBase tf) (preTabGen tab) (tabFiGens tf)
+getTabSizeBase tf tab = case preTabGen tab of
+    IntGenId intId -> IM.findWithDefault (tabFiBase tf) intId (tabFiGens tf)
+    StringGenId stringId -> M.findWithDefault (tabFiBase tf) stringId (tabNamedFiGens tf)
 
 defineTabSize :: Int -> TabSize -> Int
 defineTabSize base x = case x of
@@ -223,14 +229,23 @@ defineTabArgs size args = case args of
 skipNorm :: Tab -> Tab
 skipNorm x = case x of
     Tab _ -> error "you can skip normalization only for primitive tables (made with gen-routines)"
-    TabPre a -> TabPre $ a{ preTabGen = negate $ abs $ preTabGen a }
+    TabPre a -> TabPre $ a{ preTabGen = skipNormGenId $ preTabGen a }
+
+skipNormGenId = mapIntGenId (negate . abs)
 
 -- | Force normalization (sets table size to positive value).
 -- Might be useful to restore normalization for table 'Csound.Tab.doubles'.
 forceNorm :: Tab -> Tab
 forceNorm x = case x of
     Tab _ -> error "you can force normalization only for primitive tables (made with gen-routines)"
-    TabPre a -> TabPre $ a{ preTabGen = abs $ preTabGen a }
+    TabPre a -> TabPre $ a{ preTabGen = normGenId $ preTabGen a }
+
+normGenId = mapIntGenId abs
+
+mapIntGenId :: (Int -> Int) -> GenId -> GenId
+mapIntGenId f genId = case genId of
+    IntGenId intId -> IntGenId (f intId)
+    _              -> genId
 
 ----------------------------------------------------------------------------
 -- change table size
