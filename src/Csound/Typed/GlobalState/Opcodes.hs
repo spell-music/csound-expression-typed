@@ -216,8 +216,10 @@ outs as = depT_ $ opcsNoInlineArgs "outs" [(Xr, repeat Ar)] as
 
 -- clipps values by 0dbfs
 safeOut :: Double -> [E] -> [E] 
-safeOut gainLevel = fmap (( * double gainLevel) . clip)
-    where clip x = opcs "clip" [(Ar, [Ar, Ir, Ir])] [x, 0, readOnlyVar (VarVerbatim Ir "0dbfs")]
+safeOut gainLevel = fmap (( * double gainLevel) . limiter)
+
+limiter :: E -> E
+limiter x = opcs "compress" [(Ar, [Ar, Ar, Kr, Kr, Kr, Kr, Kr, Kr, Ir])] [x, 1, 0, 96, 98, 100, 0, 0, 0]
 
 autoOff :: Monad m => E -> [E] -> DepT m [E]
 autoOff dt a = do

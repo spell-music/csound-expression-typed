@@ -68,8 +68,8 @@ trigByNameMidi_ name instr = do
 -- It's intended to be used like a midi instrument. It simulates a simplified midi protocol.
 -- We can trigger notes:
 --
--- > i "givenName" 1 pitchKey volumeKey auxParams     -- note on
--- > i "givenName" 0 pitchKey volumeKey auxParams     -- note off
+-- > i "givenName" delay duration 1 pitchKey volumeKey auxParams     -- note on
+-- > i "givenName" delay duration 0 pitchKey volumeKey auxParams     -- note off
 --
 -- The arguments are
 --
