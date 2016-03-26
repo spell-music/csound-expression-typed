@@ -381,13 +381,13 @@ instance Val BoolSig where
     fromGE = BoolSig 
     toGE x = case x of
         BoolSig a -> a
-        PrimBoolSig b -> return $ if b then 1 else 0
+        PrimBoolSig b -> return $ if b then true else false
 
 instance Val BoolD   where 
     fromGE = BoolD
     toGE x = case x of
         BoolD a -> a
-        PrimBoolD b -> return $ if b then 1 else 0   
+        PrimBoolD b -> return $ if b then true else false
 
 
 class (IsPrim a, RealFrac (PrimOf a), Val a) => SigOrD a where
