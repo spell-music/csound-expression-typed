@@ -5,7 +5,7 @@ module Csound.Typed.GlobalState (
     module Csound.Typed.GlobalState.Instr,
     module Csound.Typed.GlobalState.Cache,    
     -- * Reexports dynamic    
-    BandLimited(..), readBandLimited, renderBandLimited,
+    BandLimited(..), readBandLimited, readHardSyncBandLimited, renderBandLimited,
     Instrs(..), IdMap(..), getInstrIds,
     getIn, chnUpdateUdo, renderGlobals, turnoff, turnoff2, exitnow, 
     oscListen, oscInit, oscSend,

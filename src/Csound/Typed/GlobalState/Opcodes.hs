@@ -12,6 +12,7 @@ module Csound.Typed.GlobalState.Opcodes(
     out, outs, safeOut, autoOff, turnoff, turnoff2, exitnow,
     -- * vco2
     oscili, oscilikt, vco2ft, vco2ift, vco2init, ftgen,
+    syncphasor, tableikt,
     -- * OSC
     oscInit, oscListen, oscSend,
     -- * channels
@@ -219,7 +220,7 @@ safeOut :: Double -> [E] -> [E]
 safeOut gainLevel = fmap (( * double gainLevel) . limiter)
 
 limiter :: E -> E
-limiter x = opcs "compress" [(Ar, [Ar, Ar, Kr, Kr, Kr, Kr, Kr, Kr, Ir])] [x, 1, 0, 89, 89, 100, 0, 0, 0]
+limiter x = opcs "compress" [(Ar, [Ar, Ar, Kr, Kr, Kr, Kr, Kr, Kr, Ir])] [x, 1, 0, 90, 90, 100, 0, 0, 0]
 
 autoOff :: Monad m => E -> [E] -> DepT m [E]
 autoOff dt a = do
@@ -300,6 +301,14 @@ genIdE genId = case genId of
 
 vco2init :: [E] -> E
 vco2init = opcs "vco2init" [(Ir, repeat Ir)]
+
+syncphasor :: E -> E -> Maybe E -> (E, E)
+syncphasor xcps asyncin mphase = getPair $ mopcs "syncphasor" ([Ar, Ar], [Xr, Ar, Ir]) $ case mphase of
+    Nothing     -> [xcps, asyncin]
+    Just phase  -> [xcps, asyncin, phase]
+
+tableikt :: E -> E -> E 
+tableikt xndx kfn  = opcs "tableikt" [(Ar, [Xr, Kr, Ir, Ir, Ir])] [xndx, kfn, 1]
 
 -----------------------------------------------------------
 -- OSC

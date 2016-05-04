@@ -8,9 +8,10 @@ module Csound.Typed.GlobalState.Elements(
     -- Sf2
     SfFluid(..), SfSpec(..), SfMap, newSf, sfVar, renderSf,
     -- ** Band-limited waveforms
-    BandLimited(..), BandLimitedMap, 
+    BandLimited(..), BandLimitedMap(..), BandLimitedId(..),
     saveBandLimited, renderBandLimited,
-    readBandLimited,
+    readBandLimited, readHardSyncBandLimited,
+
     -- ** String arguments
     StringMap, newString,
     -- * Midi
@@ -51,7 +52,8 @@ import Csound.Typed.GlobalState.Opcodes
 
 data IdMap a = IdMap
     { idMapContent :: M.Map a Int
-    , idMapNewId   :: Int }
+    , idMapNewId   :: Int 
+    } deriving (Eq, Ord)
 
 instance Default (IdMap a) where   
     def = IdMap def 1
@@ -187,36 +189,85 @@ renderSf (SfSpec name bank prog) n = verbatim $
 data BandLimited = Saw | Pulse | Square | Triangle | IntegratedSaw | UserGen Gen
     deriving (Eq, Ord)
 
-type BandLimitedMap = M.Map BandLimited Int
+data BandLimitedId = SimpleBandLimitedWave Int | UserBandLimitedWave Int
+    deriving (Eq, Ord)
 
-saveBandLimited :: BandLimited -> State (GenMap, BandLimitedMap) Int
+bandLimitedIdToExpr :: BandLimitedId -> E
+bandLimitedIdToExpr x = case x of
+    SimpleBandLimitedWave simpleId -> int simpleId
+    UserBandLimitedWave   userId   -> noRate $ ReadVar $ bandLimitedVar userId
+
+bandLimitedVar userId = Var GlobalVar Ir ("BandLim" ++ show userId)
+
+data BandLimitedMap = BandLimitedMap 
+    { simpleBandLimitedMap :: M.Map BandLimited BandLimitedId
+    , vcoInitMap     :: GenMap
+    } deriving (Eq, Ord)
+
+instance Default BandLimitedMap where
+    def = BandLimitedMap def def
+
+saveBandLimited :: BandLimited -> State BandLimitedMap BandLimitedId
 saveBandLimited x = case x of
     Saw             -> simpleWave 1  0
     IntegratedSaw   -> simpleWave 2  1
     Pulse           -> simpleWave 4  2
     Square          -> simpleWave 8  3
     Triangle        -> simpleWave 16 4
-    UserGen _       -> userGen 
+    UserGen gen     -> userGen gen
     where
-        simpleWave writeId readId = state $ \s@(genMap, blMap) ->
-            if (M.member x blMap) 
-                then (readId, s)
-                else (readId, (genMap, M.insert x writeId blMap))
+        simpleWave writeId readId = state $ \blMap ->
+            if (M.member x (simpleBandLimitedMap blMap)) 
+                then (SimpleBandLimitedWave readId, blMap)
+                else (SimpleBandLimitedWave readId, blMap { simpleBandLimitedMap = M.insert x (SimpleBandLimitedWave writeId) (simpleBandLimitedMap blMap) })
 
-        userGen = state $ \s@(genMap, blMap) -> case M.lookup x blMap of
-            Just n  -> (n, s)
-            Nothing -> 
-                let (newId, genMap1) = runState newGenId genMap
-                    blMap1 = M.insert x newId blMap
-                in  (negate newId, (genMap1, blMap1))        
+        userGen gen = state $ \blMap -> 
+            let genMap = vcoInitMap blMap
+                (newId, genMap1) = runState (saveId gen) genMap
+                blMap1 = blMap { vcoInitMap = genMap1 }                    
+            in  (UserBandLimitedWave newId, blMap1)
+
 
 renderBandLimited :: Monad m => GenMap -> BandLimitedMap -> DepT m ()
-renderBandLimited genMap blMap = case M.toList blMap of
-    []  -> return ()
-    as  -> render (idMapNewId genMap) (getUserGens as) as
+renderBandLimited genMap blMap = 
+    if isEmptyBlMap blMap 
+        then return ()
+        else render (idMapNewId genMap) (M.toList $ idMapContent $ vcoInitMap blMap) (M.toList $ simpleBandLimitedMap blMap)
     where 
-        render n gens vcos = do
-            mapM_ renderGen gens
+        isEmptyBlMap m = (M.null $ simpleBandLimitedMap m) && (M.null $ idMapContent $ vcoInitMap m)
+
+        render lastGenId gens vcos = do
+            writeVar freeVcoVar $ int (lastGenId + length gens + 100)            
+            mapM_ (renderGen lastGenId) gens
+            mapM_ renderVco vcos
+
+        renderGen :: Monad m => Int -> (Gen, Int) -> DepT m ()
+        renderGen lastGenId (gen, genId) = do
+            renderFtgen lastGenId (gen, genId)
+            renderVcoGen genId
+            renderVcoVarAssignment genId            
+
+        freeVcoVar = Var GlobalVar Ir "free_vco"
+        ftVar n = Var GlobalVar Ir $ "vco_table_" ++ show n     
+
+        renderFtgen lastGenId (g, n) = writeVar (ftVar n) $ ftgen (int $ lastGenId + n) g       
+
+        renderVcoGen ftId  = do
+            ft   <- readVar (ftVar ftId)
+            free <- readVar freeVcoVar
+            writeVar freeVcoVar $ vco2init [-ft, free, 1.05, -1, -1, ft]
+
+        renderVcoVarAssignment n = writeVar (bandLimitedVar n) =<< (fmap negate $ readVar (ftVar n))
+
+        renderVco :: Monad m => (BandLimited, BandLimitedId) -> DepT m ()
+        renderVco (bandLimited, blId) = case blId of
+            SimpleBandLimitedWave waveId -> do
+                free <- readVar freeVcoVar
+                writeVar freeVcoVar $ vco2init [int waveId, free]
+            UserBandLimitedWave   _      -> return ()
+
+       
+{-
             renderFirstVco n (head vcos)
             mapM_ renderTailVco (tail vcos)        
 
@@ -240,9 +291,22 @@ renderBandLimited genMap blMap = case M.toList blMap of
         dummyVar = Var LocalVar Ir "ft" 
 
         toDummy = writeVar dummyVar
+-}
 
-readBandLimited :: Maybe E -> Int -> E -> E
-readBandLimited mphase n cps = oscilikt 1 cps (vco2ft cps (int n)) mphase
+readBandLimited :: Maybe E -> BandLimitedId -> E -> E
+readBandLimited mphase n cps = oscilikt 1 cps (vco2ft cps (bandLimitedIdToExpr n)) mphase
+
+readHardSyncBandLimited :: Maybe BandLimitedId -> Maybe E -> BandLimitedId -> E -> E -> E
+readHardSyncBandLimited msmoothShape mphase n ratioCps cps = smoothWave * readShape n phasorSlave (cps * ratioCps)
+    where
+        (phasorMaster, syncMaster) = syncphasor cps 0 Nothing
+        (phasorSlave,  syncSlave)  = syncphasor (cps * ratioCps) syncMaster mphase
+
+        smoothWave = case msmoothShape of
+            Nothing    -> 1
+            Just shape -> readShape shape phasorMaster cps
+
+        readShape shapeId phasor freq = tableikt phasor (vco2ft freq (bandLimitedIdToExpr shapeId))            
 
 ----------------------------------------------------------
 -- Midi

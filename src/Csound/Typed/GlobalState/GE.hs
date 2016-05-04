@@ -194,11 +194,12 @@ saveSf = onSfMap . newSf
 sfTable :: History -> [(SfSpec, Int)]
 sfTable = M.toList . idMapContent . sfMap
 
-saveBandLimitedWave :: BandLimited -> GE Int
+saveBandLimitedWave :: BandLimited -> GE BandLimitedId
 saveBandLimitedWave = onBandLimitedMap . saveBandLimited
     where onBandLimitedMap = onHistory 
-                (\a -> (genMap a, bandLimitedMap a)) 
-                (\(gm, blm) h -> h { genMap = gm, bandLimitedMap = blm})
+                (\a -> (bandLimitedMap a)) 
+                (\(blm) h -> h { bandLimitedMap = blm})
+
 setTotalDur :: TotalDur -> GE ()
 setTotalDur = onTotalDur . modify . const . Just
     where onTotalDur = onHistory totalDur (\a h -> h { totalDur = a })
