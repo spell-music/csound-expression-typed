@@ -297,14 +297,14 @@ readBandLimited :: Maybe E -> BandLimitedId -> E -> E
 readBandLimited mphase n cps = oscilikt 1 cps (vco2ft cps (bandLimitedIdToExpr n)) mphase
 
 readHardSyncBandLimited :: Maybe BandLimitedId -> Maybe E -> BandLimitedId -> E -> E -> E
-readHardSyncBandLimited msmoothShape mphase n ratioCps cps = smoothWave * readShape n phasorSlave (cps * ratioCps)
+readHardSyncBandLimited msmoothShape mphase n slaveCps masterCps = smoothWave * readShape n phasorSlave slaveCps
     where
-        (phasorMaster, syncMaster) = syncphasor cps 0 Nothing
-        (phasorSlave,  syncSlave)  = syncphasor (cps * ratioCps) syncMaster mphase
+        (phasorMaster, syncMaster) = syncphasor masterCps 0 Nothing
+        (phasorSlave,  syncSlave)  = syncphasor slaveCps syncMaster mphase
 
         smoothWave = case msmoothShape of
             Nothing    -> 1
-            Just shape -> readShape shape phasorMaster cps
+            Just shape -> readShape shape phasorMaster masterCps
 
         readShape shapeId phasor freq = tableikt phasor (vco2ft freq (bandLimitedIdToExpr shapeId))            
 
