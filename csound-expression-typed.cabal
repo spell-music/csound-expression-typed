@@ -86,9 +86,6 @@ Library
     Csound.Typed.Constants
     Csound.Typed.Misc
 
-    Csound.Typed.Lib.StableMaps.Dynamic
-    Csound.Typed.Lib.StableMaps.Dynamic.Map
-
     Csound.Typed.Plugins.TabQueue
 
     Paths_csound_expression_typed
