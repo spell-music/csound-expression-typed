@@ -325,7 +325,7 @@ bloscSyncAbsBy' smoothType tab phs ratioCps cps = hideGE $ do
 data SyncSmooth = RawSync | SawSync | TriSync | TrapSync | UserSync Tab
 
 instance Default SyncSmooth where
-    def = TriSync
+    def = TrapSync
 
 getSyncShape :: SyncSmooth -> GE (Maybe BandLimited)
 getSyncShape x = case x of
