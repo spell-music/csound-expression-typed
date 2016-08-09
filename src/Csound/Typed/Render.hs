@@ -17,6 +17,8 @@ import Data.List(sortBy, groupBy)
 import qualified Data.IntMap as IM
 import Control.Monad.IO.Class
 
+import Text.PrettyPrint.Leijen(displayS, renderCompact)
+
 import Csound.Dynamic hiding (csdFlags)
 import Csound.Typed.Types
 import Csound.Typed.GlobalState
@@ -27,6 +29,7 @@ import Csound.Typed.Control(getIns)
 import Csound.Dynamic.Types.Flags
 
 import Csound.Typed.Gui.Gui(guiStmt, panelIsKeybdSensitive)
+import Csound.Typed.Gui.Cabbage.CabbageLang(ppCabbage)
 
 
 toCsd :: Tuple a => Maybe Int -> Options -> SE a -> GE Csd
@@ -77,16 +80,23 @@ renderHistory mnchnls_i nchnls opt = do
     hist2 <- getHistory    
     let namedIntruments = fmap (\(name, body) -> Instr (InstrLabel name) body) $ unNamedInstrs $ namedInstrs hist2
     let orc = Orc instr0 ((namedIntruments ++ ) $ maybeAppend keyEventListener $ fmap (uncurry Instr) $ instrsContent $ instrs hist2)   
-    hist3 <- getHistory     
+    hist3 <- getHistory         
     let flags   = reactOnMidi hist3 $ csdFlags opt
         sco     = Sco (Just $ pureGetTotalDurForF0 $ totalDur hist3) 
                       (renderGens (genMap hist3) (writeGenMap hist3)) $
-                      ((fmap alwaysOn $ alwaysOnInstrs hist3) ++ (getNoteEvents $ notes hist3))
-    return $ Csd flags orc sco
+                      ((fmap alwaysOn $ alwaysOnInstrs hist3) ++ (getNoteEvents $ notes hist3))                      
+    let plugins = getPlugins opt hist3
+    return $ Csd flags orc sco plugins
     where
         renderGens gens writeGens = (fmap swap $ M.toList $ idMapContent  gens) ++ writeGens
         maybeAppend ma = maybe id (:) ma 
         getNoteEvents = fmap $ \(instrId, evt) -> (instrId, [evt])
+
+        getPlugins opt hist = case csdGui opt of
+            Fltk    -> []            
+            Cabbage -> case cabbageGui hist of
+                            Nothing -> []
+                            Just x  -> [(Plugin "cabbage" (displayS (renderCompact $ ppCabbage x) ""))]
 
 getInstr0 :: Maybe Int -> Int -> Options -> Dep () -> History -> Dep ()
 getInstr0 mnchnls_i nchnls opt udos hist = do

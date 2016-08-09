@@ -82,6 +82,7 @@ Library
     Csound.Typed.Gui.Gui
     Csound.Typed.Gui.Widget
     Csound.Typed.Gui.BoxModel
+    Csound.Typed.Gui.Cabbage.CabbageLang
 
     Csound.Typed.Constants
     Csound.Typed.Misc

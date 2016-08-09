@@ -62,6 +62,7 @@ import Csound.Typed.Constants(infiniteDur)
 import Csound.Typed.GlobalState.Opcodes(hrtfmove, hrtfstat, primInstrId)
 
 import Csound.Typed.Gui.Gui(Panel(..), Win(..), GuiNode, GuiHandle(..), restoreTree, guiMap, mapGuiOnPanel, defText)
+import qualified Csound.Typed.Gui.Cabbage.CabbageLang as Cabbage
 
 import qualified Csound.Typed.GlobalState.Elements as E(saveNamedInstr, addUdoPlugin)
 
@@ -112,10 +113,11 @@ data History = History
     , userInstr0        :: Dep ()
     , bandLimitedMap    :: BandLimitedMap
     , cache             :: Cache GE
-    , guis              :: Guis }
+    , guis              :: Guis
+    , cabbageGui        :: Maybe Cabbage.Lang }
 
 instance Default History where
-    def = History def def def def def def def def def def def def def def def (return ()) def def def
+    def = History def def def def def def def def def def def def def def def (return ()) def def def def
 
 data Msg = Msg
 data MidiAssign = MidiAssign MidiType Channel InstrId

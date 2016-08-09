@@ -10,7 +10,10 @@ module Csound.Typed.GlobalState.Options (
     idPartials, idSines4, idBuzzes, idConsts, idLins, idCubes,
     idExps, idSplines, idStartEnds,  idPolys, idChebs1, idChebs2, idBessels, idWins,
     -- *** String identifiers
-    idPadsynth, idTanh, idExp, idSone, idFarey, idWave
+    idPadsynth, idTanh, idExp, idSone, idFarey, idWave,
+
+    -- * Gui engines
+    GuiEngine(..)
 ) where
 
 import Control.Applicative
@@ -35,10 +38,11 @@ data Options = Options
     , csdBlockSize      :: Maybe Int          -- ^ The number of audio samples in one control step
     , csdGain           :: Maybe Double       -- ^ A gain of the final output
     , csdTabFi          :: Maybe TabFi        -- ^ Default fidelity of the arrays
+    , csdGui            :: GuiEngine          -- ^ Default GUI-engine. The default is Fltk
     }
    
 instance Default Options where
-    def = Options def def def def def
+    def = Options def def def def def def
 
 instance Monoid Options where
     mempty = def
@@ -135,3 +139,10 @@ idSone     = "sone"
 idFarey    = "farey"
 idWave     = "wave"
 
+----------------------------------------------
+
+data GuiEngine = Fltk | Cabbage
+    deriving (Show, Eq, Ord)
+
+instance Default GuiEngine where
+    def = Fltk
