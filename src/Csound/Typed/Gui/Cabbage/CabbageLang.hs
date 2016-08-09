@@ -16,7 +16,7 @@ data Property = Property
 	, propertyArgs :: [Arg] 
 	}
 
-data Arg = StringArg String | FloatArg Float
+data Arg = StringArg String | FloatArg Float | IntArg
 
 --------------------------------------------------
 -- pretty print
@@ -34,3 +34,4 @@ ppArg :: Arg -> Doc
 ppArg x = case x of
 	StringArg s -> dquotes (text s)
 	FloatArg a  -> float a
+	IntArg a    -> int a

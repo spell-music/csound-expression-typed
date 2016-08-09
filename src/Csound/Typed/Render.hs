@@ -92,11 +92,9 @@ renderHistory mnchnls_i nchnls opt = do
         maybeAppend ma = maybe id (:) ma 
         getNoteEvents = fmap $ \(instrId, evt) -> (instrId, [evt])
 
-        getPlugins opt hist = case csdGui opt of
-            Fltk    -> []            
-            Cabbage -> case cabbageGui hist of
-                            Nothing -> []
-                            Just x  -> [(Plugin "cabbage" (displayS (renderCompact $ ppCabbage x) ""))]
+        getPlugins opt hist = case cabbageGui hist of
+                Nothing -> []
+                Just x  -> [(Plugin "cabbage" (displayS (renderCompact $ ppCabbage x) ""))]
 
 getInstr0 :: Maybe Int -> Int -> Options -> Dep () -> History -> Dep ()
 getInstr0 mnchnls_i nchnls opt udos hist = do
