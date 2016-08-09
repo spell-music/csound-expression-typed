@@ -94,7 +94,7 @@ renderHistory mnchnls_i nchnls opt = do
 
         getPlugins opt hist = case cabbageGui hist of
                 Nothing -> []
-                Just x  -> [(Plugin "cabbage" (displayS (renderCompact $ ppCabbage x) ""))]
+                Just x  -> [(Plugin "Cabbage" (displayS (renderCompact $ ppCabbage x) ""))]
 
 getInstr0 :: Maybe Int -> Int -> Options -> Dep () -> History -> Dep ()
 getInstr0 mnchnls_i nchnls opt udos hist = do
