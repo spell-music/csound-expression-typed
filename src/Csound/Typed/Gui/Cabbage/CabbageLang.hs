@@ -16,7 +16,7 @@ data Property = Property
 	, propertyArgs :: [Arg] 
 	}
 
-data Arg = StringArg String | FloatArg Float | IntArg
+data Arg = StringArg String | FloatArg Float | IntArg Int | ColonArg Float Float
 
 --------------------------------------------------
 -- pretty print

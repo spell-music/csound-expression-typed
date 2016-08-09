@@ -5,4 +5,3 @@ module Csound.Typed.Gui (
 
 import Csound.Typed.Gui.Gui
 import Csound.Typed.Gui.Widget
-

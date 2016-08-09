@@ -33,6 +33,8 @@ module Csound.Typed.GlobalState.GE(
     guiInstrExp,
     listenKeyEvt, Key(..), KeyEvt(..), Guis(..),
     getKeyEventListener,
+    -- * Cabbage Guis
+    cabbage,
     -- * Hrtf pan
     simpleHrtfmove, simpleHrtfstat,
     -- * Udo plugins
@@ -63,6 +65,7 @@ import Csound.Typed.GlobalState.Opcodes(hrtfmove, hrtfstat, primInstrId)
 
 import Csound.Typed.Gui.Gui(Panel(..), Win(..), GuiNode, GuiHandle(..), restoreTree, guiMap, mapGuiOnPanel, defText)
 import qualified Csound.Typed.Gui.Cabbage.CabbageLang as Cabbage
+import qualified Csound.Typed.Gui.Cabbage.Cabbage     as Cabbage
 
 import qualified Csound.Typed.GlobalState.Elements as E(saveNamedInstr, addUdoPlugin)
 
@@ -516,6 +519,11 @@ getKeyEventListener = do
             body <- keyEventInstrBody $ guiKeyEvents $ guis h
             return $ Just (Instr keyEventInstrId body)
 
+-----------------------------------------------
+-- cabbage
+
+cabbage :: Cabbage.Cab () -> GE ()
+cabbage cab = modifyHistory $ \h -> h { cabbageGui = Just $ Cabbage.runCab cab } 
 
 -----------------------------------------------
 -- head pan

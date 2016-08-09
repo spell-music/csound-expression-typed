@@ -49,6 +49,7 @@ Library
     Csound.Typed.Render
 
     Csound.Typed.Gui
+    Csound.Typed.Gui.Cab
 
     Csound.Typed.Types.Prim
     Csound.Typed.Types.Evt
@@ -83,6 +84,7 @@ Library
     Csound.Typed.Gui.Widget
     Csound.Typed.Gui.BoxModel
     Csound.Typed.Gui.Cabbage.CabbageLang
+    Csound.Typed.Gui.Cabbage.Cabbage
 
     Csound.Typed.Constants
     Csound.Typed.Misc
