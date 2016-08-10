@@ -1,6 +1,6 @@
 {-# Language GeneralizedNewtypeDeriving  #-}
 module Csound.Typed.Gui.Cabbage.Cabbage(
-    Cab, CabProp, runCab,
+    Cab, CabProp, Col(..), runCab, 
     
     -- * Widgets
     button, filebutton, infobutton, checkbox, combobox, csoundoutput, encoder, gentable, 
@@ -33,6 +33,7 @@ runCab :: Cab -> [Line]
 runCab = snd . runWriter . unCab'
 
 newtype CabProp' a = CabProp' { unCabProp' :: Writer [Property] a }
+    deriving (Functor, Applicative, Monad)
 
 runCabProp :: CabProp -> [Property]
 runCabProp = snd . runWriter . unCabProp'

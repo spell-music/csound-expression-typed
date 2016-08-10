@@ -25,7 +25,7 @@ ppCabbage :: Lang -> Doc
 ppCabbage xs = vcat $ fmap ppLine xs
 
 ppLine :: Line -> Doc
-ppLine (Line name props) = text name <+> hcat (punctuate comma (fmap ppProp props))
+ppLine (Line name props) = text name <+> cat (punctuate comma (fmap ppProp props))
 
 ppProp :: Property -> Doc
 ppProp (Property name args) = text name <> tupled (fmap ppArg args)

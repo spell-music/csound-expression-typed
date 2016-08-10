@@ -1,5 +1,5 @@
 module Csound.Typed.Gui.Cab(
-    Cab, CabProp, cabbage,
+    Cab, CabProp, Col(..), cabbage,
 
     -- * Widgets
     button, filebutton, infobutton, checkbox, combobox, csoundoutput, encoder, gentable, 

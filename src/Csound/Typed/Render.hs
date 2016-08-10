@@ -17,7 +17,7 @@ import Data.List(sortBy, groupBy)
 import qualified Data.IntMap as IM
 import Control.Monad.IO.Class
 
-import Text.PrettyPrint.Leijen(displayS, renderCompact)
+import Text.PrettyPrint.Leijen(displayS, renderPretty)
 
 import Csound.Dynamic hiding (csdFlags)
 import Csound.Typed.Types
@@ -94,7 +94,7 @@ renderHistory mnchnls_i nchnls opt = do
 
         getPlugins opt hist = case cabbageGui hist of
                 Nothing -> []
-                Just x  -> [(Plugin "Cabbage" (displayS (renderCompact $ ppCabbage x) ""))]
+                Just x  -> [(Plugin "Cabbage" (displayS (renderPretty 1 10000 $ ppCabbage x) ""))]
 
 getInstr0 :: Maybe Int -> Int -> Options -> Dep () -> History -> Dep ()
 getInstr0 mnchnls_i nchnls opt udos hist = do
