@@ -1,5 +1,5 @@
 module Csound.Typed.Gui.Cab(
-    Cab, cabbage,
+    Cab, CabProp, cabbage,
 
     -- * Widgets
     button, filebutton, infobutton, checkbox, combobox, csoundoutput, encoder, gentable, 
@@ -21,5 +21,5 @@ import Csound.Typed.Gui.Cabbage.Cabbage
 import qualified Csound.Typed.GlobalState as G
 import Csound.Typed.GlobalState(SE)
 
-cabbage :: Cab () -> SE ()
+cabbage :: Cab -> SE ()
 cabbage = G.geToSe . G.cabbage

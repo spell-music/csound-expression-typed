@@ -522,7 +522,7 @@ getKeyEventListener = do
 -----------------------------------------------
 -- cabbage
 
-cabbage :: Cabbage.Cab () -> GE ()
+cabbage :: Cabbage.Cab -> GE ()
 cabbage cab = modifyHistory $ \h -> h { cabbageGui = Just $ Cabbage.runCab cab } 
 
 -----------------------------------------------

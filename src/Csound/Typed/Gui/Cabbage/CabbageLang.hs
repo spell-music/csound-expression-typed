@@ -35,3 +35,4 @@ ppArg x = case x of
 	StringArg s -> dquotes (text s)
 	FloatArg a  -> float a
 	IntArg a    -> int a
+	ColonArg a b -> float a <> colon <> float b
