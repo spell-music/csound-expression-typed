@@ -26,6 +26,11 @@ Data-Files :
     data/opcodes/tabQueue.udo
     data/opcodes/tabQueue2.udo
 
+    data/opcodes/zdf.udo
+    data/opcodes/solina_chorus.udo
+    data/opcodes/adsr140.udo
+    data/opcodes/audaciouseq.udo
+
 
 Homepage:        https://github.com/anton-k/csound-expression-typed
 Bug-Reports:     https://github.com/anton-k/csound-expression-typed/issues
@@ -90,6 +95,7 @@ Library
     Csound.Typed.Misc
 
     Csound.Typed.Plugins.TabQueue
+    Csound.Typed.Plugins.Zdf
 
     Paths_csound_expression_typed
 
