@@ -96,6 +96,7 @@ Library
 
     Csound.Typed.Plugins.TabQueue
     Csound.Typed.Plugins.Zdf
+    Csound.Typed.Plugins.Adsr140
 
     Paths_csound_expression_typed
 
