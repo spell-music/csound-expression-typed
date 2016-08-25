@@ -30,7 +30,8 @@ module Csound.Typed.GlobalState.Elements(
     subinstr, subinstr_, event_i, event, safeOut, autoOff, changed,
     -- * Udo plugins
     UdoPlugin, addUdoPlugin, getUdoPluginNames,
-    tabQueuePlugin, tabQueue2Plugin    
+    tabQueuePlugin, tabQueue2Plugin,
+    zdfPlugin, solinaChorusPlugin, audaciouseqPlugin, adsr140Plugin    
 ) where
 
 import Data.List
@@ -495,12 +496,21 @@ chnPargId arityIns = 4 + arityIns
 
 newtype UdoPlugin  = UdoPlugin { unUdoPlugin :: String }
 
-tabQueuePlugin  = UdoPlugin "tabQueue"
-tabQueue2Plugin = UdoPlugin "tabQueue2"
-
 addUdoPlugin :: UdoPlugin -> State [UdoPlugin] ()
 addUdoPlugin a = modify (a :)
 
 getUdoPluginNames :: [UdoPlugin] -> [String]
 getUdoPluginNames xs = nub (fmap unUdoPlugin xs)
 
+-- tabQueue
+
+tabQueuePlugin  = UdoPlugin "tabQueue"
+tabQueue2Plugin = UdoPlugin "tabQueue2"
+
+----------------------------------------------------------
+-- Steven Yi wonderful UDOs
+
+zdfPlugin           = UdoPlugin "zdf"               -- Zero delay filters
+solinaChorusPlugin  = UdoPlugin "solina_chorus"     -- solina chorus
+audaciouseqPlugin   = UdoPlugin "audaciouseq"       -- audacious 10 band EQ
+adsr140Plugin       = UdoPlugin "adsr140"           -- adsr with retriggering
