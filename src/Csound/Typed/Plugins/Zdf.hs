@@ -115,7 +115,7 @@ zdf_1pole :: Sig -> Sig -> (Sig, Sig)
 zdf_1pole asig cfq = toTuple $ fmap ($ 2) $ do
     addUdoPlugin E.zdfPlugin
     f <$> toGE asig <*> toGE cfq
-    where f asig cfq = mopcs "zdf_1pole" ([Ar, Ar], [Ar, Xr]) [asig, cfq]
+    where f asig cfq = mopcs "zdf_1pole" ([Ar, Ar], [Ar, Ar]) [asig, cfq]
 
 -- 1-pole allpass filter
 -- takes in an a-rate signal and corner frequency where input
@@ -124,7 +124,7 @@ zdf_allpass_1pole :: Sig -> Sig -> Sig
 zdf_allpass_1pole asig cfq = fromGE $ do
     addUdoPlugin E.zdfPlugin
     f <$> toGE asig <*> toGE cfq
-    where f asig cfq = opcs "zdf_allpass_1pole" [(Ar, [Ar, Xr])] [asig, cfq]
+    where f asig cfq = opcs "zdf_allpass_1pole" [(Ar, [Ar, Ar])] [asig, cfq]
 
 -- 2-pole (12dB) lowpass/highpass/bandpass filter
 -- takes in a a-rate signal, cutoff value in frequency, and
@@ -135,7 +135,7 @@ zdf_2pole :: Sig -> Sig -> Sig -> (Sig, Sig, Sig)
 zdf_2pole asig cfq q = toTuple $ fmap ($ 3) $ do
     addUdoPlugin E.zdfPlugin
     f <$> toGE asig <*> toGE cfq <*> toGE q
-    where f asig cfq q = mopcs "zdf_2pole" ([Ar, Ar, Ar], [Ar, Xr, Xr]) [asig, cfq, q]
+    where f asig cfq q = mopcs "zdf_2pole" ([Ar, Ar, Ar], [Ar, Ar, Ar]) [asig, cfq, q]
 
 -- 2-pole (12dB) lowpass/highpass/bandpass/notch filter
 -- takes in a a-rate signal, cutoff value in frequency, and
@@ -146,7 +146,7 @@ zdf_2pole_notch :: Sig -> Sig -> Sig -> (Sig, Sig, Sig, Sig)
 zdf_2pole_notch asig cfq q = toTuple $ fmap ($ 4) $ do
     addUdoPlugin E.zdfPlugin
     f <$> toGE asig <*> toGE cfq <*> toGE q
-    where f asig cfq q = mopcs "zdf_2pole_notch" ([Ar, Ar, Ar, Ar], [Ar, Xr, Xr]) [asig, cfq, q]
+    where f asig cfq q = mopcs "zdf_2pole_notch" ([Ar, Ar, Ar, Ar], [Ar, Ar, Ar]) [asig, cfq, q]
 
 -- moog ladder
 --
@@ -157,7 +157,7 @@ zdf_ladder :: Sig -> Sig -> Sig -> Sig
 zdf_ladder asig cfq res = fromGE $ do
     addUdoPlugin E.zdfPlugin
     f <$> toGE asig <*> toGE cfq <*> toGE res
-    where f asig cfq res = opcs "zdf_ladder" [(Ar, [Ar, Xr, Xr])] [asig, cfq, res]
+    where f asig cfq res = opcs "zdf_ladder" [(Ar, [Ar, Ar, Ar])] [asig, cfq, res]
 
 -- 4-pole
 --
@@ -169,7 +169,7 @@ zdf_4pole :: Sig -> Sig -> Sig -> (Sig, Sig, Sig, Sig, Sig, Sig)
 zdf_4pole asig cfq res = toTuple $ fmap ($ 6) $ do
     addUdoPlugin E.zdfPlugin
     f <$> toGE asig <*> toGE cfq <*> toGE res
-    where f asig cfq res = mopcs "zdf_1pole" ([Ar, Ar, Ar, Ar, Ar, Ar], [Ar, Xr, Xr]) [asig, cfq, res]
+    where f asig cfq res = mopcs "zdf_4pole" ([Ar, Ar, Ar, Ar, Ar, Ar], [Ar, Ar, Ar]) [asig, cfq, res]
 
 -- 4-pole
 --
@@ -181,7 +181,7 @@ zdf_4pole_hp :: Sig -> Sig -> Sig -> (Sig, Sig, Sig, Sig, Sig, Sig)
 zdf_4pole_hp asig cfq res = toTuple $ fmap ($ 6) $ do
     addUdoPlugin E.zdfPlugin
     f <$> toGE asig <*> toGE cfq <*> toGE res
-    where f asig cfq res = mopcs "zdf_4pole_hp" ([Ar, Ar, Ar, Ar, Ar, Ar], [Ar, Xr, Xr]) [asig, cfq, res]
+    where f asig cfq res = mopcs "zdf_4pole_hp" ([Ar, Ar, Ar, Ar, Ar, Ar], [Ar, Ar, Ar]) [asig, cfq, res]
 
 -- ;; TODO - implement
 -- opcode zdf_peak_eq, a, akkk
