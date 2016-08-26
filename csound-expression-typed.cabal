@@ -30,6 +30,7 @@ Data-Files :
     data/opcodes/solina_chorus.udo
     data/opcodes/adsr140.udo
     data/opcodes/audaciouseq.udo
+    data/opcodes/tdf2.udo
 
 
 Homepage:        https://github.com/anton-k/csound-expression-typed

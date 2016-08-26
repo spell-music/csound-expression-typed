@@ -1,4 +1,19 @@
-module Csound.Typed.Plugins.Zdf(    
+-- Zero delay filters (implemented in Csound by Steven Yi)
+module Csound.Typed.Plugins.Zdf( 
+    -- One pole filters
+    zdf1, zlp1, zhp1, zap1,
+
+    -- Two pole filters
+    zdf2, zlp, zbp, zhp, zdf2_notch, zbr,
+
+    -- Ladder filter
+    zladder, 
+
+    -- Four poles filters
+    zdf4, zlp4, zbp4, zhp4, 
+
+    -- Eq-filters
+    peakEq, highShelf, lowShelf   
 ) where
 
 import Data.Boolean
@@ -11,6 +26,88 @@ import Csound.Typed.GlobalState
 import qualified Csound.Typed.GlobalState.Elements as E(zdfPlugin)
 
 -------------------------------------------------------------------------------
+-- Haskell way (reorder arguments, split some funs)
+
+-- zdf_1pole
+
+zdf1 :: Sig -> Sig -> (Sig, Sig)
+zdf1 cfq asig = zdf_1pole asig cfq
+
+zlp1 :: Sig -> Sig -> Sig
+zlp1 cfq asig = lows
+    where (lows, _) = zdf_1pole asig cfq
+
+zhp1 :: Sig -> Sig -> Sig
+zhp1 cfq asig = lows
+    where (_, highs) = zdf_1pole asig cfq
+
+-- zdf_allpass_1pole
+
+zap1 :: Sig -> Sig -> Sig
+zap1 cfq asig = zdf_allpass_1pole asig cfq
+
+-- zdf_2pole
+
+-- outs: lp, bp, hp
+zdf2 :: Sig -> Sig -> Sig -> (Sig, Sig, Sig)
+zdf2 cfq q asig = zdf_2pole asig cfq q
+
+zlp :: Sig -> Sig -> Sig -> Sig
+zlp cfq q asig = lows
+    where (lows, _, _) = zdf2 cfq q asig
+
+zbp :: Sig -> Sig -> Sig -> Sig
+zbp cfq q asig = mids
+    where (_, mids, _) = zdf2 cfq q asig
+
+zhp :: Sig -> Sig -> Sig -> Sig
+zhp cfq q asig = highs
+    where (_, _, highs) = zdf2 cfq q asig
+
+zdf2_notch :: Sig -> Sig -> Sig -> (Sig, Sig, Sig, Sig)
+zdf2_notch cfq q asig = zdf_2pole_notch asig cfq q
+
+zbr cfq q asig = notch
+    where (_, _, _, notch) = zdf2_notch cfq q asig
+
+-- ladder
+
+zladder :: Sig -> Sig -> Sig -> Sig
+zladder cfq q asig = zdf_ladder asig cfq q 
+
+-- zdf_4pole
+
+zdf4 ::  Sig -> Sig -> Sig -> (Sig, Sig, Sig, Sig, Sig, Sig)
+zdf4 cfq q asig = zdf_4pole asig cfq q
+
+zlp4 ::  Sig -> Sig -> Sig -> Sig 
+zlp4 cfq q asig = lows
+    where (_, _, _, lows, _, _) = zdf4 cfq q asig
+
+zbp4 ::  Sig -> Sig -> Sig -> Sig 
+zbp4 cfq q asig = mids
+    where (_, _, _, _, mids, _) = zdf4 cfq q asig
+
+zhp4 ::  Sig -> Sig -> Sig -> Sig  
+zhp4 cfq q asig = highs
+    where (_, _, _, _, _, highs) = zdf4 cfq q asig
+
+-- zdf_peak_eq
+toEqFun f kcf kres kdB ain = f ain kcf kres kdB
+
+peakEq :: Sig -> Sig -> Sig -> Sig -> Sig
+peakEq = toEqFun zdf_peak_eq 
+
+-- zdf_high_shelf_eq
+highShelf :: Sig -> Sig -> Sig -> Sig -> Sig
+highShelf = toEqFun zdf_high_shelf_eq 
+
+-- zdf_low_shelf_eq
+lowShelf :: Sig -> Sig -> Sig -> Sig -> Sig
+lowShelf = toEqFun zdf_low_shelf_eq 
+
+-------------------------------------------------------------------------------
+-- Steven implementation
 
 -- 1-pole (6dB) lowpass/highpass filter
 -- takes in a a-rate signal and cutoff value in frequency
@@ -91,7 +188,7 @@ zdf_4pole_hp asig cfq res = toTuple $ fmap ($ 6) $ do
 -- ;; TODO - implement
 -- opcode zdf_peak_eq, a, akkk
 -- ain, kcf, kres, kdB xin
-zdf_peak_eq :: Sig -> Sig -> Sig
+zdf_peak_eq :: Sig -> Sig -> Sig -> Sig -> Sig
 zdf_peak_eq ain kcf kres kdB = fromGE $ do
     addUdoPlugin E.zdfPlugin
     f <$> toGE ain <*> toGE kcf <*> toGE kres <*> toGE kdB
