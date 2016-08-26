@@ -62,6 +62,8 @@ Library
     Csound.Typed.Types.Tuple
     Csound.Typed.Types.Lift
 
+    Csound.Typed.Plugins    
+
   Other-Modules:
     Csound.Typed.GlobalState
     Csound.Typed.GlobalState.Options

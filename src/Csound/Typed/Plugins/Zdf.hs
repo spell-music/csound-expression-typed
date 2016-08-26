@@ -38,7 +38,7 @@ zlp1 cfq asig = lows
     where (lows, _) = zdf_1pole asig cfq
 
 zhp1 :: Sig -> Sig -> Sig
-zhp1 cfq asig = lows
+zhp1 cfq asig = highs
     where (_, highs) = zdf_1pole asig cfq
 
 -- zdf_allpass_1pole
@@ -93,18 +93,16 @@ zhp4 cfq q asig = highs
     where (_, _, _, _, _, highs) = zdf4 cfq q asig
 
 -- zdf_peak_eq
-toEqFun f kcf kres kdB ain = f ain kcf kres kdB
-
 peakEq :: Sig -> Sig -> Sig -> Sig -> Sig
-peakEq = toEqFun zdf_peak_eq 
+peakEq kcf kres kdB ain = zdf_peak_eq ain kcf kres kdB
 
 -- zdf_high_shelf_eq
-highShelf :: Sig -> Sig -> Sig -> Sig -> Sig
-highShelf = toEqFun zdf_high_shelf_eq 
+highShelf :: Sig -> Sig -> Sig -> Sig
+highShelf kcf kres ain = zdf_high_shelf_eq ain kcf kres
 
 -- zdf_low_shelf_eq
-lowShelf :: Sig -> Sig -> Sig -> Sig -> Sig
-lowShelf = toEqFun zdf_low_shelf_eq 
+lowShelf :: Sig -> Sig -> Sig -> Sig
+lowShelf kcf kres ain = zdf_low_shelf_eq ain kcf kres 
 
 -------------------------------------------------------------------------------
 -- Steven implementation
