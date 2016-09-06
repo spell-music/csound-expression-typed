@@ -612,7 +612,7 @@ whens bodies el = case bodies of
     where elseIfs = mapM_ (\(p, body) -> elseBegin >> ifBegin p >> body)
 
 ifBegin :: BoolSig -> SE ()
-ifBegin a = fromDep_ $ D.ifBegin =<< lift (toGE a)
+ifBegin a = fromDep_ $ D.ifBegin Kr =<< lift (toGE a)
 
 ifEnd :: SE ()
 ifEnd = fromDep_ D.ifEnd
@@ -644,7 +644,7 @@ whenDs bodies el = case bodies of
     where elseIfs = mapM_ (\(p, body) -> elseBegin >> ifBeginD p >> body)
 
 ifBeginD :: BoolD -> SE ()
-ifBeginD a = fromDep_ $ D.ifBegin =<< lift (toGE a)
+ifBeginD a = fromDep_ $ D.ifBegin Ir =<< lift (toGE a)
 
 -- elseIfBegin :: BoolSig -> SE ()
 -- elseIfBegin a = fromDep_ $ D.elseIfBegin =<< lift (toGE a)

@@ -85,7 +85,7 @@ servantUpdateChnAlive :: Monad m => Int -> DepT m ()
 servantUpdateChnAlive pargId = do
     let sName = chnAliveName (pn pargId) 
     kAlive <- chngetK sName
-    when1 (kAlive <* -10) $ do
+    when1 Kr (kAlive <* -10) $ do
         turnoff
     chnsetK (kAlive - 1) sName
 
@@ -97,7 +97,7 @@ servantUpdateChnRetrig pargId = do
     let sName = chnRetrigName (pn pargId) 
     let retrigVal = pn $ pargId + 1
     kRetrig <- chngetK sName
-    when1 (kRetrig /=* retrigVal) $ do
+    when1 Kr (kRetrig /=* retrigVal) $ do
         turnoff    
 
 servantUpdateChnEvtLoop :: Monad m => Int -> DepT m ()
@@ -225,7 +225,7 @@ limiter x = opcs "compress" [(Ar, [Ar, Ar, Kr, Kr, Kr, Kr, Kr, Kr, Ir])] [x, 1, 
 autoOff :: Monad m => E -> [E] -> DepT m [E]
 autoOff dt a = do
     ihold    
-    when1 (trig a)
+    when1 Kr (trig a)
         turnoff
     return a
     where

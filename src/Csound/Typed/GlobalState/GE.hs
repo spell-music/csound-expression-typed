@@ -497,8 +497,8 @@ keyEventInstrBody :: KeyCodeMap -> GE InstrBody
 keyEventInstrBody keyMap = execDepT $ do
     let keys     = flKeyIn
         isChange = changed keys ==* 1
-    when1 isChange $ do
-        whens (fmap (uncurry $ listenEvt keys) events) doNothing
+    when1 Kr isChange $ do
+        whens Kr (fmap (uncurry $ listenEvt keys) events) doNothing
     where 
         doNothing = return ()
 
