@@ -164,6 +164,12 @@ instance Sigs Sig4
 instance Sigs Sig6
 instance Sigs Sig8
 
+instance Sigs (Sig2, Sig2)
+instance Sigs (Sig2, Sig2, Sig2)
+instance Sigs (Sig2, Sig2, Sig2, Sig2)
+instance Sigs (Sig2, Sig2, Sig2, Sig2, Sig2)
+instance Sigs (Sig2, Sig2, Sig2, Sig2, Sig2, Sig2)
+
 instance Sigs (Sig8, Sig8)
 instance Sigs (Sig8, Sig8, Sig8, Sig8)
 
@@ -354,4 +360,47 @@ instance Num (Sig8, Sig8, Sig8, Sig8) where
     signum (a1, a2, a3, a4) = (signum a1, signum a2, signum a3, signum a4)
     abs (a1, a2, a3, a4) = (abs a1, abs a2, abs a3, abs a4)
 
+instance Num (Sig2, Sig2) where
+    (a1, a2) + (b1, b2) = (a1 + b1, a2 + b2)
+    (a1, a2) * (b1, b2) = (a1 * b1, a2 * b2)
+    negate (a1, a2) = (negate a1, negate a2)
 
+    fromInteger n = (fromInteger n, fromInteger n)
+    signum (a1, a2) = (signum a1, signum a2)
+    abs (a1, a2) = (abs a1, abs a2)
+
+instance Num (Sig2, Sig2, Sig2) where
+    (a1, a2, a3) + (b1, b2, b3) = (a1 + b1, a2 + b2, a3 + b3)
+    (a1, a2, a3) * (b1, b2, b3) = (a1 * b1, a2 * b2, a3 * b3)
+    negate (a1, a2, a3) = (negate a1, negate a2, negate a3)
+
+    fromInteger n = (fromInteger n, fromInteger n, fromInteger n)
+    signum (a1, a2, a3) = (signum a1, signum a2, signum a3)
+    abs (a1, a2, a3) = (abs a1, abs a2, abs a3)
+
+instance Num (Sig2, Sig2, Sig2, Sig2) where
+    (a1, a2, a3, a4) + (b1, b2, b3, b4) = (a1 + b1, a2 + b2, a3 + b3, a4 + b4)
+    (a1, a2, a3, a4) * (b1, b2, b3, b4) = (a1 * b1, a2 * b2, a3 * b3, a4 * b4)
+    negate (a1, a2, a3, a4) = (negate a1, negate a2, negate a3, negate a4)
+
+    fromInteger n = (fromInteger n, fromInteger n, fromInteger n, fromInteger n)
+    signum (a1, a2, a3, a4) = (signum a1, signum a2, signum a3, signum a4)
+    abs (a1, a2, a3, a4) = (abs a1, abs a2, abs a3, abs a4)
+
+instance Num (Sig2, Sig2, Sig2, Sig2, Sig2) where
+    (a1, a2, a3, a4, a5) + (b1, b2, b3, b4, b5) = (a1 + b1, a2 + b2, a3 + b3, a4 + b4, a5 + b5)
+    (a1, a2, a3, a4, a5) * (b1, b2, b3, b4, b5) = (a1 * b1, a2 * b2, a3 * b3, a4 * b4, a5 * b5)
+    negate (a1, a2, a3, a4, a5) = (negate a1, negate a2, negate a3, negate a4, negate a5)
+
+    fromInteger n = (fromInteger n, fromInteger n, fromInteger n, fromInteger n, fromInteger n)
+    signum (a1, a2, a3, a4, a5) = (signum a1, signum a2, signum a3, signum a4, signum a5)
+    abs (a1, a2, a3, a4, a5) = (abs a1, abs a2, abs a3, abs a4, abs a5)
+
+instance Num (Sig2, Sig2, Sig2, Sig2, Sig2, Sig2) where
+    (a1, a2, a3, a4, a5, a6) + (b1, b2, b3, b4, b5, b6) = (a1 + b1, a2 + b2, a3 + b3, a4 + b4, a5 + b5, a6 + b6)
+    (a1, a2, a3, a4, a5, a6) * (b1, b2, b3, b4, b5, b6) = (a1 * b1, a2 * b2, a3 * b3, a4 * b4, a5 * b5, a6 * b6)
+    negate (a1, a2, a3, a4, a5, a6) = (negate a1, negate a2, negate a3, negate a4, negate a5, negate a6)
+
+    fromInteger n = (fromInteger n, fromInteger n, fromInteger n, fromInteger n, fromInteger n, fromInteger n)
+    signum (a1, a2, a3, a4, a5, a6) = (signum a1, signum a2, signum a3, signum a4, signum a5, signum a6)
+    abs (a1, a2, a3, a4, a5, a6) = (abs a1, abs a2, abs a3, abs a4, abs a5, abs a6)
