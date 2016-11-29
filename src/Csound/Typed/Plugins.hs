@@ -15,9 +15,13 @@ module Csound.Typed.Plugins(
     zdf4, zlp4, zbp4, zhp4, 
 
     -- Eq-filters
-    peakEq, highShelf, lowShelf
+    peakEq, highShelf, lowShelf,
+
+    -- Diode ladder filters
+    diode, linDiode, noNormDiode
 ) where
 
 import Csound.Typed.Plugins.Adsr140
 import Csound.Typed.Plugins.Zdf
+import Csound.Typed.Plugins.Diode
 import Csound.Typed.Plugins.Audaciouseq

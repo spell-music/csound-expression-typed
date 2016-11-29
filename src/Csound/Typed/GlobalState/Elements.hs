@@ -31,7 +31,7 @@ module Csound.Typed.GlobalState.Elements(
     -- * Udo plugins
     UdoPlugin, addUdoPlugin, getUdoPluginNames,
     tabQueuePlugin, tabQueue2Plugin,
-    zdfPlugin, solinaChorusPlugin, audaciouseqPlugin, adsr140Plugin    
+    zdfPlugin, solinaChorusPlugin, audaciouseqPlugin, adsr140Plugin, diodePlugin    
 ) where
 
 import Data.List
@@ -514,3 +514,4 @@ zdfPlugin           = UdoPlugin "zdf"               -- Zero delay filters
 solinaChorusPlugin  = UdoPlugin "solina_chorus"     -- solina chorus
 audaciouseqPlugin   = UdoPlugin "audaciouseq"       -- audacious 10 band EQ
 adsr140Plugin       = UdoPlugin "adsr140"           -- adsr with retriggering
+diodePlugin         = UdoPlugin "diode"             -- diode ladder filter

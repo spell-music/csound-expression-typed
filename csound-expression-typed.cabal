@@ -31,6 +31,7 @@ Data-Files :
     data/opcodes/adsr140.udo
     data/opcodes/audaciouseq.udo
     data/opcodes/tdf2.udo
+    data/opcodes/diode.udo
 
 
 Homepage:        https://github.com/anton-k/csound-expression-typed
@@ -99,6 +100,7 @@ Library
 
     Csound.Typed.Plugins.TabQueue
     Csound.Typed.Plugins.Zdf
+    Csound.Typed.Plugins.Diode
     Csound.Typed.Plugins.Adsr140
     Csound.Typed.Plugins.Audaciouseq
 
