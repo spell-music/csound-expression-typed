@@ -2,6 +2,9 @@ module Csound.Typed.Plugins(
     adsr140,
     audaciousEq,
     
+    -- Solina chorus
+    solinaChorus, testSolinaChorus,
+
     -- One pole filters
     zdf1, zlp1, zhp1, zap1,
 
@@ -18,10 +21,15 @@ module Csound.Typed.Plugins(
     peakEq, highShelf, lowShelf,
 
     -- Diode ladder filters
-    diode, linDiode, noNormDiode
+    diode, linDiode, noNormDiode,
+
+    -- Korg 35 filters
+    linKorg_lp, linKorg_hp, korg_lp, korg_hp
 ) where
 
 import Csound.Typed.Plugins.Adsr140
 import Csound.Typed.Plugins.Zdf
 import Csound.Typed.Plugins.Diode
 import Csound.Typed.Plugins.Audaciouseq
+import Csound.Typed.Plugins.Korg35
+import Csound.Typed.Plugins.SolinaChorus

@@ -20,7 +20,7 @@
 gi_solina_parabola ftgen 0, 0, 65537, 19, 0.5, 1, 180, 1 
 
 ;; 3 sine wave LFOs, 120 degrees out of phase
-opcode sol_lfo_3, aaa, kk
+opcode sol_lfo_3, aaa, KK
   kfreq, kamp xin
 
   aphs phasor kfreq
@@ -32,7 +32,7 @@ opcode sol_lfo_3, aaa, kk
   xout (a0 * kamp), (a120 * kamp), (a240 * kamp)
 endop
 
-opcode solina_chorus, a, akkkk
+opcode solina_chorus, a, aKKKK
 
   aLeft, klfo_freq1, klfo_amp1, klfo_freq2, klfo_amp2 xin
 
