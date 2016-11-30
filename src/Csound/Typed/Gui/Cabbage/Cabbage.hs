@@ -1,5 +1,5 @@
 {-# Language GeneralizedNewtypeDeriving  #-}
-module Csound.Typed.Gui.Cabbage.Cabbage(
+module Csound.Typed.Gui.Cabbage.Cabbage(    
     Cab, CabProp, Col(..), runCab, 
     
     -- * Widgets
@@ -26,6 +26,8 @@ import Csound.Typed.Gui.Cabbage.CabbageLang
 type Cab = Cab' ()
 type CabProp = CabProp' ()
 
+-- | The Cab is a monad for Cabbage markup language. 
+-- The markup description can be constructed in the same way as blaze-html markup.
 newtype Cab' a = Cab' { unCab' :: Writer [Line] a }
 	deriving (Functor, Applicative, Monad)
 
