@@ -1,5 +1,5 @@
 Name:          csound-expression-typed
-Version:       0.0.9.3
+Version:       0.1.0.0
 Cabal-Version: >= 1.22
 License:       BSD3
 License-file:  LICENSE
@@ -33,6 +33,7 @@ Data-Files :
     data/opcodes/tdf2.udo
     data/opcodes/diode.udo
     data/opcodes/korg35.udo
+    data/opcodes/zero-delay-convolution.udo
 
 
 Homepage:        https://github.com/anton-k/csound-expression-typed
@@ -106,6 +107,7 @@ Library
     Csound.Typed.Plugins.Adsr140
     Csound.Typed.Plugins.Audaciouseq
     Csound.Typed.Plugins.SolinaChorus
+    Csound.Typed.Plugins.ZeroDelayConvolution
 
     Paths_csound_expression_typed
 

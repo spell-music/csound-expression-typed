@@ -24,7 +24,10 @@ module Csound.Typed.Plugins(
     diode, linDiode, noNormDiode,
 
     -- Korg 35 filters
-    linKorg_lp, linKorg_hp, korg_lp, korg_hp
+    linKorg_lp, linKorg_hp, korg_lp, korg_hp,
+
+    -- zero delay convolution
+    ZConvSpec(..), zconv, zconv'
 ) where
 
 import Csound.Typed.Plugins.Adsr140
@@ -33,3 +36,4 @@ import Csound.Typed.Plugins.Diode
 import Csound.Typed.Plugins.Audaciouseq
 import Csound.Typed.Plugins.Korg35
 import Csound.Typed.Plugins.SolinaChorus
+import Csound.Typed.Plugins.ZeroDelayConvolution
