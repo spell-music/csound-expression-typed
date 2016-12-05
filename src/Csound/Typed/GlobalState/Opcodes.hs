@@ -42,6 +42,7 @@ import Control.Monad(zipWithM_, forM_)
 import Data.Boolean
 
 import Csound.Dynamic
+import Data.Fix
 
 -- channels
 
@@ -316,8 +317,10 @@ tableikt xndx kfn  = opcs "tableikt" [(Ar, [Xr, Kr, Ir, Ir, Ir])] [xndx, kfn, 1]
 oscInit :: Monad m => E -> DepT m E
 oscInit port = depT $ opcs "OSCinit" [(Ir, [Ir])] [port]
 
-oscListen :: Monad m => [E] -> DepT m E
-oscListen args = depT $ opcs "OSClisten" [(Kr, Ir:Ir:Ir:repeat Xr)] args
+oscListen :: Monad m => E -> E -> E -> [Var] -> DepT m E
+oscListen oscHandle addr oscType vars = depT $ opcs "OSClisten" [(Kr, Ir:Ir:Ir:repeat Xr)] (oscHandle : addr : oscType : fmap inlineVar vars)
+    where
+        inlineVar = Fix . RatedExp Nothing Nothing . ReadVar
 
 oscSend :: Monad m => [E] -> DepT m ()
 oscSend args = depT_ $ opcs "OSCsend" [(Xr, Kr:Ir:Ir:Ir:Ir:repeat Xr)] args

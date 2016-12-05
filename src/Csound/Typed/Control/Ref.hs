@@ -1,19 +1,24 @@
 module Csound.Typed.Control.Ref(
-    Ref, writeRef, readRef, newRef, mixRef, modifyRef, sensorsSE, newGlobalRef,
+    Ref(..), writeRef, readRef, newRef, mixRef, modifyRef, sensorsSE, newGlobalRef,
     newCtrlRef, newGlobalCtrlRef,
-    globalSensorsSE, newClearableGlobalRef, newTab, newGlobalTab
+    globalSensorsSE, newClearableGlobalRef, newTab, newGlobalTab,
+    -- conditionals
+    whileSE
 ) where
 
+import Data.Boolean
 import Control.DeepSeq(deepseq)
 
 import Control.Monad
 import Control.Monad.Trans.Class
-import Csound.Dynamic hiding (newLocalVars)
+import Csound.Dynamic hiding (when1, newLocalVars)
 
 import Csound.Typed.Types.Prim
 import Csound.Typed.Types.Tuple
 import Csound.Typed.GlobalState.SE
 import Csound.Typed.GlobalState.GE
+
+import qualified Csound.Dynamic as D
 
 -- | It describes a reference to mutable values.
 newtype Ref a = Ref [Var]
@@ -44,7 +49,6 @@ newRef t = fmap Ref $ newLocalVars (tupleRates t) (fromTuple t)
 -- It contains control signals (k-rate) and constants for numbers (i-rates).
 newCtrlRef :: Tuple a => a -> SE (Ref a)
 newCtrlRef t = fmap Ref $ newLocalVars (fmap toCtrlRate $ tupleRates t) (fromTuple t) 
-    where 
         
 toCtrlRate x = case x of 
     Ar -> Kr
@@ -150,3 +154,28 @@ ftgenonce b1 b2 b3 b4 b5 b6 = fmap ( Tab . return) $ SE $ (depT =<<) $ lift $ f 
 ftgentmp ::  D -> D -> D -> D -> D -> [D] -> SE Tab
 ftgentmp b1 b2 b3 b4 b5 b6 = fmap ( Tab . return) $ SE $ (depT =<<) $ lift $ f <$> unD b1 <*> unD b2 <*> unD b3 <*> unD b4 <*> unD b5 <*> mapM unD b6
     where f a1 a2 a3 a4 a5 a6 = opcs "ftgentmp" [(Ir,(repeat Ir))] ([a1,a2,a3,a4,a5] ++ a6)
+
+------------------------------------------------
+
+whileSE :: SE BoolSig -> SE () -> SE ()
+whileSE mcond body = do        
+    ref <- newCtrlRef (0::Sig)
+    writeCond ref
+    untilRefBegin ref
+    body
+    writeCond ref
+    untilRefEnd
+    where
+        writeCond ref = do
+            cond <- mcond
+            when1 cond        $ writeRef ref 1
+            when1 (notB cond) $ writeRef ref 0
+
+-- ifBegin :: BoolSig -> SE ()
+-- ifBegin a = fromDep_ $ D.ifBegin Kr =<< lift (toGE a)
+
+untilRefBegin :: Ref Sig -> SE ()
+untilRefBegin (Ref [var]) = fromDep_ $ D.untilBegin ((D.prim $ D.PrimVar D.Kr var) ==* 1)
+
+untilRefEnd :: SE ()
+untilRefEnd = fromDep_ D.untilEnd

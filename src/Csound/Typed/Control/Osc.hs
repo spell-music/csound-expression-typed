@@ -6,6 +6,7 @@ module Csound.Typed.Control.Osc(
 ) where
 
 import Data.Boolean ((==*))
+import Csound.Dynamic(Rate(..))
 
 import Csound.Typed.Types
 import Csound.Typed.GlobalState hiding (oscInit, oscListen, oscSend)
@@ -57,28 +58,31 @@ initOsc port = do
 --
 -- > runEvt :: Evt a -> (a -> SE ()) -> SE ()
 listenOsc :: forall a . Tuple a => OscRef -> OscAddress -> OscType -> Evt a
-listenOsc oscRef oscAddr oscType = Evt $ \bam -> do
-    (readCond, writeCond) <- sensorsSE (0 :: Sig)
+listenOsc oscRef oscAddr oscType = Evt $ \bam -> do    
     resRef <- newRef (defTuple :: a)
-    writeCond =<< listen resRef
-    readCond >>= (\cond -> whileDo (cond ==* 1) $ do
+    whileSE (listen resRef) $ do
         bam =<< readRef resRef
-        writeCond =<< listen resRef)
     where
-        listen :: Tuple a => Ref a -> SE Sig
-        listen ref = csdOscListen ref oscRef oscAddr oscType
+        listen :: Tuple a => Ref a -> SE BoolSig
+        listen ref = fmap (==* 1) $ csdOscListen ref oscRef oscAddr oscType
 
         csdOscListen :: Tuple a => Ref a -> OscRef -> OscAddress -> OscType -> SE Sig
-        csdOscListen resRef oscHandle addr ty = do
-            args <- readRef resRef
-            res  <- fmap fromGE $ fromDep $ hideGEinDep $ do 
-                expArgs <- fromTuple args
+        csdOscListen (Ref refVars) oscHandle addr ty = do            
+            res  <- fmap fromGE $ fromDep $ hideGEinDep $ do                 
                 expOscHandle <- toGE $ unOscRef oscHandle
                 expAddr <- toGE $ text addr
                 expOscType <- toGE $ text ty
-                return $ C.oscListen $ expOscHandle : expAddr : expOscType : expArgs
-            writeRef resRef args
+                return $ C.oscListen expOscHandle expAddr expOscType refVars
             return res
+
+        initOscRef :: OscType -> SE (Ref a)
+        initOscRef typeStr = fmap Ref $ newLocalVars (fmap getOscRate typeStr) (fromTuple $ (defTuple :: a))
+
+        getOscRate :: Char -> Rate
+        getOscRate x = case x of
+            'a' -> Ar
+            's' -> Sr
+            _   -> Kr
 
 -- | Sends OSC-messages. It takes in a name of the host computer 
 -- (empty string is alocal machine), port on which the target 
