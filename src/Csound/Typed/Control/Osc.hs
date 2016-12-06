@@ -2,7 +2,8 @@
 {-# Language ScopedTypeVariables #-}
 module Csound.Typed.Control.Osc(
     OscRef, OscHost, OscPort, OscAddress, OscType, 
-    initOsc, listenOsc, sendOsc
+    initOsc, listenOsc, sendOsc,
+    OscVal, listenOscVal
 ) where
 
 import Data.Boolean ((==*))
@@ -34,13 +35,8 @@ type OscType = String
 type OscHost = String
 
 -- | Initializes host client. The process starts to run in the background.
-initOsc :: OscPort -> SE OscRef
-initOsc port = do
-    oscRef <- fmap fromGE $ fromDep $ C.oscInit (fromIntegral port)
-    varRef <- newGlobalRef (0 :: D)
-    writeRef varRef oscRef
-    ihandle <- readRef varRef
-    return $ OscRef ihandle
+initOsc :: OscPort -> OscRef
+initOsc port = OscRef $ fromGE $ getOscPortHandle port
 
 -- | Listens for the OSC-messages. The first argument is OSC-reference.
 -- We can create it with the function @oscInit@. The next two arguments are strings.
@@ -59,21 +55,20 @@ initOsc port = do
 -- > runEvt :: Evt a -> (a -> SE ()) -> SE ()
 listenOsc :: forall a . Tuple a => OscRef -> OscAddress -> OscType -> Evt a
 listenOsc oscRef oscAddr oscType = Evt $ \bam -> do    
-    resRef <- newRef (defTuple :: a)
-    whileSE (listen resRef) $ do
-        bam =<< readRef resRef
+    resRef <- initOscRef oscType
+    cond <- listen resRef
+    when1 cond $ bam =<< readRef resRef
     where
         listen :: Tuple a => Ref a -> SE BoolSig
         listen ref = fmap (==* 1) $ csdOscListen ref oscRef oscAddr oscType
 
         csdOscListen :: Tuple a => Ref a -> OscRef -> OscAddress -> OscType -> SE Sig
-        csdOscListen (Ref refVars) oscHandle addr ty = do            
-            res  <- fmap fromGE $ fromDep $ hideGEinDep $ do                 
+        csdOscListen (Ref refVars) oscHandle addr ty =             
+            fmap fromGE $ fromDep $ hideGEinDep $ do                 
                 expOscHandle <- toGE $ unOscRef oscHandle
                 expAddr <- toGE $ text addr
                 expOscType <- toGE $ text ty
-                return $ C.oscListen expOscHandle expAddr expOscType refVars
-            return res
+                return $ C.oscListen expOscHandle expAddr expOscType refVars            
 
         initOscRef :: OscType -> SE (Ref a)
         initOscRef typeStr = fmap Ref $ newLocalVars (fmap getOscRate typeStr) (fromTuple $ (defTuple :: a))
@@ -82,6 +77,8 @@ listenOsc oscRef oscAddr oscType = Evt $ \bam -> do
         getOscRate x = case x of
             'a' -> Ar
             's' -> Sr
+            'i' -> Kr
+            'f' -> Kr
             _   -> Kr
 
 -- | Sends OSC-messages. It takes in a name of the host computer 
@@ -99,4 +96,57 @@ sendOsc host port addr ty evts = runEvt evts send
             expAddr <- toGE $ text $ addr
             expTy   <- toGE $ text $ ty
             return $ C.oscSend $ 1 : expHost : expPort : expAddr : expTy : args
+
+
+class Tuple a => OscVal a where
+    getOscTypes :: a -> String
+    getOscRef :: a -> SE (Ref a)
+
+instance OscVal Sig where
+    getOscTypes = const "f"
+    getOscRef = newCtrlRef
+
+instance OscVal Str where
+    getOscTypes = const "s"
+    getOscRef = newRef
+
+instance (OscVal a, OscVal b) => OscVal (a, b) where
+    getOscTypes (a, b) = getOscTypes a ++ getOscTypes b
+    getOscRef (a, b) = do
+        refA <- getOscRef a
+        refB <- getOscRef b
+        return $ concatRef refA refB
+
+instance (OscVal a, OscVal b, OscVal c) => OscVal (a, b, c) where
+    getOscTypes (a, b, c) = getOscTypes a ++ getOscTypes b ++ getOscTypes c
+    getOscRef (a, b, c) = do
+        refA <- getOscRef a
+        refB <- getOscRef b
+        refC <- getOscRef c
+        return $ concatRef3 refA refB refC
+
+instance (OscVal a, OscVal b, OscVal c, OscVal d) => OscVal (a, b, c, d) where
+    getOscTypes (a, b, c, d) = getOscTypes a ++ getOscTypes b ++ getOscTypes c ++ getOscTypes d
+    getOscRef (a, b, c, d) = do
+        refA <- getOscRef a
+        refB <- getOscRef b
+        refC <- getOscRef c
+        refD <- getOscRef d
+        return $ concatRef4 refA refB refC refD
+
+instance (OscVal a, OscVal b, OscVal c, OscVal d, OscVal e) => OscVal (a, b, c, d, e) where
+    getOscTypes (a, b, c, d, e) = getOscTypes a ++ getOscTypes b ++ getOscTypes c ++ getOscTypes d ++ getOscTypes e
+    getOscRef (a, b, c, d, e) = do
+        refA <- getOscRef a
+        refB <- getOscRef b
+        refC <- getOscRef c
+        refD <- getOscRef d
+        refE <- getOscRef e
+        return $ concatRef5 refA refB refC refD refE
+
+listenOscVal :: (Tuple a, OscVal a) => OscRef -> String -> a -> SE a
+listenOscVal port path initVal = do
+    ref <- getOscRef initVal
+    runEvt (listenOsc port path (getOscTypes initVal)) $ \a -> writeRef ref a
+    readRef ref
 

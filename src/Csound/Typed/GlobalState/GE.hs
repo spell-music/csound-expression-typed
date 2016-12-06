@@ -33,6 +33,8 @@ module Csound.Typed.GlobalState.GE(
     guiInstrExp,
     listenKeyEvt, Key(..), KeyEvt(..), Guis(..),
     getKeyEventListener,
+    -- * OSC
+    getOscPortHandle,
     -- * Cabbage Guis
     cabbage,
     -- * Hrtf pan
@@ -117,10 +119,11 @@ data History = History
     , bandLimitedMap    :: BandLimitedMap
     , cache             :: Cache GE
     , guis              :: Guis
+    , oscListenPorts    :: OscListenPorts
     , cabbageGui        :: Maybe Cabbage.Lang }
 
 instance Default History where
-    def = History def def def def def def def def def def def def def def def (return ()) def def def def
+    def = History def def def def def def def def def def def def def def def (return ()) def def def def def
 
 data Msg = Msg
 data MidiAssign = MidiAssign MidiType Channel InstrId
@@ -518,6 +521,14 @@ getKeyEventListener = do
             saveAlwaysOnInstr keyEventInstrId
             body <- keyEventInstrBody $ guiKeyEvents $ guis h
             return $ Just (Instr keyEventInstrId body)
+
+-----------------------------------------------
+-- osc port listen
+
+getOscPortHandle :: Int -> GE E
+getOscPortHandle port = onOscPorts (fmap inlineVar $ getOscPortVar port)
+    where
+        onOscPorts = onHistory (\h -> (oscListenPorts h, globals h)) (\(ports, gs) h -> h { oscListenPorts = ports, globals = gs })
 
 -----------------------------------------------
 -- cabbage

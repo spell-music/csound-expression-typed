@@ -42,8 +42,8 @@ import qualified Data.Map       as M
 import Data.Default
 import Data.Boolean
 
-import Csound.Dynamic hiding (double, int, str, when1, whens, ifBegin, ifEnd, elseBegin, untilBegin, untilEnd, untilDo)
-import qualified Csound.Dynamic as D(double, int, str, ifBegin, ifEnd, elseBegin, untilBegin, untilEnd)
+import Csound.Dynamic hiding (double, int, str, when1, whens, ifBegin, ifEnd, elseBegin, untilBegin, untilEnd, untilDo, whileBegin, whileEnd, whileDo)
+import qualified Csound.Dynamic as D(double, int, str, ifBegin, ifEnd, elseBegin, untilBegin, untilEnd, whileBegin, whileEnd)
 import Csound.Typed.GlobalState.GE
 import Csound.Typed.GlobalState.SE
 import Csound.Typed.GlobalState.Options
@@ -656,7 +656,16 @@ untilDo p body = do
     untilEnd
 
 whileDo :: BoolSig -> SE () -> SE ()
-whileDo p = untilDo (notB p) 
+whileDo p body = do
+    whileBegin p
+    body
+    whileEnd
+
+whileBegin :: BoolSig -> SE ()
+whileBegin a = fromDep_ $ D.whileBegin =<< lift (toGE a)
+
+whileEnd :: SE ()
+whileEnd = fromDep_ D.whileEnd
 
 untilBegin :: BoolSig -> SE ()
 untilBegin a = fromDep_ $ D.untilBegin =<< lift (toGE a)
@@ -671,7 +680,13 @@ untilDoD p body = do
     untilEnd
 
 whileDoD :: BoolD -> SE () -> SE ()
-whileDoD p = untilDoD (notB p) 
+whileDoD p body = do
+    whileBeginD p
+    body
+    whileEnd
+
+whileBeginD :: BoolD -> SE ()
+whileBeginD a = fromDep_ $ D.whileBegin =<< lift (toGE a)
 
 untilBeginD :: BoolD -> SE ()
 untilBeginD a = fromDep_ $ D.untilBegin =<< lift (toGE a)

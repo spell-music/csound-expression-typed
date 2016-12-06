@@ -1,5 +1,6 @@
 module Csound.Typed.Control.Ref(
     Ref(..), writeRef, readRef, newRef, mixRef, modifyRef, sensorsSE, newGlobalRef,
+    concatRef, concatRef3, concatRef4, concatRef5,
     newCtrlRef, newGlobalCtrlRef,
     globalSensorsSE, newClearableGlobalRef, newTab, newGlobalTab,
     -- conditionals
@@ -54,6 +55,19 @@ toCtrlRate x = case x of
     Ar -> Kr
     Kr -> Ir
     _  -> x
+
+concatRef :: (Tuple a, Tuple b) => Ref a -> Ref b -> Ref (a, b)
+concatRef (Ref a) (Ref b) = Ref (a ++ b)
+
+concatRef3 :: (Tuple a, Tuple b, Tuple c) => Ref a -> Ref b -> Ref c -> Ref (a, b, c)
+concatRef3 (Ref a) (Ref b) (Ref c) = Ref (a ++ b ++ c)
+
+concatRef4 :: (Tuple a, Tuple b, Tuple c, Tuple d) => Ref a -> Ref b -> Ref c -> Ref d -> Ref (a, b, c, d)
+concatRef4 (Ref a) (Ref b) (Ref c) (Ref d) = Ref (a ++ b ++ c ++ d)
+
+concatRef5 :: (Tuple a, Tuple b, Tuple c, Tuple d, Tuple e) => Ref a -> Ref b -> Ref c -> Ref d -> Ref e -> Ref (a, b, c, d, e)
+concatRef5 (Ref a) (Ref b) (Ref c) (Ref d) (Ref e) = Ref (a ++ b ++ c ++ d ++ e)
+
 
 -- | Adds the given signal to the value that is contained in the
 -- reference.
@@ -158,24 +172,22 @@ ftgentmp b1 b2 b3 b4 b5 b6 = fmap ( Tab . return) $ SE $ (depT =<<) $ lift $ f <
 ------------------------------------------------
 
 whileSE :: SE BoolSig -> SE () -> SE ()
-whileSE mcond body = do        
-    ref <- newCtrlRef (0::Sig)
+whileSE mcond body = do      
+    ref <- newCtrlRef $ (0 :: Sig)
     writeCond ref
-    untilRefBegin ref
+    whileRefBegin ref
     body
     writeCond ref
-    untilRefEnd
+    whileRefEnd
     where
-        writeCond ref = do
-            cond <- mcond
-            when1 cond        $ writeRef ref 1
-            when1 (notB cond) $ writeRef ref 0
+        writeCond :: Ref Sig -> SE ()
+        writeCond ref = writeRef ref =<< fmap (\x -> ifB x 1 0) mcond
 
 -- ifBegin :: BoolSig -> SE ()
 -- ifBegin a = fromDep_ $ D.ifBegin Kr =<< lift (toGE a)
 
-untilRefBegin :: Ref Sig -> SE ()
-untilRefBegin (Ref [var]) = fromDep_ $ D.untilBegin ((D.prim $ D.PrimVar D.Kr var) ==* 1)
+whileRefBegin :: Ref Sig -> SE ()
+whileRefBegin (Ref [var]) = fromDep_ $ D.whileBegin ((D.prim $ D.PrimVar D.Kr var) ==* 1)
 
-untilRefEnd :: SE ()
-untilRefEnd = fromDep_ D.untilEnd
+whileRefEnd :: SE ()
+whileRefEnd = fromDep_ D.whileEnd

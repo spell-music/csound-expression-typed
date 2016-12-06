@@ -28,6 +28,8 @@ module Csound.Typed.GlobalState.Elements(
     Event(..),
     ChnRef(..), chnRefFromParg, chnRefAlloc, readChn, writeChn, chnUpdateUdo,
     subinstr, subinstr_, event_i, event, safeOut, autoOff, changed,
+    -- * OSC listen ports
+    OscListenPorts, getOscPortVar,
     -- * Udo plugins
     UdoPlugin, addUdoPlugin, getUdoPluginNames,
     tabQueuePlugin, tabQueue2Plugin,
@@ -491,6 +493,27 @@ chnPargId arityIns = 4 + arityIns
 
 -- guis
 
+--------------------------------------------------------
+-- Osc listeners
+
+newtype OscListenPorts = OscListenPorts { unOscListenPorts :: IM.IntMap Var }
+
+instance Default OscListenPorts where
+    def = OscListenPorts IM.empty
+
+getOscPortVar :: Int -> State (OscListenPorts, Globals) Var
+getOscPortVar port = state $ \st@(OscListenPorts m, globals) -> case IM.lookup port m of
+        Just a  -> (a, st)
+        Nothing -> onNothing port m globals
+    where
+        onNothing port m globals = (var, (OscListenPorts m1, newGlobals)) 
+            where
+                (var, newGlobals) = runState (allocOscPortVar port) globals
+                m1 = IM.insert port var m
+
+
+allocOscPortVar :: Int -> State Globals Var
+allocOscPortVar oscPort = newGlobalVar PersistentGlobalVar Ir $ oscInit (fromIntegral oscPort)
 
 --------------------------------------------------------
 -- Udo plugins 
