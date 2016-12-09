@@ -1,3 +1,4 @@
+{-# Language FlexibleInstances #-}
 module Csound.Typed.Types.Array(
     Arr(..), 
     newLocalArr, newGlobalArr, 
@@ -17,7 +18,6 @@ import Csound.Typed.GlobalState.GE
 
 import qualified Csound.Dynamic as D
 
-
 -- | Arrays
 newtype Arr ix a = Arr { unArr :: [Var] }
 
@@ -34,27 +34,27 @@ newGlobalArr :: Tuple a => [D] -> [a] -> SE (Arr ix a)
 newGlobalArr = newArrBy newGlobalArrVar
 
 
-readArr :: (Tuple a, Val ix) => Arr ix a -> [ix] -> SE a
+readArr :: (Tuple a, Tuple ix) => Arr ix a -> ix -> SE a
 readArr (Arr vars) ixs = fmap (toTuple . return) $ SE $ hideGEinDep $ do
-    ixsExp <- mapM toGE ixs
+    ixsExp <- fromTuple ixs
     return $ mapM (\v -> read v ixsExp) vars
     where
         read ::  Var -> [E] -> Dep E
         read = D.readArr
 
-writeArr :: (Val ix, Tuple a) => Arr ix a -> [ix] -> a -> SE ()
+writeArr :: (Tuple ix, Tuple a) => Arr ix a -> ix -> a -> SE ()
 writeArr (Arr vars) ixs b = SE $ hideGEinDep $ do
-    ixsExp <- mapM toGE ixs
+    ixsExp <- fromTuple ixs
     bsExp <- fromTuple b
     return $ zipWithM_ (\var value -> write var ixsExp value) vars bsExp
     where
         write ::  Var -> [E] -> E -> Dep ()
         write = D.writeArr
 
-modifyArr :: (Tuple a, Val ix) => Arr ix a -> [ix] -> (a -> a) -> SE ()
+modifyArr :: (Tuple a, Tuple ix) => Arr ix a -> ix -> (a -> a) -> SE ()
 modifyArr ref ixs f = do
     value <- readArr ref ixs 
     writeArr ref ixs (f value)
 
-mixArr :: (Val ix, Tuple a, Num a) => Arr ix a -> [ix] -> a -> SE ()
+mixArr :: (Tuple ix, Tuple a, Num a) => Arr ix a -> ix -> a -> SE ()
 mixArr ref ixs a = modifyArr ref ixs (+ a)
