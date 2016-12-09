@@ -12,6 +12,9 @@ module Csound.Typed.Types(
     -- * Events
     module Csound.Typed.Types.Evt,
 
+    -- * Arrays
+    module Csound.Typed.Types.Array,        
+
     -- * Tab helpers
     getNextGlobalGenId
 ) where
@@ -22,6 +25,7 @@ import Csound.Typed.Types.Prim
 import Csound.Typed.Types.Tuple
 import Csound.Typed.Types.Evt
 import Csound.Typed.Types.Lift
+import Csound.Typed.Types.Array
 
 import Csound.Typed.GlobalState(evalSE, SE, geToSe)
 

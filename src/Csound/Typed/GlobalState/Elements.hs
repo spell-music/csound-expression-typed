@@ -17,7 +17,8 @@ module Csound.Typed.GlobalState.Elements(
     -- * Midi
     MidiType(..), Channel, MidiMap, MidiKey(..), saveMidiInstr,
     -- * Global variables
-    Globals(..), newPersistentGlobalVar, newClearableGlobalVar,     
+    Globals(..), newPersistentGlobalVar, newClearableGlobalVar,  
+    newPersistentGloabalArrVar,   
     renderGlobals,
     -- * Instruments
     Instrs(..), saveInstr, getInstrIds, -- newInstrId, saveInstrById, saveInstr, CacheName, makeCacheName, saveCachedInstr, getInstrIds,
@@ -335,10 +336,13 @@ data Globals = Globals
     , globalsVars   :: [AllocVar] }
 
 data AllocVar = AllocVar 
-    { allocVarType     :: GlobalVarType 
-    , allocVar         :: Var
-    , allocVarInit     :: E 
-    }
+        { allocVarType     :: GlobalVarType 
+        , allocVar         :: Var
+        , allocVarInit     :: E }
+    | AllocArrVar 
+        { allocArrVar :: Var
+        , allocArrVarSizes :: [E] }
+
 
 data GlobalVarType = PersistentGlobalVar | ClearableGlobalVar
     deriving (Eq)
@@ -359,14 +363,34 @@ newPersistentGlobalVar = newGlobalVar PersistentGlobalVar
 
 newClearableGlobalVar :: Rate -> E -> State Globals Var
 newClearableGlobalVar = newGlobalVar ClearableGlobalVar
- 
+
+newPersistentGloabalArrVar :: Rate -> [E] -> State Globals Var
+newPersistentGloabalArrVar rate sizes = state $ \s ->
+    let newId = globalsNewId s
+        var   = Var GlobalVar rate ('g' : show newId) 
+        s1    = s { globalsNewId = succ newId 
+                  , globalsVars  = AllocArrVar var sizes : globalsVars s }
+    in (var, s1)
+
 renderGlobals :: Monad m => Globals -> (DepT m (), DepT m ())
 renderGlobals a = (initAll, clear)
     where
-        initAll = mapM_ (\x -> initVar (allocVar x) (allocVarInit x)) gs
-        clear   = mapM_ (\x -> writeVar (allocVar x) (allocVarInit x)) clearable
-        clearable = filter ((== ClearableGlobalVar) . allocVarType) gs
+        initAll = mapM_ initAlloc gs
+        clear   = mapM_ clearAlloc clearable
+        clearable = filter isClearable gs
         gs = globalsVars a
+
+        initAlloc x = case x of
+            AllocVar _  var init  -> initVar var init 
+            AllocArrVar var sizes -> initArr var sizes
+
+        clearAlloc x = case x of
+            AllocVar _  var init  ->  writeVar var init
+            AllocArrVar _ _       -> return ()
+
+        isClearable x = case x of
+            AllocVar ty _ _ -> ty == ClearableGlobalVar
+            _               -> False
 
 -----------------------------------------------------------------
 -- instrs

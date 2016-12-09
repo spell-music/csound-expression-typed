@@ -2,17 +2,19 @@ module Csound.Typed.GlobalState.SE(
     SE(..), LocalHistory(..), 
     runSE, execSE, evalSE, execGEinSE, hideGEinDep, 
     fromDep, fromDep_, geToSe,
-    newLocalVar, newLocalVars, newGlobalVars, newClearableGlobalVars
+    newLocalVar, newLocalVars, newGlobalVars, newClearableGlobalVars,
+    -- array variables
+    newLocalArrVar, newGlobalArrVar
 ) where
 
 import Control.Applicative
 import Control.Monad
 import Control.Monad.Trans.Class
 
-import Csound.Dynamic hiding (newLocalVar, newLocalVars)
-import qualified Csound.Dynamic as D(newLocalVar, newLocalVars)
+import Csound.Dynamic hiding (newLocalVar, newLocalVars, newLocalArrVar)
+import qualified Csound.Dynamic as D(newLocalVar, newLocalVars, newLocalArrVar)
 import Csound.Typed.GlobalState.GE
-import Csound.Typed.GlobalState.Elements(newPersistentGlobalVar, newClearableGlobalVar)
+import Csound.Typed.GlobalState.Elements(newPersistentGlobalVar, newClearableGlobalVar, newPersistentGloabalArrVar)
 
 -- | The Csound's @IO@-monad. All values that produce side effects are wrapped
 -- in the @SE@-monad.
@@ -78,3 +80,12 @@ newGlobalVars rs vs = geToSe $ zipWithM f rs =<< vs
 newClearableGlobalVars :: [Rate] -> GE [E] -> SE [Var]
 newClearableGlobalVars rs vs = geToSe $ zipWithM f rs =<< vs
     where f r v = onGlobals $ newClearableGlobalVar r v
+
+------------------------------------------------------------------
+-- allocation of array vars
+
+newLocalArrVar :: Rate -> GE [E] -> SE Var
+newLocalArrVar rate val = SE $ D.newLocalArrVar rate val
+
+newGlobalArrVar :: Rate -> GE [E] -> SE Var
+newGlobalArrVar r v = geToSe $ onGlobals . newPersistentGloabalArrVar r =<< v

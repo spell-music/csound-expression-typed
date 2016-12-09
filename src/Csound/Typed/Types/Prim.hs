@@ -1,6 +1,6 @@
 {-# Language TypeFamilies, FlexibleInstances, FlexibleContexts, ScopedTypeVariables, Rank2Types #-}
 module Csound.Typed.Types.Prim(
-    Sig(..), unSig, D(..), unD, Tab(..), unTab, Str(..), Spec(..), Wspec(..), 
+    Sig(..), unSig, D(..), unD, Tab(..), unTab, Str(..), Spec(..), Wspec(..),
     BoolSig(..), unBoolSig, BoolD(..), unBoolD, Unit(..), unit, Val(..), hideGE, SigOrD,
 
     -- ** Tables

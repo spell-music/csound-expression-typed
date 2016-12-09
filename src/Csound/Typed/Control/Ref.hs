@@ -12,7 +12,7 @@ import Control.DeepSeq(deepseq)
 
 import Control.Monad
 import Control.Monad.Trans.Class
-import Csound.Dynamic hiding (when1, newLocalVars)
+import Csound.Dynamic hiding (when1, newLocalVars, writeArr, readArr)
 
 import Csound.Typed.Types.Prim
 import Csound.Typed.Types.Tuple

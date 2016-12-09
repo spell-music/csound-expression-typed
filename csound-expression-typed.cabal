@@ -64,6 +64,7 @@ Library
     Csound.Typed.Types.Evt
     Csound.Typed.Types.Tuple
     Csound.Typed.Types.Lift
+    Csound.Typed.Types.Array
 
     Csound.Typed.Plugins    
 
