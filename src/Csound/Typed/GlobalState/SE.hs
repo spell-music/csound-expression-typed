@@ -4,15 +4,15 @@ module Csound.Typed.GlobalState.SE(
     fromDep, fromDep_, geToSe,
     newLocalVar, newLocalVars, newGlobalVars, newClearableGlobalVars,
     -- array variables
-    newLocalArrVar, newGlobalArrVar
+    newLocalArrVar, newGlobalArrVar, newTmpArrVar
 ) where
 
 import Control.Applicative
 import Control.Monad
 import Control.Monad.Trans.Class
 
-import Csound.Dynamic hiding (newLocalVar, newLocalVars, newLocalArrVar)
-import qualified Csound.Dynamic as D(newLocalVar, newLocalVars, newLocalArrVar)
+import Csound.Dynamic hiding (newLocalVar, newLocalVars, newLocalArrVar, newTmpArrVar)
+import qualified Csound.Dynamic as D(newLocalVar, newLocalVars, newLocalArrVar, newTmpArrVar)
 import Csound.Typed.GlobalState.GE
 import Csound.Typed.GlobalState.Elements(newPersistentGlobalVar, newClearableGlobalVar, newPersistentGloabalArrVar)
 
@@ -86,6 +86,9 @@ newClearableGlobalVars rs vs = geToSe $ zipWithM f rs =<< vs
 
 newLocalArrVar :: Rate -> GE [E] -> SE Var
 newLocalArrVar rate val = SE $ D.newLocalArrVar rate val
+
+newTmpArrVar :: Rate -> SE Var
+newTmpArrVar rate = SE $ D.newTmpArrVar rate
 
 newGlobalArrVar :: Rate -> GE [E] -> SE Var
 newGlobalArrVar r v = geToSe $ onGlobals . newPersistentGloabalArrVar r =<< v
