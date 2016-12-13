@@ -8,14 +8,22 @@ module Csound.Typed.Types.Array(
     arr1, darr1, arr2, darr2, arr3, darr3,
 
     -- * Array opcodes
-    fillLocalArray, fillGlobalArray, fillLocalCtrlArray, fillGlobalCtrlArray,
-    lenarray, copyf2array, copya2ftab, minarray, maxarray, sumarray, 
-    scalearray, slicearray,
+    fillLocalArrayNew, fillGlobalArrayNew, fillLocalCtrlArrayNew, fillGlobalCtrlArrayNew,
+    maparrayNew, lenarray, copyf2array, copya2ftab, minarray, maxarray, sumarray, 
+    scalearray, slicearrayNew,
+
+    fillArrayCopy, maparrayCopy, slicearrayCopy,
 
     -- * Spectral opcodes
-    SpecArr, fft, fftinv, rfft, rifft, pvs2tab, tab2pvs, cmplxprod, 
-    rect2pol, pol2rect, pol2rect2, windowArray, 
-    r2c, c2r, magsArray, phsArray
+    SpecArr, 
+
+    fftNew, fftinvNew, rfftNew, rifftNew, pvs2tab, tab2pvs, cmplxprodNew, 
+    rect2polNew, pol2rectNew, pol2rect2New, windowArrayNew, 
+    r2cNew, c2rNew, magsArrayNew, phsArrayNew,
+
+    fftCopy, fftinvCopy, rfftCopy, rifftCopy, cmplxprodCopy, 
+    rect2polCopy, pol2rectCopy, pol2rect2Copy, windowArrayCopy, 
+    r2cCopy, c2rCopy, magsArrayCopy, phsArrayCopy
 ) where
 
 
@@ -109,38 +117,38 @@ mixArr :: (Tuple ix, Tuple a, Num a) => Arr ix a -> ix -> a -> SE ()
 mixArr ref ixs a = modifyArr ref ixs (+ a)
 
 -----------------------------------------------------
--- opcodes
+-- opcodes with array allocation
 
-mulArray :: (Tuple b, Num b) => Arr a b -> Arr a b -> SE (Arr a b)
-mulArray = binOp "*"
+mulArrayNew :: (Tuple b, Num b) => Arr a b -> Arr a b -> SE (Arr a b)
+mulArrayNew = binOp "*"
 
-addArray :: (Tuple b, Num b) => Arr a b -> Arr a b -> SE (Arr a b)
-addArray = binOp "+"
+addArrayNew :: (Tuple b, Num b) => Arr a b -> Arr a b -> SE (Arr a b)
+addArrayNew = binOp "+"
 
-subArray :: (Tuple b, Num b) => Arr a b -> Arr a b -> SE (Arr a b)
-subArray = binOp "-"
+subArrayNew :: (Tuple b, Num b) => Arr a b -> Arr a b -> SE (Arr a b)
+subArrayNew = binOp "-"
 
-divArray :: (Tuple b, Num b) => Arr a b -> Arr a b -> SE (Arr a b)
-divArray = binOp "/"
+divArrayNew :: (Tuple b, Num b) => Arr a b -> Arr a b -> SE (Arr a b)
+divArrayNew = binOp "/"
 
-fillLocalArray  :: [D] -> SE (Arr Sig Sig)
-fillLocalArray = fillArrayBy Ar newLocalArrVar
+fillLocalArrayNew  :: [D] -> SE (Arr Sig Sig)
+fillLocalArrayNew = fillArrayBy Ar newLocalArrVar
 
-fillGlobalArray :: [D] -> SE (Arr Sig Sig)
-fillGlobalArray = fillArrayBy Ar newGlobalArrVar
+fillGlobalArrayNew :: [D] -> SE (Arr Sig Sig)
+fillGlobalArrayNew = fillArrayBy Ar newGlobalArrVar
 
-fillLocalCtrlArray  :: [D] -> SE (Arr Sig Sig)
-fillLocalCtrlArray = fillArrayBy Kr newLocalArrVar
+fillLocalCtrlArrayNew  :: [D] -> SE (Arr Sig Sig)
+fillLocalCtrlArrayNew = fillArrayBy Kr newLocalArrVar
 
-fillGlobalCtrlArray :: [D] -> SE (Arr Sig Sig)
-fillGlobalCtrlArray = fillArrayBy Kr newGlobalArrVar
+fillGlobalCtrlArrayNew :: [D] -> SE (Arr Sig Sig)
+fillGlobalCtrlArrayNew = fillArrayBy Kr newGlobalArrVar
 
 fillArrayBy :: Rate -> (Rate -> GE [E] -> SE Var) -> [D] -> SE (Arr Sig Sig)
 fillArrayBy rate mkVar inits = SE $ fmap Arr $ hideGEinDep $ do        
     initExp <- mapM toGE inits
     return $ do
         outVar <- unSE $ newTmpArrVar rate    
-        opcsArr outVar "fillarray" [(rate, replicate (length inits) Ir)] initExp
+        opcsArr isArrayInit outVar "fillarray" [(rate, replicate (length inits) Ir)] initExp
         return [outVar]
 
 lenarray :: Arr a b -> D
@@ -158,14 +166,14 @@ copya2ftab (Arr vs) t = SE $ hideGEinDep $ do
     return $ depT_ $ opcs "copya2ftab" [(Xr, [varRate $ head vs, Ir])] [inlineVar $ head vs, tabExp]
 
 
-maparray :: Arr a b -> Str -> SE (Arr a b)
-maparray (Arr vs) str = SE $ fmap Arr $ hideGEinDep $ do
+maparrayNew :: Arr a b -> Str -> SE (Arr a b)
+maparrayNew (Arr vs) str = SE $ fmap Arr $ hideGEinDep $ do
     strExp <- toGE str    
     return $ mapM (\var -> go var strExp) vs    
     where
         go var strExp = do
             outVar <- unSE $ newTmpArrVar (varRate var)
-            opcsArr outVar "slicearray" idRate [inlineVar var, strExp]
+            opcsArr isArrayInit outVar "slicearray" idRate [inlineVar var, strExp]
             return $ outVar
 
         idRate = fmap (\rate -> (rate, [rate, Ir, Ir])) [Ir, Kr, Ar]
@@ -188,15 +196,15 @@ scalearray (Arr vs) (a, b) = SE $ hideGEinDep $ do
         go v (aExp, bExp) = 
             depT_ $ opcs "copyf2array" [(Xr, [varRate $ head vs, Ir])] [inlineVar $ head vs, aExp, bExp]
 
-slicearray :: Arr D a -> (D, D) -> SE (Arr D a)
-slicearray (Arr vs) (from, to) = SE $ fmap Arr $ hideGEinDep $ do
+slicearrayNew :: Arr D a -> (D, D) -> SE (Arr D a)
+slicearrayNew (Arr vs) (from, to) = SE $ fmap Arr $ hideGEinDep $ do
     fromExp <- toGE from
     toExp   <- toGE to
     return $ mapM (\var -> go var (fromExp, toExp)) vs    
     where
         go var (from, to) = do
             outVar <- unSE $ newTmpArrVar (varRate var)
-            opcsArr outVar "slicearray" idRate [inlineVar var, from, to]
+            opcsArr isArrayInit outVar "slicearray" idRate [inlineVar var, from, to]
             return $ outVar
 
         idRate = fmap (\rate -> (rate, [rate, Ir, Ir])) [Ir, Kr, Ar]
@@ -205,17 +213,17 @@ slicearray (Arr vs) (from, to) = SE $ fmap Arr $ hideGEinDep $ do
 
 type SpecArr = Arr Sig Sig
 
-fft :: SpecArr -> SE SpecArr
-fft = convert "fft"
+fftNew :: SpecArr -> SE SpecArr
+fftNew = convert "fft"
 
-fftinv :: SpecArr -> SE SpecArr
-fftinv = convert "fftinvi"
+fftinvNew :: SpecArr -> SE SpecArr
+fftinvNew = convert "fftinvi"
 
-rfft :: SpecArr -> SE SpecArr
-rfft = convert "rfft"
+rfftNew :: SpecArr -> SE SpecArr
+rfftNew = convert "rfft"
 
-rifft :: SpecArr -> SE SpecArr
-rifft = convert "rifft"
+rifftNew :: SpecArr -> SE SpecArr
+rifftNew = convert "rifft"
 
 pvs2tab :: SpecArr -> Spec -> SE Sig
 pvs2tab = extractWith "pvs2tab" (Kr, [Xr, Fr]) 
@@ -224,48 +232,51 @@ tab2pvs :: SpecArr -> SE Spec
 tab2pvs = extract1 Fr "tab2pvs"
 
 -- kout[] cmplxprod kin1[], kin2[]
-cmplxprod :: SpecArr -> SpecArr -> SE SpecArr
-cmplxprod = convert2 "cmplxprod"
+cmplxprodNew :: SpecArr -> SpecArr -> SE SpecArr
+cmplxprodNew = convert2 "cmplxprod"
 
 -- kout[] rect2pol kin[]
-rect2pol :: SpecArr -> SE SpecArr
-rect2pol = convert "rect2pol"
+rect2polNew :: SpecArr -> SE SpecArr
+rect2polNew = convert "rect2pol"
 
 -- kout[] pol2rect kin[]
 -- kout[] pol2rect kmags[], kphs[]
-pol2rect :: SpecArr -> SE SpecArr
-pol2rect = convert "pol2rect"
+pol2rectNew :: SpecArr -> SE SpecArr
+pol2rectNew = convert "pol2rect"
 
-pol2rect2 :: SpecArr -> SpecArr -> SE SpecArr
-pol2rect2 = convert2 "pol2rect2"
+pol2rect2New :: SpecArr -> SpecArr -> SE SpecArr
+pol2rect2New = convert2 "pol2rect2"
 
 -- kout[] window kin[][, koff, itype]
-windowArray :: SpecArr -> SE SpecArr
-windowArray = convert "window"
+windowArrayNew :: SpecArr -> SE SpecArr
+windowArrayNew = convert "window"
 
 -- kout[] r2c kin[]
-r2c :: SpecArr -> SE SpecArr
-r2c = convert "r2c"
+r2cNew :: SpecArr -> SE SpecArr
+r2cNew = convert "r2c"
 
 -- kout[] c2r kin[]
-c2r :: SpecArr -> SE SpecArr
-c2r = convert "c2r"
+c2rNew :: SpecArr -> SE SpecArr
+c2rNew = convert "c2r"
 
-magsArray :: SpecArr -> SE SpecArr
-magsArray = convert "mags"
+magsArrayNew :: SpecArr -> SE SpecArr
+magsArrayNew = convert "mags"
 
 -- kout[] phs kin[]
-phsArray :: SpecArr -> SE SpecArr
-phsArray = convert "phs"
+phsArrayNew :: SpecArr -> SE SpecArr
+phsArrayNew = convert "phs"
 
 -----------------------------
+
+isArrayInit = True
+noArrayInit = False
 
 binOp :: String -> Arr a b -> Arr a b -> SE (Arr a b)
 binOp name (Arr xs) (Arr ys) = fmap Arr $ zipWithM go xs ys
     where
         go x y = SE $ do
             outVar <- unSE $ newTmpArrVar (varRate x)
-            infOprArr outVar name (inlineVar x) (inlineVar y)
+            infOprArr isArrayInit outVar name (inlineVar x) (inlineVar y)
             return outVar
 
 convert :: String -> Arr a b -> SE (Arr a b)
@@ -273,7 +284,7 @@ convert name (Arr vars) = fmap Arr $ mapM go vars
     where
         go v = SE $ do
             outVar <- unSE $ newTmpArrVar (varRate v)
-            opcsArr outVar name idRate1 [inlineVar v]
+            opcsArr isArrayInit outVar name idRate1 [inlineVar v]
             return outVar
 
         idRate1 = fmap (\r -> (r, [r])) [Kr, Ar, Ir, Sr, Fr]
@@ -283,7 +294,7 @@ convert2 name (Arr xs) (Arr ys) = fmap Arr $ zipWithM go xs ys
     where
         go x y = SE $ do
             outVar <- unSE $ newTmpArrVar (varRate x)
-            opcsArr outVar name idRate2 [inlineVar x, inlineVar y]
+            opcsArr isArrayInit outVar name idRate2 [inlineVar x, inlineVar y]
             return outVar
 
         idRate2 = fmap (\r -> (r, [r, r])) [Kr, Ar, Ir, Sr, Fr]
@@ -301,3 +312,109 @@ extractWith name rates (Arr vs) arg = SE $ fmap (toTuple . return) $ hideGEinDep
         argExps <- fromTuple arg        
         return $ zipWithM (\var x -> f (inlineVar var) x) vs argExps
     where f a b = depT $ opcs name [rates] [a, b]
+
+---------------------------------------------------
+-- opcodes with copy
+
+fillArrayCopy :: [D] -> Arr Sig Sig -> SE ()
+fillArrayCopy inits (Arr outs) = SE $ hideGEinDep $ do
+    initExp <- mapM toGE inits
+    return $ opcsArr noArrayInit outVar "fillarray" [(varRate outVar, replicate (length inits) Ir)] initExp
+    where outVar = head outs
+
+maparrayCopy :: Arr a b -> Str -> Arr a b -> SE ()
+maparrayCopy (Arr vs) str (Arr outs) = SE $ hideGEinDep $ do
+    strExp <- toGE str    
+    return $ zipWithM_ (\var outVar -> go var strExp outVar) vs outs   
+    where
+        go var strExp outVar = opcsArr noArrayInit outVar "slicearray" idRate [inlineVar var, strExp]
+        idRate = fmap (\rate -> (rate, [rate, Ir, Ir])) [Ir, Kr, Ar]
+
+slicearrayCopy :: Arr D a -> (D, D) -> Arr D a -> SE ()
+slicearrayCopy (Arr vs) (from, to) (Arr outs) = SE $ hideGEinDep $ do
+    fromExp <- toGE from
+    toExp   <- toGE to
+    return $ zipWithM_ (\var outVar -> go var (fromExp, toExp) outVar) vs outs   
+    where
+        go var (from, to) outVar = opcsArr noArrayInit outVar "slicearray" idRate [inlineVar var, from, to]         
+        idRate = fmap (\rate -> (rate, [rate, Ir, Ir])) [Ir, Kr, Ar]
+
+mulArrayCopy :: (Tuple b, Num b) => Arr a b -> Arr a b -> Arr a b -> SE ()
+mulArrayCopy = binOpCopy "*"
+
+addArrayCopy :: (Tuple b, Num b) => Arr a b -> Arr a b -> Arr a b -> SE ()
+addArrayCopy = binOpCopy "+"
+
+subArrayCopy :: (Tuple b, Num b) => Arr a b -> Arr a b -> Arr a b -> SE ()
+subArrayCopy = binOpCopy "-"
+
+divArrayCopy :: (Tuple b, Num b) => Arr a b -> Arr a b -> Arr a b -> SE ()
+divArrayCopy = binOpCopy "/"
+
+-- spectral opcodes
+
+fftCopy :: SpecArr -> SpecArr -> SE ()
+fftCopy = convertCopy "fft"
+
+fftinvCopy :: SpecArr -> SpecArr -> SE ()
+fftinvCopy = convertCopy "fftinvi"
+
+rfftCopy :: SpecArr -> SpecArr -> SE ()
+rfftCopy = convertCopy "rfft"
+
+rifftCopy :: SpecArr -> SpecArr -> SE ()
+rifftCopy = convertCopy "rifft"
+
+-- kout[] cmplxprod kin1[], kin2[]
+cmplxprodCopy :: SpecArr -> SpecArr -> SpecArr -> SE ()
+cmplxprodCopy = convert2Copy "cmplxprod"
+
+-- kout[] rect2pol kin[]
+rect2polCopy :: SpecArr -> SpecArr -> SE ()
+rect2polCopy = convertCopy "rect2pol"
+
+-- kout[] pol2rect kin[]
+-- kout[] pol2rect kmags[], kphs[]
+pol2rectCopy :: SpecArr -> SpecArr -> SE ()
+pol2rectCopy = convertCopy "pol2rect"
+
+pol2rect2Copy :: SpecArr -> SpecArr -> SpecArr -> SE ()
+pol2rect2Copy = convert2Copy "pol2rect2"
+
+-- kout[] window kin[][, koff, itype]
+windowArrayCopy :: SpecArr -> SpecArr -> SE ()
+windowArrayCopy = convertCopy "window"
+
+-- kout[] r2c kin[]
+r2cCopy :: SpecArr -> SpecArr -> SE ()
+r2cCopy = convertCopy "r2c"
+
+-- kout[] c2r kin[]
+c2rCopy :: SpecArr -> SpecArr -> SE ()
+c2rCopy = convertCopy "c2r"
+
+magsArrayCopy :: SpecArr -> SpecArr -> SE ()
+magsArrayCopy = convertCopy "mags"
+
+-- kout[] phs kin[]
+phsArrayCopy :: SpecArr -> SpecArr -> SE ()
+phsArrayCopy = convertCopy "phs"
+
+---------------------------------------------------------------
+
+binOpCopy :: String -> Arr a b -> Arr a b -> Arr a b -> SE ()
+binOpCopy name (Arr xs) (Arr ys) (Arr outs) = mapM_ go $ zip3 xs ys outs
+    where
+        go (x, y, outVar) = SE $ infOprArr noArrayInit outVar name (inlineVar x) (inlineVar y)
+
+convertCopy :: String -> Arr a b -> Arr a b -> SE ()
+convertCopy name (Arr vars) (Arr outs) = zipWithM_ go vars outs
+    where
+        go v outVar = SE $ opcsArr noArrayInit outVar name idRate1 [inlineVar v]          
+        idRate1 = fmap (\r -> (r, [r])) [Kr, Ar, Ir, Sr, Fr]
+
+convert2Copy :: String -> Arr a b -> Arr a b -> Arr a b -> SE ()
+convert2Copy name (Arr xs) (Arr ys) (Arr outs) = mapM_ go $ zip3 xs ys outs
+    where
+        go (x, y, outVar) = SE $ opcsArr noArrayInit outVar name idRate2 [inlineVar x, inlineVar y]
+        idRate2 = fmap (\r -> (r, [r, r])) [Kr, Ar, Ir, Sr, Fr]
