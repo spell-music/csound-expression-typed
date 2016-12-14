@@ -4,13 +4,15 @@ module Csound.Typed.Control.Instr(
     funArity, constArity, 
     insExp, effExp, masterExp, midiExp, unitExp, 
     apInstr, apInstr0
-) where
+) where    
 
-import Csound.Dynamic(InstrId)
+import Data.Default
+import Csound.Dynamic(InstrId(..))
 import qualified Csound.Typed.GlobalState.Elements as C
 
 import Csound.Typed.Types
 import Csound.Typed.GlobalState
+import Csound.Typed.GlobalState.Opcodes(primInstrId)
 
 funProxy :: (a -> f b) -> (a, b)
 funProxy = const (msg, msg)
@@ -48,4 +50,3 @@ apInstr instrIdGE args = res
 
 apInstr0 :: (Sigs b) => GE InstrId -> b
 apInstr0 instrId = apInstr instrId unit
-

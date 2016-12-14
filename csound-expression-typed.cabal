@@ -89,8 +89,9 @@ Library
     Csound.Typed.Control.Sf2
     Csound.Typed.Control.Osc
     Csound.Typed.Control.Channel
-    Csound.Typed.Control.Ref
+    Csound.Typed.Control.Ref    
     Csound.Typed.Control.Instr
+    Csound.Typed.Control.InstrRef
 
     Csound.Typed.Gui.Gui
     Csound.Typed.Gui.Widget

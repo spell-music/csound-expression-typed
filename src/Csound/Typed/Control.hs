@@ -22,7 +22,9 @@ module Csound.Typed.Control (
     -- * Events
     module Csound.Typed.Control.Evt,
     -- * Band-limited oscillators
-    module Csound.Typed.Control.Vco
+    module Csound.Typed.Control.Vco,
+    -- * Imperative instruments
+    module Csound.Typed.Control.InstrRef
 ) where
 
 import Csound.Typed.GlobalState.SE
@@ -36,6 +38,7 @@ import Csound.Typed.Control.Osc
 import Csound.Typed.Control.Channel
 import Csound.Typed.Control.Sf2
 import Csound.Typed.Control.Vco
+import Csound.Typed.Control.InstrRef
 
 import Csound.Typed.Types
 import Csound.Typed.GlobalState
