@@ -1,6 +1,6 @@
 -- | Imperative csound instruments
 module Csound.Typed.Control.InstrRef(
-    InstrRef, newInstr, schedule, negateInstrRef, addFracInstrRef,
+    InstrRef, newInstr, scheduleEvent, negateInstrRef, addFracInstrRef,
     newOutInstr, noteOn, noteOff
 ) where    
 
@@ -24,8 +24,8 @@ data InstrRef a = InstrRef
 newInstr ::  (Arg a) => (a -> SE ()) -> SE (InstrRef a)
 newInstr instr = geToSe $ fmap fromInstrId $ saveInstr $ instr toArg
 
-schedule :: (Arg a) => InstrRef a -> D -> D -> a -> SE ()
-schedule instrRef start end args = SE $ hideGEinDep $ fmap C.event $ C.Event <$> toGE (getInstrId instrRef) <*> toGE start <*> toGE end <*> toNote args
+scheduleEvent :: (Arg a) => InstrRef a -> D -> D -> a -> SE ()
+scheduleEvent instrRef start end args = SE $ hideGEinDep $ fmap C.event $ C.Event <$> toGE (getInstrId instrRef) <*> toGE start <*> toGE end <*> toNote args
 
 getInstrId :: InstrRef a -> D
 getInstrId (InstrRef value frac) = value + maybe 0 fromFrac frac
@@ -51,7 +51,7 @@ newOutInstr f = do
     return (instrId, aout)
 
 noteOn :: (Arg a) => D -> D -> InstrRef a -> a -> SE ()
-noteOn maxSize noteId instrId args = schedule (addFracInstrRef maxSize noteId instrId) 0 (-1) args
+noteOn maxSize noteId instrId args = scheduleEvent (addFracInstrRef maxSize noteId instrId) 0 (-1) args
 
 noteOff :: (Default a, Arg a) => D -> D -> InstrRef a -> SE () 
-noteOff maxSize noteId instrId = schedule (negateInstrRef $ addFracInstrRef maxSize noteId instrId) 0 0.01 def
+noteOff maxSize noteId instrId = scheduleEvent (negateInstrRef $ addFracInstrRef maxSize noteId instrId) 0 0.01 def
