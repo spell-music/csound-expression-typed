@@ -27,7 +27,10 @@ module Csound.Typed.Plugins(
     linKorg_lp, linKorg_hp, korg_lp, korg_hp,
 
     -- zero delay convolution
-    ZConvSpec(..), zconv, zconv'
+    ZConvSpec(..), zconv, zconv',
+
+    -- ptich shifter delay
+    pitchShifterDelay
 ) where
 
 import Csound.Typed.Plugins.Adsr140
@@ -37,3 +40,4 @@ import Csound.Typed.Plugins.Audaciouseq
 import Csound.Typed.Plugins.Korg35
 import Csound.Typed.Plugins.SolinaChorus
 import Csound.Typed.Plugins.ZeroDelayConvolution
+import Csound.Typed.Plugins.Ian

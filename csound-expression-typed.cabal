@@ -34,6 +34,7 @@ Data-Files :
     data/opcodes/diode.udo
     data/opcodes/korg35.udo
     data/opcodes/zero-delay-convolution.udo
+    data/opcodes/PitchShifterDelay.udo
 
 
 Homepage:        https://github.com/anton-k/csound-expression-typed
@@ -110,6 +111,7 @@ Library
     Csound.Typed.Plugins.Audaciouseq
     Csound.Typed.Plugins.SolinaChorus
     Csound.Typed.Plugins.ZeroDelayConvolution
+    Csound.Typed.Plugins.Ian
 
     Paths_csound_expression_typed
 

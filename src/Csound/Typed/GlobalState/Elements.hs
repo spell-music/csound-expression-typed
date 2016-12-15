@@ -35,7 +35,8 @@ module Csound.Typed.GlobalState.Elements(
     UdoPlugin, addUdoPlugin, getUdoPluginNames,
     tabQueuePlugin, tabQueue2Plugin,
     zdfPlugin, solinaChorusPlugin, audaciouseqPlugin, adsr140Plugin, 
-    diodePlugin, korg35Plugin, zeroDelayConvolutionPlugin    
+    diodePlugin, korg35Plugin, zeroDelayConvolutionPlugin,
+    pitchShifterDelayPlugin    
 ) where
 
 import Data.List
@@ -565,3 +566,4 @@ adsr140Plugin       = UdoPlugin "adsr140"           -- adsr with retriggering
 diodePlugin         = UdoPlugin "diode"             -- diode ladder filter
 korg35Plugin        = UdoPlugin "korg35"            -- korg 35 filter
 zeroDelayConvolutionPlugin = UdoPlugin "zero-delay-convolution"  -- zero delay convolutio by Victor Lazzarini
+pitchShifterDelayPlugin = UdoPlugin "PitchShifterDelay" -- pitch shifter delay
