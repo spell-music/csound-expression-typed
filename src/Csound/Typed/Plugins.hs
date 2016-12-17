@@ -30,7 +30,12 @@ module Csound.Typed.Plugins(
     ZConvSpec(..), zconv, zconv',
 
     -- ptich shifter delay
-    pitchShifterDelay
+    pitchShifterDelay,
+
+    -- Ian's fxs
+    fxAnalogDelay, fxDistortion, fxEnvelopeFollower, fxFlanger, fxFreqShifter, fxLoFi, 
+    fxPanTrem, fxPhaser, fxPitchShifter, fxReverse, fxRingModulator, fxChorus2
+
 ) where
 
 import Csound.Typed.Plugins.Adsr140

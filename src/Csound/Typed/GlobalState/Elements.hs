@@ -36,7 +36,9 @@ module Csound.Typed.GlobalState.Elements(
     tabQueuePlugin, tabQueue2Plugin,
     zdfPlugin, solinaChorusPlugin, audaciouseqPlugin, adsr140Plugin, 
     diodePlugin, korg35Plugin, zeroDelayConvolutionPlugin,
-    pitchShifterDelayPlugin    
+    pitchShifterDelayPlugin,
+    analogDelayPlugin, distortionPlugin, envelopeFolollowerPlugin, flangerPlugin, freqShifterPlugin,
+    loFiPlugin, panTermPlugin, phaserPlugin, pitchShifterPlugin, reversePlugin, ringModulatorPlugin, stChorusPlugin    
 ) where
 
 import Data.List
@@ -567,3 +569,16 @@ diodePlugin         = UdoPlugin "diode"             -- diode ladder filter
 korg35Plugin        = UdoPlugin "korg35"            -- korg 35 filter
 zeroDelayConvolutionPlugin = UdoPlugin "zero-delay-convolution"  -- zero delay convolutio by Victor Lazzarini
 pitchShifterDelayPlugin = UdoPlugin "PitchShifterDelay" -- pitch shifter delay
+
+analogDelayPlugin = UdoPlugin "MultiFX/AnalogDelay"
+distortionPlugin = UdoPlugin "MultiFX/Distortion"
+envelopeFolollowerPlugin = UdoPlugin "MultiFX/EnvelopeFollower"
+flangerPlugin = UdoPlugin "MultiFX/Flanger"
+freqShifterPlugin = UdoPlugin "MultiFX/FreqShifter"
+loFiPlugin = UdoPlugin "MultiFX/LoFi"
+panTermPlugin = UdoPlugin "MultiFX/PanTrem"
+phaserPlugin = UdoPlugin "MultiFX/Phaser"
+pitchShifterPlugin = UdoPlugin "MultiFX/PitchShifter"
+reversePlugin = UdoPlugin "MultiFX/Reverse"
+ringModulatorPlugin = UdoPlugin "MultiFX/RingModulator"
+stChorusPlugin = UdoPlugin "MultiFX/StChorus."
