@@ -10,6 +10,9 @@ module Csound.Typed.GlobalState.Options (
     idPartials, idSines4, idBuzzes, idConsts, idLins, idCubes,
     idExps, idSplines, idStartEnds,  idPolys, idChebs1, idChebs2, idBessels, idWins,
     idTabHarmonics, idMixOnTab, idMixTabs,
+    idNormTab, idPolynomFuns, idLinTab, idRandDists, idReadNumFile, idReadNumTab,
+    idExpsBreakPoints, idLinsBreakPoints, idReadTrajectoryFile, idMixSines1, idMixSines2,
+    idRandHist, idRandPairs, idRandRanges, idPvocex, idTuning, idMultichannel,    
     -- *** String identifiers
     idPadsynth, idTanh, idExp, idSone, idFarey, idWave
 ) where
@@ -100,8 +103,10 @@ coarseFi n = TabFi n IM.empty M.empty
 idWavs, idMp3s, idDoubles, idSines, idSines3, idSines2,
     idPartials, idSines4, idBuzzes, idConsts, idLins, idCubes,
     idExps, idSplines, idStartEnds,  idPolys, idChebs1, idChebs2, idBessels, idWins,
-    idTabHarmonics, idMixOnTab, idMixTabs :: Int
-
+    idTabHarmonics, idMixOnTab, idMixTabs,
+    idNormTab, idPolynomFuns, idLinTab, idRandDists, idReadNumFile, idReadNumTab,
+    idExpsBreakPoints, idLinsBreakPoints, idReadTrajectoryFile, idMixSines1, idMixSines2,
+    idRandHist, idRandPairs, idRandRanges, idPvocex, idTuning, idMultichannel :: Int
 
 -- Human readable Csound identifiers for GEN-routines
 
@@ -135,6 +140,27 @@ idMixTabs = 32
 idPadsynth, idTanh, idExp, idSone, idFarey, idWave :: String
 
 idPadsynth = "padsynth"
+
+---------------------------------------------
+-- not implemented yet
+idNormTab = 4
+idPolynomFuns = 15
+idLinTab = 18
+idRandDists = 21
+idReadNumFile = 23
+idReadNumTab = 24
+idExpsBreakPoints = 25
+idLinsBreakPoints = 27
+idReadTrajectoryFile = 28
+idMixSines1 = 33
+idMixSines2 = 34
+idRandHist = 40
+idRandPairs = 41
+idRandRanges = 42
+idPvocex = 43
+idTuning = 51
+idMultichannel = 52
+
 idTanh     = "tanh"
 idExp      = "exp"
 idSone     = "sone"
