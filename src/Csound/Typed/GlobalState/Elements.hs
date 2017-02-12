@@ -86,11 +86,11 @@ newIdMapId = state $ \s ->
 
 type GenMap = IdMap Gen
 
-newGen :: Gen -> State GenMap E
-newGen = fmap int . saveGenId
+newGen :: Gen -> State GenMap Int
+newGen = saveGenId
 
-newTabOfGens :: [Gen] -> State GenMap E
-newTabOfGens = fmap int . (saveGenId . intTab =<<) . mapM saveGenId
+newTabOfGens :: [Gen] -> State GenMap Int
+newTabOfGens = (saveGenId . intTab =<<) . mapM saveGenId
     where intTab ns = Gen (length ns) (IntGenId (-2)) (fmap fromIntegral ns) Nothing
 
 saveGenId :: Ord a => a -> State (IdMap a) Int
@@ -581,4 +581,4 @@ phaserPlugin = UdoPlugin "MultiFX/Phaser"
 pitchShifterPlugin = UdoPlugin "MultiFX/PitchShifter"
 reversePlugin = UdoPlugin "MultiFX/Reverse"
 ringModulatorPlugin = UdoPlugin "MultiFX/RingModulator"
-stChorusPlugin = UdoPlugin "MultiFX/StChorus."
+stChorusPlugin = UdoPlugin "MultiFX/StChorus"

@@ -8,7 +8,7 @@ module Csound.Typed.Types.Tuple(
     Tuple(..), TupleMethods, makeTupleMethods, 
     fromTuple, toTuple, tupleArity, tupleRates, defTuple, mapTuple,
 
-    Sig2, Sig3, Sig4, Sig5, Sig6, Sig8,
+    Sig2, Sig3, Sig4, Sig5, Sig6, Sig7, Sig8,
 
     -- ** Outs
     Sigs, outArity, 
@@ -156,12 +156,16 @@ type Sig3 = (Sig, Sig, Sig)
 type Sig4 = (Sig, Sig, Sig, Sig)
 type Sig5 = (Sig, Sig, Sig, Sig, Sig)
 type Sig6 = (Sig, Sig, Sig, Sig, Sig, Sig)
+type Sig7 = (Sig, Sig, Sig, Sig, Sig, Sig, Sig)
 type Sig8 = (Sig, Sig, Sig, Sig, Sig, Sig, Sig, Sig)
 
 instance Sigs Sig
 instance Sigs Sig2
+instance Sigs Sig3
 instance Sigs Sig4
+instance Sigs Sig5
 instance Sigs Sig6
+instance Sigs Sig7
 instance Sigs Sig8
 
 instance Sigs (Sig2, Sig2)
@@ -324,6 +328,15 @@ instance Num Sig4 where
     signum (a1, a2, a3, a4) = (signum a1, signum a2, signum a3, signum a4)
     abs (a1, a2, a3, a4) = (abs a1, abs a2, abs a3, abs a4)
 
+instance Num Sig5 where
+    (a1, a2, a3, a4, a5) + (b1, b2, b3, b4, b5) = (a1 + b1, a2 + b2, a3 + b3, a4 + b4, a5 + b5)
+    (a1, a2, a3, a4, a5) * (b1, b2, b3, b4, b5) = (a1 * b1, a2 * b2, a3 * b3, a4 * b4, a5 * b5)
+    negate (a1, a2, a3, a4, a5) = (negate a1, negate a2, negate a3, negate a4, negate a5)
+
+    fromInteger n = (fromInteger n, fromInteger n, fromInteger n, fromInteger n, fromInteger n)
+    signum (a1, a2, a3, a4, a5) = (signum a1, signum a2, signum a3, signum a4, signum a5)
+    abs (a1, a2, a3, a4, a5) = (abs a1, abs a2, abs a3, abs a4, abs a5)
+
 instance Num Sig6 where
     (a1, a2, a3, a4, a5, a6) + (b1, b2, b3, b4, b5, b6) = (a1 + b1, a2 + b2, a3 + b3, a4 + b4, a5 + b5, a6 + b6)
     (a1, a2, a3, a4, a5, a6) * (b1, b2, b3, b4, b5, b6) = (a1 * b1, a2 * b2, a3 * b3, a4 * b4, a5 * b5, a6 * b6)
@@ -332,6 +345,15 @@ instance Num Sig6 where
     fromInteger n = (fromInteger n, fromInteger n, fromInteger n, fromInteger n, fromInteger n, fromInteger n)
     signum (a1, a2, a3, a4, a5, a6) = (signum a1, signum a2, signum a3, signum a4, signum a5, signum a6)
     abs (a1, a2, a3, a4, a5, a6) = (abs a1, abs a2, abs a3, abs a4, abs a5, abs a6)
+
+instance Num Sig7 where
+    (a1, a2, a3, a4, a5, a6, a7) + (b1, b2, b3, b4, b5, b6, b7) = (a1 + b1, a2 + b2, a3 + b3, a4 + b4, a5 + b5, a6 + b6, a7 + b7)
+    (a1, a2, a3, a4, a5, a6, a7) * (b1, b2, b3, b4, b5, b6, b7) = (a1 * b1, a2 * b2, a3 * b3, a4 * b4, a5 * b5, a6 * b6, a7 * b7)
+    negate (a1, a2, a3, a4, a5, a6, a7) = (negate a1, negate a2, negate a3, negate a4, negate a5, negate a6, negate a7)
+
+    fromInteger n = (fromInteger n, fromInteger n, fromInteger n, fromInteger n, fromInteger n, fromInteger n, fromInteger n)
+    signum (a1, a2, a3, a4, a5, a6, a7) = (signum a1, signum a2, signum a3, signum a4, signum a5, signum a6, signum a7)
+    abs (a1, a2, a3, a4, a5, a6, a7) = (abs a1, abs a2, abs a3, abs a4, abs a5, abs a6, abs a7)
 
 instance Num Sig8 where
     (a1, a2, a3, a4, a5, a6, a7, a8) + (b1, b2, b3, b4, b5, b6, b7, b8) = (a1 + b1, a2 + b2, a3 + b3, a4 + b4, a5 + b5, a6 + b6, a7 + b7, a8 + b8)

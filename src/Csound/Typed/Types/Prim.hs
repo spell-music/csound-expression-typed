@@ -1,6 +1,6 @@
 {-# Language TypeFamilies, FlexibleInstances, FlexibleContexts, ScopedTypeVariables, Rank2Types #-}
 module Csound.Typed.Types.Prim(
-    Sig(..), unSig, D(..), unD, Tab(..), unTab, Str(..), Spec(..), Wspec(..),
+    Sig(..), unSig, D(..), unD, Tab(..), unTab, Str(..), Spec(..), Wspec(..), renderTab,
     BoolSig(..), unBoolSig, BoolD(..), unBoolD, Unit(..), unit, Val(..), hideGE, SigOrD,
 
     -- ** Tables
@@ -158,8 +158,8 @@ data TabArgs
     | ArgsGen16 [Double]
     | FileAccess String [Double]
 
-renderTab :: PreTab -> GE E
-renderTab a = saveGen =<< fromPreTab a 
+renderPreTab :: PreTab -> GE E
+renderPreTab a = (fmap D.int . saveGen) =<< fromPreTab a 
 
 getPreTabUnsafe :: String -> Tab -> PreTab
 getPreTabUnsafe msg x = case x of
@@ -375,7 +375,12 @@ instance Val Tab where
 unTab :: Tab -> GE E
 unTab x = case x of
         Tab a -> a
-        TabPre a -> renderTab a
+        TabPre a -> renderPreTab a
+
+renderTab :: Tab -> GE Int
+renderTab x = case x of
+    TabPre a -> saveGen =<< fromPreTab a
+    Tab _    -> error "table should be primitive"
 
 instance Val BoolSig where 
     fromGE = BoolSig 

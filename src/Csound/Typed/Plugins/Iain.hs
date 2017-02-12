@@ -1,4 +1,4 @@
-module Csound.Typed.Plugins.Ian(  
+module Csound.Typed.Plugins.Iain(  
     pitchShifterDelay,
     fxAnalogDelay, fxDistortion, fxEnvelopeFollower, fxFlanger, fxFreqShifter, fxLoFi, 
     fxPanTrem, fxPhaser, fxPitchShifter, fxReverse, fxRingModulator, fxChorus2
@@ -217,14 +217,15 @@ fxPhaser krate kdepth kfreq kfback ain = fromGE $ do
 -- ; -----------
 -- ; ain    --  input audio to be pitch shifted
 -- ; kmix   --  dry / wet mix of the output signal (range 0 to 1)
--- ; kpitch --  pitch shifting interval in thousands of a semitone (suggested range -0.012 to 0.012)
--- ; kfine  --  fine control of pitch shifting interval in octaves (range -1/12 to 1/12)
+-- ; kscal  -- pitch ratio
+-- #### ; kpitch --  pitch shifting interval in thousands of a semitone (suggested range -0.012 to 0.012)
+-- #### ; kfine  --  fine control of pitch shifting interval in octaves (range -1/12 to 1/12)
 -- ; kfback --  control of the amount of output signal fed back into the input of the effect (suggested range 0 to 1)    
-fxPitchShifter :: Sig -> Sig -> Sig -> Sig -> Sig -> Sig
-fxPitchShifter kmix kpitch kfine kfback ain = fromGE $ do
+fxPitchShifter :: D -> Sig -> Sig -> Sig -> Sig -> Sig
+fxPitchShifter ifftsize kmix kscal kfback ain = fromGE $ do
     addUdoPlugin E.pitchShifterPlugin
-    f <$> toGE ain <*> toGE kmix <*> toGE kpitch <*> toGE kfine <*> toGE kfback
-    where f ain kmix kpitch kfine kfback = opcs "PitchShifter" [(Ar,[Ar,Kr,Kr,Kr,Kr])] [ain, kmix, kpitch, kfine, kfback]
+    f <$> toGE ain <*> toGE kmix <*> toGE kscal <*> toGE kfback <*> toGE ifftsize
+    where f ain kmix kscal kfback ifftsize = opcs "PitchShifter" [(Ar,[Ar,Kr,Kr,Kr,Ir])] [ain, kmix, kscal, kfback, ifftsize]
 
 
 -- ; Reverse

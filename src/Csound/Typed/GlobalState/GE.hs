@@ -17,6 +17,7 @@ module Csound.Typed.GlobalState.GE(
     -- * Notes
     addNote,
     -- * GEN routines
+    GenId,
     saveGen, saveTabs, getNextGlobalGenId,
     saveWriteGen, saveWriteTab,
     -- * Sf2
@@ -177,7 +178,7 @@ saveStr = fmap prim . onStringMap . newString
 getNextGlobalGenId :: GE Int
 getNextGlobalGenId = onHistory globalGenCounter (\a h -> h{ globalGenCounter = a }) nextGlobalGenCounter
 
-saveGen :: Gen -> GE E
+saveGen :: Gen -> GE Int
 saveGen = onGenMap . newGen
 
 onGenMap = onHistory genMap (\val h -> h{ genMap = val })
@@ -191,7 +192,7 @@ saveWriteTab = onWriteGenMap . newWriteTab
 onWriteGenMap = onHistory writeGenMap (\val h -> h{ writeGenMap = val })
 
 saveTabs :: [Gen] -> GE E
-saveTabs = onGenMap . newTabOfGens
+saveTabs = onGenMap . fmap int . newTabOfGens
 
 onSfMap :: State SfMap a -> GE a
 onSfMap = onHistory sfMap (\val h -> h{ sfMap = val })

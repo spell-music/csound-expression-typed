@@ -32,7 +32,7 @@ module Csound.Typed.Plugins(
     -- ptich shifter delay
     pitchShifterDelay,
 
-    -- Ian's fxs
+    -- Iain's fxs
     fxAnalogDelay, fxDistortion, fxEnvelopeFollower, fxFlanger, fxFreqShifter, fxLoFi, 
     fxPanTrem, fxPhaser, fxPitchShifter, fxReverse, fxRingModulator, fxChorus2
 
@@ -45,4 +45,4 @@ import Csound.Typed.Plugins.Audaciouseq
 import Csound.Typed.Plugins.Korg35
 import Csound.Typed.Plugins.SolinaChorus
 import Csound.Typed.Plugins.ZeroDelayConvolution
-import Csound.Typed.Plugins.Ian
+import Csound.Typed.Plugins.Iain

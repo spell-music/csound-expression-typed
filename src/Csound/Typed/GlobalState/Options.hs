@@ -9,6 +9,7 @@ module Csound.Typed.GlobalState.Options (
     idWavs, idMp3s, idDoubles, idSines, idSines3, idSines2,
     idPartials, idSines4, idBuzzes, idConsts, idLins, idCubes,
     idExps, idSplines, idStartEnds,  idPolys, idChebs1, idChebs2, idBessels, idWins,
+    idTabHarmonics,
     -- *** String identifiers
     idPadsynth, idTanh, idExp, idSone, idFarey, idWave
 ) where
@@ -98,7 +99,8 @@ coarseFi n = TabFi n IM.empty M.empty
 
 idWavs, idMp3s, idDoubles, idSines, idSines3, idSines2,
     idPartials, idSines4, idBuzzes, idConsts, idLins, idCubes,
-    idExps, idSplines, idStartEnds,  idPolys, idChebs1, idChebs2, idBessels, idWins :: Int
+    idExps, idSplines, idStartEnds,  idPolys, idChebs1, idChebs2, idBessels, idWins,
+    idTabHarmonics :: Int
 
 
 -- Human readable Csound identifiers for GEN-routines
@@ -123,6 +125,8 @@ idChebs2 = 14
 idBessels = 12
 idWins = 20
 idMp3s = 49
+
+idTabHarmonics = 30
 
 -- Identifiers for named GEN-routines
 
