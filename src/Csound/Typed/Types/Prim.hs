@@ -39,6 +39,8 @@ import Data.Monoid
 import qualified Data.IntMap    as IM
 import qualified Data.Map       as M
 
+import Control.Monad.Trans.Reader
+
 import Data.Default
 import Data.Boolean
 
@@ -151,11 +153,11 @@ instance Default TabSize where
 -- Table arguments can be
 data TabArgs 
     -- absolute
-    = ArgsPlain [Double]
-    -- or relative to the table size (used for tables that implement interpolation)
+    = ArgsPlain (Reader Int [Double])
+{-    -- or relative to the table size (used for tables that implement interpolation)
     | ArgsRelative [Double]
     -- GEN 16 uses unusual interpolation scheme, so we need a special case
-    | ArgsGen16 [Double]
+    | ArgsGen16 [Double] -}
     | FileAccess String [Double]
 
 renderPreTab :: PreTab -> GE E
@@ -193,38 +195,9 @@ defineTabSize base x = case x of
 
 defineTabArgs :: Int -> TabArgs -> ([Double], Maybe String)
 defineTabArgs size args = case args of
-    ArgsPlain as -> (as, Nothing)
-    ArgsRelative as -> (fromRelative size as, Nothing)
-    ArgsGen16 as -> (formRelativeGen16 size as, Nothing)
+    ArgsPlain as -> (runReader as size, Nothing)
     FileAccess filename as -> (as, Just filename)
-    where fromRelative n as = substEvens (mkRelative n $ getEvens as) as
-          getEvens xs = case xs of
-            [] -> []
-            _:[] -> []
-            _:b:as -> b : getEvens as
-            
-          substEvens evens xs = case (evens, xs) of
-            ([], as) -> as
-            (_, []) -> []
-            (e:es, a:_:as) -> a : e : substEvens es as
-            _ -> error "table argument list should contain even number of elements"
-            
-          mkRelative n as = fmap ((fromIntegral :: (Int -> Double)) . round . (s * )) as
-            where s = fromIntegral n / sum as
           
-          -- special case. subst relatives for Gen16
-          formRelativeGen16 n as = substGen16 (mkRelative n $ getGen16 as) as
-
-          getGen16 xs = case xs of
-            _:durN:_:rest    -> durN : getGen16 rest
-            _                -> []
-
-          substGen16 durs xs = case (durs, xs) of 
-            ([], as) -> as
-            (_, [])  -> []
-            (d:ds, valN:_:typeN:rest)   -> valN : d : typeN : substGen16 ds rest
-            (_, _)   -> xs
-
 -- | Skips normalization (sets table size to negative value)
 skipNorm :: Tab -> Tab
 skipNorm x = case x of
@@ -254,7 +227,6 @@ updateTabSize :: (TabSize -> TabSize) -> Tab -> Tab
 updateTabSize phi x = case x of
     Tab _ -> error "you can change size only for primitive tables (made with gen-routines)"
     TabPre a -> TabPre $ a{ preTabSize = phi $ preTabSize a }
-
 
 ----------------------------------------------------------------------------
 -- Tab of tabs
