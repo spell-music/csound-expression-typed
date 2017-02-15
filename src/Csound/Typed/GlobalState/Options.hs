@@ -73,7 +73,7 @@ data TabFi = TabFi
 
 instance Default TabFi where
     def = fineFi 13 
-                [(idLins, 11), (idExps, 11), (idConsts, 9), (idSplines, 11), (idStartEnds, 12)] 
+                [(idLins, 11), (idExps, 11), (idConsts, 9), (idSplines, 11), (idStartEnds, 12), (idExpsBreakPoints, 11), (idLinsBreakPoints, 11), (idRandDists, 6)] 
                 [(idPadsynth, 18), (idSone, 14), (idTanh, 13), (idExp, 13)]
         
 
@@ -134,18 +134,9 @@ idMp3s = 49
 idTabHarmonics = 30
 idMixOnTab = 31
 idMixTabs = 32
-
--- Identifiers for named GEN-routines
-
-idPadsynth, idTanh, idExp, idSone, idFarey, idWave :: String
-
-idPadsynth = "padsynth"
-
----------------------------------------------
--- not implemented yet
 idNormTab = 4
-idPolynomFuns = 15
 idLinTab = 18
+
 idRandDists = 21
 idReadNumFile = 23
 idReadNumTab = 24
@@ -166,3 +157,14 @@ idExp      = "exp"
 idSone     = "sone"
 idFarey    = "farey"
 idWave     = "wave"
+
+-- Identifiers for named GEN-routines
+
+idPadsynth, idTanh, idExp, idSone, idFarey, idWave :: String
+
+idPadsynth = "padsynth"
+
+---------------------------------------------
+-- not implemented yet (hard to implement within the current model)
+
+idPolynomFuns = 15
