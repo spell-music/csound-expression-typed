@@ -7,7 +7,7 @@ import Control.Monad.Trans.Class
 
 import Csound.Dynamic
 
-import Csound.Typed.Types
+import Csound.Typed.Types.Prim
 import Csound.Typed.GlobalState
 import qualified Csound.Typed.GlobalState.Elements as E(adsr140Plugin)
 

@@ -73,11 +73,12 @@ Library
     Csound.Typed.Gui
     Csound.Typed.Gui.Cab
 
-    Csound.Typed.Types.Prim
+    Csound.Typed.Types.Prim    
     Csound.Typed.Types.Evt
     Csound.Typed.Types.Tuple
     Csound.Typed.Types.Lift
     Csound.Typed.Types.Array
+    Csound.Typed.Types.MonoArg
 
     Csound.Typed.Plugins    
 
@@ -87,6 +88,7 @@ Library
     Csound.Typed.GlobalState.GE
     Csound.Typed.GlobalState.SE
     Csound.Typed.GlobalState.Instr
+    Csound.Typed.GlobalState.InstrApi
     Csound.Typed.GlobalState.Cache
     Csound.Typed.GlobalState.Elements
     Csound.Typed.GlobalState.Opcodes

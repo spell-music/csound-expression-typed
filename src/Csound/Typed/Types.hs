@@ -13,7 +13,10 @@ module Csound.Typed.Types(
     module Csound.Typed.Types.Evt,
 
     -- * Arrays
-    module Csound.Typed.Types.Array,        
+    module Csound.Typed.Types.Array, 
+
+    -- * Arguments for monophonic synths
+    module Csound.Typed.Types.MonoArg,           
 
     -- * Tab helpers
     getNextGlobalGenId
@@ -26,6 +29,7 @@ import Csound.Typed.Types.Tuple
 import Csound.Typed.Types.Evt
 import Csound.Typed.Types.Lift
 import Csound.Typed.Types.Array
+import Csound.Typed.Types.MonoArg
 
 import Csound.Typed.GlobalState(evalSE, SE, geToSe)
 

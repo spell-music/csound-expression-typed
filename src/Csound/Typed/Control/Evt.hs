@@ -1,7 +1,7 @@
 {-# Language FlexibleContexts #-}
 module Csound.Typed.Control.Evt(
     sched, sched_, schedBy, schedHarp, schedHarpBy,
-    retrigs, evtLoop, evtLoopOnce    
+    retrigs, evtLoop, evtLoopOnce, monoSched
 ) where
 
 import System.Mem.StableName
@@ -22,6 +22,7 @@ import Csound.Typed.GlobalState
 import Csound.Typed.GlobalState.Opcodes(primInstrId)
 import Csound.Typed.Control.Instr
 import Csound.Typed.Control.Mix(Sco)
+import qualified Csound.Typed.GlobalState.InstrApi as I
 
 import Csound.Typed.Control.Ref
 import Csound.Typed.Constants(infiniteDur)
@@ -268,3 +269,41 @@ samNext = undefined
 samLoop :: (Sigs a) => Evt Unit -> a -> a
 samLoop = undefined
 
+-------------------------------------------------------------
+-- monophonic scheduling
+
+-- | Turns 
+monoSched :: Evt (Sco (D, D)) -> SE MonoArg
+monoSched evts = evtPort instr evts read
+    where
+        instr ((amp, cps), p) = do
+            (_, _, gate) <- I.readPort p
+            I.writePort p (sig amp, sig cps, gate + 1)
+
+        read :: I.Port (Sig, Sig, Sig) -> SE MonoArg
+        read p = do
+            (amp, cps, gate) <- I.readPort p
+            I.writePort p (amp, cps, 0)
+            return $ MonoArg amp cps (ifB (gate `equalsTo` 0) 0 1) (changed [amp, cps, gate])
+
+evtPort :: (Arg a, Sigs p) => ((a, I.Port p) -> SE ()) -> Evt (Sco a) -> (I.Port p -> SE b) -> SE b
+evtPort instr evts read = do
+    port <- I.freePort
+    let idx = I.newInstr instr
+    runSco evts $ go idx port
+    read port
+    where
+        go idx port (start,dur,a) = I.event idx (start, dur, (a, port))
+
+runSco :: Arg a => Evt (Sco a) -> ((D,D,a) -> SE ()) -> SE ()
+runSco evts f = runEvt (renderEvts evts) $ mapM_ f 
+
+-- | This opcode outputs a trigger signal that informs when any one of its k-rate 
+-- arguments has changed. Useful with valuator widgets or MIDI controllers.
+--
+-- > ktrig changed kvar1 [, kvar2,..., kvarN]
+--
+-- doc: <http://www.csounds.com/manual/html/changed.html>
+changed :: [Sig] -> Sig
+changed = Sig . fmap f . mapM toGE
+    where f = C.opcs "changed" [(C.Kr, repeat C.Kr)]

@@ -719,4 +719,3 @@ ftsr = on1 $ opr1 "ftsr"
 -- | Returns the base frequency for a table that stores wav files
 ftcps :: Tab -> D
 ftcps = on1 $ opr1 "ftcps"
-

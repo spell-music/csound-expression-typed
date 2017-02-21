@@ -130,6 +130,7 @@ idChebs2 = 14
 idBessels = 12
 idWins = 20
 idMp3s = 49
+idNormTab = 4
 
 idTabHarmonics = 30
 idMixOnTab = 31
@@ -143,7 +144,6 @@ idPadsynth = "padsynth"
 
 ---------------------------------------------
 -- not implemented yet
-idNormTab = 4
 idPolynomFuns = 15
 idLinTab = 18
 idRandDists = 21

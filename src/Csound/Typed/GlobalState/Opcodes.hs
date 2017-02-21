@@ -1,7 +1,7 @@
 module Csound.Typed.GlobalState.Opcodes(
     sprintf,
     -- * channel opcodes    
-    ChnRef(..), chnRefFromParg, chnRefAlloc, readChn, writeChn, freeChn,
+    ChnRef(..), chnRefFromParg, chnRefAlloc, readChn, writeChn, freeChn, chnName, chnget, chnset,
     readChnEvtLoop,
     chnUpdateUdo, masterUpdateChnAlive, servantUpdateChnAlive,
     masterUpdateChnRetrig, servantUpdateChnRetrig,
@@ -131,6 +131,9 @@ chnmix asig name = do
     writeVar var asig
     val <- readVar var
     depT_ $ opcsNoInlineArgs "chnmix" [(Xr, [Ar, Sr])] [val, name]
+
+chnset :: Monad m => E -> E -> DepT m ()
+chnset name value = depT_ $ opcs "chnset" [(Xr, [Ar, Sr])] [value, name]
 
 chnget :: Monad m => E -> DepT m E
 chnget name = depT $ opcs "chnget" [(Ar, [Sr])] [name]
