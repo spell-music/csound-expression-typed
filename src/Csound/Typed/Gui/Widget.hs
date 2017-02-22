@@ -35,6 +35,7 @@ import qualified Csound.Typed.GlobalState.Opcodes as C
 import Csound.Typed.Gui.Gui
 import Csound.Typed.GlobalState
 import Csound.Typed.Types hiding (whens)
+import Csound.Typed.InnerOpcodes
 
 -- | Renders a list of panels.
 panels :: [Gui] -> SE ()
@@ -498,16 +499,6 @@ flSetVal trig val handle = SE $ (depT_ =<<) $ lift $ f <$> toGE trig <*> toGE va
 flPrintk2 :: Sig -> D -> SE ()
 flPrintk2 val handle = SE $ (depT_ =<<) $ lift $ f <$> toGE val <*> toGE handle
     where f a b = opcs "FLprintk2" [(Xr, [Kr, Ir])] [a, b]
-
--- | This opcode outputs a trigger signal that informs when any one of its k-rate 
--- arguments has changed. Useful with valuator widgets or MIDI controllers.
---
--- > ktrig changed kvar1 [, kvar2,..., kvarN]
---
--- doc: <http://www.csounds.com/manual/html/changed.html>
-changed :: [Sig] -> Sig
-changed = Sig . fmap f . mapM toGE
-    where f = opcs "changed" [(Kr, repeat Kr)]
 
 -----------------------------------------------------
 

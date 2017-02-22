@@ -26,6 +26,7 @@ import qualified Csound.Typed.GlobalState.InstrApi as I
 
 import Csound.Typed.Control.Ref
 import Csound.Typed.Constants(infiniteDur)
+import Csound.Typed.InnerOpcodes
 
 renderEvts :: Evt (Sco a) -> Evt [(D, D, a)]
 renderEvts = fmap (fmap unEvt . T.render)
@@ -297,13 +298,3 @@ evtPort instr evts read = do
 
 runSco :: Arg a => Evt (Sco a) -> ((D,D,a) -> SE ()) -> SE ()
 runSco evts f = runEvt (renderEvts evts) $ mapM_ f 
-
--- | This opcode outputs a trigger signal that informs when any one of its k-rate 
--- arguments has changed. Useful with valuator widgets or MIDI controllers.
---
--- > ktrig changed kvar1 [, kvar2,..., kvarN]
---
--- doc: <http://www.csounds.com/manual/html/changed.html>
-changed :: [Sig] -> Sig
-changed = Sig . fmap f . mapM toGE
-    where f = C.opcs "changed" [(C.Kr, repeat C.Kr)]

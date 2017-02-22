@@ -16,6 +16,7 @@ import Csound.Typed.Types
 import Csound.Typed.Control.Ref
 import Csound.Typed.GlobalState
 import Csound.Typed.GlobalState.Opcodes(eventi, Event(..), turnoff, port, downsamp)
+import Csound.Typed.InnerOpcodes
 
 import Csound.Typed.Plugins.TabQueue
 
@@ -96,8 +97,8 @@ trigByNameMidi name instr = do
     readRef ref    
     where go ref x = mixRef ref =<< instr x
 
-namedMonoMsg :: D -> D -> String -> SE (Sig, Sig)
-namedMonoMsg portTime relTime name = do
+namedMonoMsg ::String -> SE MonoArg
+namedMonoMsg name = do
     refPch <- newGlobalRef 0
     refVol <- newGlobalRef 0
     tab <- newGlobalTab 24
@@ -111,8 +112,11 @@ namedMonoMsg portTime relTime name = do
         writeRef refVol 0
     pchKey <- readRef refPch
     volKey <- readRef refVol
-    let resStatus = ifB onFlag 1 0
-    return (port' (downsamp' volKey) portTime * port' resStatus relTime,  port' (downsamp' pchKey) portTime)
+    let kgate = ifB onFlag 1 0
+        kamp = downsamp' volKey
+        kcps = downsamp' pchKey
+        trig = changed [kamp, kcps] 
+    return $ MonoArg kamp kcps kgate trig
     where        
         onNote = tabQueue2_append        
         offNote tab (pch, vol) = tabQueue2_delete tab pch
