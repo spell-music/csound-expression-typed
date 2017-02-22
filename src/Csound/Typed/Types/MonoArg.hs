@@ -1,5 +1,5 @@
 module Csound.Typed.Types.MonoArg(
-    MonoArg(..), MonoAdsr, adsrMonoSynt
+    MonoArg(..), MonoAdsr, adsrMonoSynt, monoAdsr
 ) where
 
 import Csound.Typed.Types.Prim
@@ -32,4 +32,7 @@ type MonoAdsr = Sig -> Sig -> Sig -> Sig -> Sig
 -- function on monophonic argument.
 adsrMonoSynt :: (MonoAdsr -> (Sig, Sig) -> a) -> (MonoArg -> a)
 adsrMonoSynt f arg = f env (monoAmp arg, monoCps arg) 
-    where env = adsr140 (monoGate arg) (monoTrig arg)
+    where env = monoAdsr arg
+
+monoAdsr :: MonoArg -> MonoAdsr
+monoAdsr arg = adsr140 (monoGate arg) (monoTrig arg) 

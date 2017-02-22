@@ -1,11 +1,13 @@
 {-# Language FlexibleContexts #-}
 module Csound.Typed.Control.Evt(
     sched, sched_, schedBy, schedHarp, schedHarpBy,
-    retrigs, evtLoop, evtLoopOnce, monoSched
+    monoSched, monoSchedUntil, monoSchedHarp,
+    retrigs, evtLoop, evtLoopOnce
 ) where
 
 import System.Mem.StableName
 
+import Data.Monoid
 import Data.Boolean
 
 import Control.Applicative
@@ -287,6 +289,31 @@ monoSched evts = evtPort instr evts read
             I.writePort p (amp, cps, 0)
             return $ MonoArg amp cps (ifB (gate `equalsTo` 0) 0 1) (changed [amp, cps, gate])
 
+runSco :: Arg a => Evt (Sco a) -> ((D,D,a) -> SE ()) -> SE ()
+runSco evts f = runEvt (renderEvts evts) $ mapM_ f 
+
+-- | Plays the note until next note comes or something happens on the second event stream.
+monoSchedUntil :: Evt (D, D) -> Evt a -> SE MonoArg
+monoSchedUntil evts stop = do
+    ref <- newRef (MonoArg 0 0 0 0)
+    clearTrig ref
+    runEvt (fmap Left evts <> fmap Right stop) (go ref)
+    readRef ref
+    where
+        go ref = either (ons ref) (const $ offs ref)
+
+        ons ref (amp, cps) = 
+            writeRef ref $ MonoArg { monoAmp = sig amp, monoCps = sig cps, monoGate = 1, monoTrig = 1 }
+
+        offs ref = modifyRef ref $ \arg -> arg { monoGate = 0 }
+
+        clearTrig ref = modifyRef ref $ \arg -> arg { monoTrig = 0 }
+
+-- | Plays the note until next note comes
+monoSchedHarp :: Evt (D, D) -> SE MonoArg
+monoSchedHarp evts = monoSchedUntil evts mempty
+
+
 evtPort :: (Arg a, Sigs p) => ((a, I.Port p) -> SE ()) -> Evt (Sco a) -> (I.Port p -> SE b) -> SE b
 evtPort instr evts read = do
     port <- I.freePort
@@ -296,5 +323,3 @@ evtPort instr evts read = do
     where
         go idx port (start,dur,a) = I.event idx (start, dur, (a, port))
 
-runSco :: Arg a => Evt (Sco a) -> ((D,D,a) -> SE ()) -> SE ()
-runSco evts f = runEvt (renderEvts evts) $ mapM_ f 
