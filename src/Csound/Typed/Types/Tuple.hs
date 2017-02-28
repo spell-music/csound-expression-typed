@@ -149,7 +149,7 @@ ar1 = id;   ar2 = id;   ar4 = id;   ar6 = id;   ar8 = id
 -- out instances
 
 -- | The tuples of signals.
-class (Tuple a, Num a) => Sigs a where
+class (Tuple a, Num a, Fractional a) => Sigs a where
 
 type Sig2 = (Sig, Sig)
 type Sig3 = (Sig, Sig, Sig)
@@ -310,6 +310,10 @@ instance Num Sig2 where
     signum (a1, a2) = (signum a1, signum a2)
     abs (a1, a2) = (abs a1, abs a2)
 
+instance Fractional Sig2 where
+    recip (a1, a2) = (recip a1, recip a2)
+    fromRational n = (fromRational n, fromRational n)
+
 instance Num Sig3 where
     (a1, a2, a3) + (b1, b2, b3) = (a1 + b1, a2 + b2, a3 + b3)
     (a1, a2, a3) * (b1, b2, b3) = (a1 * b1, a2 * b2, a3 * b3)
@@ -318,6 +322,10 @@ instance Num Sig3 where
     fromInteger n = (fromInteger n, fromInteger n, fromInteger n)
     signum (a1, a2, a3) = (signum a1, signum a2, signum a3)
     abs (a1, a2, a3) = (abs a1, abs a2, abs a3)
+
+instance Fractional Sig3 where
+    recip (a1, a2, a3) = (recip a1, recip a2, recip a3)
+    fromRational n = (fromRational n, fromRational n, fromRational n)
 
 instance Num Sig4 where
     (a1, a2, a3, a4) + (b1, b2, b3, b4) = (a1 + b1, a2 + b2, a3 + b3, a4 + b4)
@@ -328,6 +336,10 @@ instance Num Sig4 where
     signum (a1, a2, a3, a4) = (signum a1, signum a2, signum a3, signum a4)
     abs (a1, a2, a3, a4) = (abs a1, abs a2, abs a3, abs a4)
 
+instance Fractional Sig4 where
+    recip (a1, a2, a3, a4) = (recip a1, recip a2, recip a3, recip a4)
+    fromRational n = (fromRational n, fromRational n, fromRational n, fromRational n)
+
 instance Num Sig5 where
     (a1, a2, a3, a4, a5) + (b1, b2, b3, b4, b5) = (a1 + b1, a2 + b2, a3 + b3, a4 + b4, a5 + b5)
     (a1, a2, a3, a4, a5) * (b1, b2, b3, b4, b5) = (a1 * b1, a2 * b2, a3 * b3, a4 * b4, a5 * b5)
@@ -336,6 +348,10 @@ instance Num Sig5 where
     fromInteger n = (fromInteger n, fromInteger n, fromInteger n, fromInteger n, fromInteger n)
     signum (a1, a2, a3, a4, a5) = (signum a1, signum a2, signum a3, signum a4, signum a5)
     abs (a1, a2, a3, a4, a5) = (abs a1, abs a2, abs a3, abs a4, abs a5)
+
+instance Fractional Sig5 where
+    recip (a1, a2, a3, a4, a5) = (recip a1, recip a2, recip a3, recip a4, recip a5)
+    fromRational n = (fromRational n, fromRational n, fromRational n, fromRational n, fromRational n)
 
 instance Num Sig6 where
     (a1, a2, a3, a4, a5, a6) + (b1, b2, b3, b4, b5, b6) = (a1 + b1, a2 + b2, a3 + b3, a4 + b4, a5 + b5, a6 + b6)
@@ -346,6 +362,10 @@ instance Num Sig6 where
     signum (a1, a2, a3, a4, a5, a6) = (signum a1, signum a2, signum a3, signum a4, signum a5, signum a6)
     abs (a1, a2, a3, a4, a5, a6) = (abs a1, abs a2, abs a3, abs a4, abs a5, abs a6)
 
+instance Fractional Sig6 where
+    recip (a1, a2, a3, a4, a5, a6) = (recip a1, recip a2, recip a3, recip a4, recip a5, recip a6)
+    fromRational n = (fromRational n, fromRational n, fromRational n, fromRational n, fromRational n, fromRational n)
+
 instance Num Sig7 where
     (a1, a2, a3, a4, a5, a6, a7) + (b1, b2, b3, b4, b5, b6, b7) = (a1 + b1, a2 + b2, a3 + b3, a4 + b4, a5 + b5, a6 + b6, a7 + b7)
     (a1, a2, a3, a4, a5, a6, a7) * (b1, b2, b3, b4, b5, b6, b7) = (a1 * b1, a2 * b2, a3 * b3, a4 * b4, a5 * b5, a6 * b6, a7 * b7)
@@ -354,6 +374,10 @@ instance Num Sig7 where
     fromInteger n = (fromInteger n, fromInteger n, fromInteger n, fromInteger n, fromInteger n, fromInteger n, fromInteger n)
     signum (a1, a2, a3, a4, a5, a6, a7) = (signum a1, signum a2, signum a3, signum a4, signum a5, signum a6, signum a7)
     abs (a1, a2, a3, a4, a5, a6, a7) = (abs a1, abs a2, abs a3, abs a4, abs a5, abs a6, abs a7)
+
+instance Fractional Sig7 where
+    recip (a1, a2, a3, a4, a5, a6, a7) = (recip a1, recip a2, recip a3, recip a4, recip a5, recip a6, recip a7)
+    fromRational n = (fromRational n, fromRational n, fromRational n, fromRational n, fromRational n, fromRational n, fromRational n)
 
 instance Num Sig8 where
     (a1, a2, a3, a4, a5, a6, a7, a8) + (b1, b2, b3, b4, b5, b6, b7, b8) = (a1 + b1, a2 + b2, a3 + b3, a4 + b4, a5 + b5, a6 + b6, a7 + b7, a8 + b8)
@@ -364,6 +388,10 @@ instance Num Sig8 where
     signum (a1, a2, a3, a4, a5, a6, a7, a8) = (signum a1, signum a2, signum a3, signum a4, signum a5, signum a6, signum a7, signum a8)
     abs (a1, a2, a3, a4, a5, a6, a7, a8) = (abs a1, abs a2, abs a3, abs a4, abs a5, abs a6, abs a7, abs a8)
 
+instance Fractional Sig8 where
+    recip (a1, a2, a3, a4, a5, a6, a7, a8) = (recip a1, recip a2, recip a3, recip a4, recip a5, recip a6, recip a7, recip a8)
+    fromRational n = (fromRational n, fromRational n, fromRational n, fromRational n, fromRational n, fromRational n, fromRational n, fromRational n)
+
 instance Num (Sig8, Sig8) where
     (a1, a2) + (b1, b2) = (a1 + b1, a2 + b2)
     (a1, a2) * (b1, b2) = (a1 * b1, a2 * b2)
@@ -372,6 +400,10 @@ instance Num (Sig8, Sig8) where
     fromInteger n = (fromInteger n, fromInteger n)
     signum (a1, a2) = (signum a1, signum a2)
     abs (a1, a2) = (abs a1, abs a2)
+
+instance Fractional (Sig8, Sig8) where
+    recip (a1, a2) = (recip a1, recip a2)
+    fromRational n = (fromRational n, fromRational n)
 
 instance Num (Sig8, Sig8, Sig8, Sig8) where
     (a1, a2, a3, a4) + (b1, b2, b3, b4) = (a1 + b1, a2 + b2, a3 + b3, a4 + b4)
@@ -382,6 +414,10 @@ instance Num (Sig8, Sig8, Sig8, Sig8) where
     signum (a1, a2, a3, a4) = (signum a1, signum a2, signum a3, signum a4)
     abs (a1, a2, a3, a4) = (abs a1, abs a2, abs a3, abs a4)
 
+instance Fractional (Sig8, Sig8, Sig8, Sig8) where
+    recip (a1, a2, a3, a4) = (recip a1, recip a2, recip a3, recip a4)
+    fromRational n = (fromRational n, fromRational n, fromRational n, fromRational n)
+
 instance Num (Sig2, Sig2) where
     (a1, a2) + (b1, b2) = (a1 + b1, a2 + b2)
     (a1, a2) * (b1, b2) = (a1 * b1, a2 * b2)
@@ -390,6 +426,10 @@ instance Num (Sig2, Sig2) where
     fromInteger n = (fromInteger n, fromInteger n)
     signum (a1, a2) = (signum a1, signum a2)
     abs (a1, a2) = (abs a1, abs a2)
+
+instance Fractional (Sig2, Sig2) where
+    recip (a1, a2) = (recip a1, recip a2)
+    fromRational n = (fromRational n, fromRational n)
 
 instance Num (Sig2, Sig2, Sig2) where
     (a1, a2, a3) + (b1, b2, b3) = (a1 + b1, a2 + b2, a3 + b3)
@@ -400,6 +440,10 @@ instance Num (Sig2, Sig2, Sig2) where
     signum (a1, a2, a3) = (signum a1, signum a2, signum a3)
     abs (a1, a2, a3) = (abs a1, abs a2, abs a3)
 
+instance Fractional (Sig2, Sig2, Sig2) where
+    recip (a1, a2, a3) = (recip a1, recip a2, recip a3)
+    fromRational n = (fromRational n, fromRational n, fromRational n)
+
 instance Num (Sig2, Sig2, Sig2, Sig2) where
     (a1, a2, a3, a4) + (b1, b2, b3, b4) = (a1 + b1, a2 + b2, a3 + b3, a4 + b4)
     (a1, a2, a3, a4) * (b1, b2, b3, b4) = (a1 * b1, a2 * b2, a3 * b3, a4 * b4)
@@ -408,6 +452,10 @@ instance Num (Sig2, Sig2, Sig2, Sig2) where
     fromInteger n = (fromInteger n, fromInteger n, fromInteger n, fromInteger n)
     signum (a1, a2, a3, a4) = (signum a1, signum a2, signum a3, signum a4)
     abs (a1, a2, a3, a4) = (abs a1, abs a2, abs a3, abs a4)
+
+instance Fractional (Sig2, Sig2, Sig2, Sig2) where
+    recip (a1, a2, a3, a4) = (recip a1, recip a2, recip a3, recip a4)
+    fromRational n = (fromRational n, fromRational n, fromRational n, fromRational n)
 
 instance Num (Sig2, Sig2, Sig2, Sig2, Sig2) where
     (a1, a2, a3, a4, a5) + (b1, b2, b3, b4, b5) = (a1 + b1, a2 + b2, a3 + b3, a4 + b4, a5 + b5)
@@ -418,6 +466,10 @@ instance Num (Sig2, Sig2, Sig2, Sig2, Sig2) where
     signum (a1, a2, a3, a4, a5) = (signum a1, signum a2, signum a3, signum a4, signum a5)
     abs (a1, a2, a3, a4, a5) = (abs a1, abs a2, abs a3, abs a4, abs a5)
 
+instance Fractional (Sig2, Sig2, Sig2, Sig2, Sig2) where
+    recip (a1, a2, a3, a4, a5) = (recip a1, recip a2, recip a3, recip a4, recip a5)
+    fromRational n = (fromRational n, fromRational n, fromRational n, fromRational n, fromRational n)
+
 instance Num (Sig2, Sig2, Sig2, Sig2, Sig2, Sig2) where
     (a1, a2, a3, a4, a5, a6) + (b1, b2, b3, b4, b5, b6) = (a1 + b1, a2 + b2, a3 + b3, a4 + b4, a5 + b5, a6 + b6)
     (a1, a2, a3, a4, a5, a6) * (b1, b2, b3, b4, b5, b6) = (a1 * b1, a2 * b2, a3 * b3, a4 * b4, a5 * b5, a6 * b6)
@@ -426,3 +478,7 @@ instance Num (Sig2, Sig2, Sig2, Sig2, Sig2, Sig2) where
     fromInteger n = (fromInteger n, fromInteger n, fromInteger n, fromInteger n, fromInteger n, fromInteger n)
     signum (a1, a2, a3, a4, a5, a6) = (signum a1, signum a2, signum a3, signum a4, signum a5, signum a6)
     abs (a1, a2, a3, a4, a5, a6) = (abs a1, abs a2, abs a3, abs a4, abs a5, abs a6)
+
+instance Fractional (Sig2, Sig2, Sig2, Sig2, Sig2, Sig2) where
+    recip (a1, a2, a3, a4, a5, a6) = (recip a1, recip a2, recip a3, recip a4, recip a5, recip a6)
+    fromRational n = (fromRational n, fromRational n, fromRational n, fromRational n, fromRational n, fromRational n)
