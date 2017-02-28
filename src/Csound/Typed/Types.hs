@@ -16,7 +16,10 @@ module Csound.Typed.Types(
     module Csound.Typed.Types.Array, 
 
     -- * Arguments for monophonic synths
-    module Csound.Typed.Types.MonoArg,           
+    module Csound.Typed.Types.MonoArg,  
+
+    -- * Signal space (generic signal transformers)
+    module Csound.Typed.Types.SigSpace,
 
     -- * Tab helpers
     getNextGlobalGenId
@@ -30,6 +33,7 @@ import Csound.Typed.Types.Evt
 import Csound.Typed.Types.Lift
 import Csound.Typed.Types.Array
 import Csound.Typed.Types.MonoArg
+import Csound.Typed.Types.SigSpace
 
 import Csound.Typed.GlobalState(evalSE, SE, geToSe)
 

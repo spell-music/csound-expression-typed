@@ -7,9 +7,7 @@ module Csound.Typed.Types.Tuple(
     -- ** Tuple
     Tuple(..), TupleMethods, makeTupleMethods, 
     fromTuple, toTuple, tupleArity, tupleRates, defTuple, mapTuple,
-
-    Sig2, Sig3, Sig4, Sig5, Sig6, Sig7, Sig8,
-
+    
     -- ** Outs
     Sigs, outArity, 
 
@@ -38,6 +36,7 @@ import Data.Boolean
 
 import Csound.Dynamic
 import Csound.Typed.Types.Prim
+import Csound.Typed.Types.SigSpace
 import Csound.Typed.GlobalState.GE
 import Csound.Typed.GlobalState.SE
 import Csound.Typed.Types.TupleHelpers
@@ -149,15 +148,7 @@ ar1 = id;   ar2 = id;   ar4 = id;   ar6 = id;   ar8 = id
 -- out instances
 
 -- | The tuples of signals.
-class (Tuple a, Num a, Fractional a) => Sigs a where
-
-type Sig2 = (Sig, Sig)
-type Sig3 = (Sig, Sig, Sig)
-type Sig4 = (Sig, Sig, Sig, Sig)
-type Sig5 = (Sig, Sig, Sig, Sig, Sig)
-type Sig6 = (Sig, Sig, Sig, Sig, Sig, Sig)
-type Sig7 = (Sig, Sig, Sig, Sig, Sig, Sig, Sig)
-type Sig8 = (Sig, Sig, Sig, Sig, Sig, Sig, Sig, Sig)
+class (Tuple a, Num a, Fractional a, SigSpace a, BindSig a) => Sigs a where
 
 instance Sigs Sig
 instance Sigs Sig2
@@ -296,189 +287,5 @@ dirtyTuple a = res
 
         proxy :: SE a -> a
         proxy = const undefined
-        
+     
 
--------------------------------------------------
--- numeric instances
-
-instance Num Sig2 where
-    (a1, a2) + (b1, b2) = (a1 + b1, a2 + b2)
-    (a1, a2) * (b1, b2) = (a1 * b1, a2 * b2)
-    negate (a1, a2) = (negate a1, negate a2)
-
-    fromInteger n = (fromInteger n, fromInteger n)
-    signum (a1, a2) = (signum a1, signum a2)
-    abs (a1, a2) = (abs a1, abs a2)
-
-instance Fractional Sig2 where
-    recip (a1, a2) = (recip a1, recip a2)
-    fromRational n = (fromRational n, fromRational n)
-
-instance Num Sig3 where
-    (a1, a2, a3) + (b1, b2, b3) = (a1 + b1, a2 + b2, a3 + b3)
-    (a1, a2, a3) * (b1, b2, b3) = (a1 * b1, a2 * b2, a3 * b3)
-    negate (a1, a2, a3) = (negate a1, negate a2, negate a3)
-
-    fromInteger n = (fromInteger n, fromInteger n, fromInteger n)
-    signum (a1, a2, a3) = (signum a1, signum a2, signum a3)
-    abs (a1, a2, a3) = (abs a1, abs a2, abs a3)
-
-instance Fractional Sig3 where
-    recip (a1, a2, a3) = (recip a1, recip a2, recip a3)
-    fromRational n = (fromRational n, fromRational n, fromRational n)
-
-instance Num Sig4 where
-    (a1, a2, a3, a4) + (b1, b2, b3, b4) = (a1 + b1, a2 + b2, a3 + b3, a4 + b4)
-    (a1, a2, a3, a4) * (b1, b2, b3, b4) = (a1 * b1, a2 * b2, a3 * b3, a4 * b4)
-    negate (a1, a2, a3, a4) = (negate a1, negate a2, negate a3, negate a4)
-
-    fromInteger n = (fromInteger n, fromInteger n, fromInteger n, fromInteger n)
-    signum (a1, a2, a3, a4) = (signum a1, signum a2, signum a3, signum a4)
-    abs (a1, a2, a3, a4) = (abs a1, abs a2, abs a3, abs a4)
-
-instance Fractional Sig4 where
-    recip (a1, a2, a3, a4) = (recip a1, recip a2, recip a3, recip a4)
-    fromRational n = (fromRational n, fromRational n, fromRational n, fromRational n)
-
-instance Num Sig5 where
-    (a1, a2, a3, a4, a5) + (b1, b2, b3, b4, b5) = (a1 + b1, a2 + b2, a3 + b3, a4 + b4, a5 + b5)
-    (a1, a2, a3, a4, a5) * (b1, b2, b3, b4, b5) = (a1 * b1, a2 * b2, a3 * b3, a4 * b4, a5 * b5)
-    negate (a1, a2, a3, a4, a5) = (negate a1, negate a2, negate a3, negate a4, negate a5)
-
-    fromInteger n = (fromInteger n, fromInteger n, fromInteger n, fromInteger n, fromInteger n)
-    signum (a1, a2, a3, a4, a5) = (signum a1, signum a2, signum a3, signum a4, signum a5)
-    abs (a1, a2, a3, a4, a5) = (abs a1, abs a2, abs a3, abs a4, abs a5)
-
-instance Fractional Sig5 where
-    recip (a1, a2, a3, a4, a5) = (recip a1, recip a2, recip a3, recip a4, recip a5)
-    fromRational n = (fromRational n, fromRational n, fromRational n, fromRational n, fromRational n)
-
-instance Num Sig6 where
-    (a1, a2, a3, a4, a5, a6) + (b1, b2, b3, b4, b5, b6) = (a1 + b1, a2 + b2, a3 + b3, a4 + b4, a5 + b5, a6 + b6)
-    (a1, a2, a3, a4, a5, a6) * (b1, b2, b3, b4, b5, b6) = (a1 * b1, a2 * b2, a3 * b3, a4 * b4, a5 * b5, a6 * b6)
-    negate (a1, a2, a3, a4, a5, a6) = (negate a1, negate a2, negate a3, negate a4, negate a5, negate a6)
-
-    fromInteger n = (fromInteger n, fromInteger n, fromInteger n, fromInteger n, fromInteger n, fromInteger n)
-    signum (a1, a2, a3, a4, a5, a6) = (signum a1, signum a2, signum a3, signum a4, signum a5, signum a6)
-    abs (a1, a2, a3, a4, a5, a6) = (abs a1, abs a2, abs a3, abs a4, abs a5, abs a6)
-
-instance Fractional Sig6 where
-    recip (a1, a2, a3, a4, a5, a6) = (recip a1, recip a2, recip a3, recip a4, recip a5, recip a6)
-    fromRational n = (fromRational n, fromRational n, fromRational n, fromRational n, fromRational n, fromRational n)
-
-instance Num Sig7 where
-    (a1, a2, a3, a4, a5, a6, a7) + (b1, b2, b3, b4, b5, b6, b7) = (a1 + b1, a2 + b2, a3 + b3, a4 + b4, a5 + b5, a6 + b6, a7 + b7)
-    (a1, a2, a3, a4, a5, a6, a7) * (b1, b2, b3, b4, b5, b6, b7) = (a1 * b1, a2 * b2, a3 * b3, a4 * b4, a5 * b5, a6 * b6, a7 * b7)
-    negate (a1, a2, a3, a4, a5, a6, a7) = (negate a1, negate a2, negate a3, negate a4, negate a5, negate a6, negate a7)
-
-    fromInteger n = (fromInteger n, fromInteger n, fromInteger n, fromInteger n, fromInteger n, fromInteger n, fromInteger n)
-    signum (a1, a2, a3, a4, a5, a6, a7) = (signum a1, signum a2, signum a3, signum a4, signum a5, signum a6, signum a7)
-    abs (a1, a2, a3, a4, a5, a6, a7) = (abs a1, abs a2, abs a3, abs a4, abs a5, abs a6, abs a7)
-
-instance Fractional Sig7 where
-    recip (a1, a2, a3, a4, a5, a6, a7) = (recip a1, recip a2, recip a3, recip a4, recip a5, recip a6, recip a7)
-    fromRational n = (fromRational n, fromRational n, fromRational n, fromRational n, fromRational n, fromRational n, fromRational n)
-
-instance Num Sig8 where
-    (a1, a2, a3, a4, a5, a6, a7, a8) + (b1, b2, b3, b4, b5, b6, b7, b8) = (a1 + b1, a2 + b2, a3 + b3, a4 + b4, a5 + b5, a6 + b6, a7 + b7, a8 + b8)
-    (a1, a2, a3, a4, a5, a6, a7, a8) * (b1, b2, b3, b4, b5, b6, b7, b8) = (a1 * b1, a2 * b2, a3 * b3, a4 * b4, a5 * b5, a6 * b6, a7 + b7, a8 + b8)
-    negate (a1, a2, a3, a4, a5, a6, a7, a8) = (negate a1, negate a2, negate a3, negate a4, negate a5, negate a6, negate a7, negate a8)
-
-    fromInteger n = (fromInteger n, fromInteger n, fromInteger n, fromInteger n, fromInteger n, fromInteger n, fromInteger n, fromInteger n)
-    signum (a1, a2, a3, a4, a5, a6, a7, a8) = (signum a1, signum a2, signum a3, signum a4, signum a5, signum a6, signum a7, signum a8)
-    abs (a1, a2, a3, a4, a5, a6, a7, a8) = (abs a1, abs a2, abs a3, abs a4, abs a5, abs a6, abs a7, abs a8)
-
-instance Fractional Sig8 where
-    recip (a1, a2, a3, a4, a5, a6, a7, a8) = (recip a1, recip a2, recip a3, recip a4, recip a5, recip a6, recip a7, recip a8)
-    fromRational n = (fromRational n, fromRational n, fromRational n, fromRational n, fromRational n, fromRational n, fromRational n, fromRational n)
-
-instance Num (Sig8, Sig8) where
-    (a1, a2) + (b1, b2) = (a1 + b1, a2 + b2)
-    (a1, a2) * (b1, b2) = (a1 * b1, a2 * b2)
-    negate (a1, a2) = (negate a1, negate a2)
-
-    fromInteger n = (fromInteger n, fromInteger n)
-    signum (a1, a2) = (signum a1, signum a2)
-    abs (a1, a2) = (abs a1, abs a2)
-
-instance Fractional (Sig8, Sig8) where
-    recip (a1, a2) = (recip a1, recip a2)
-    fromRational n = (fromRational n, fromRational n)
-
-instance Num (Sig8, Sig8, Sig8, Sig8) where
-    (a1, a2, a3, a4) + (b1, b2, b3, b4) = (a1 + b1, a2 + b2, a3 + b3, a4 + b4)
-    (a1, a2, a3, a4) * (b1, b2, b3, b4) = (a1 * b1, a2 * b2, a3 * b3, a4 * b4)
-    negate (a1, a2, a3, a4) = (negate a1, negate a2, negate a3, negate a4)
-
-    fromInteger n = (fromInteger n, fromInteger n, fromInteger n, fromInteger n)
-    signum (a1, a2, a3, a4) = (signum a1, signum a2, signum a3, signum a4)
-    abs (a1, a2, a3, a4) = (abs a1, abs a2, abs a3, abs a4)
-
-instance Fractional (Sig8, Sig8, Sig8, Sig8) where
-    recip (a1, a2, a3, a4) = (recip a1, recip a2, recip a3, recip a4)
-    fromRational n = (fromRational n, fromRational n, fromRational n, fromRational n)
-
-instance Num (Sig2, Sig2) where
-    (a1, a2) + (b1, b2) = (a1 + b1, a2 + b2)
-    (a1, a2) * (b1, b2) = (a1 * b1, a2 * b2)
-    negate (a1, a2) = (negate a1, negate a2)
-
-    fromInteger n = (fromInteger n, fromInteger n)
-    signum (a1, a2) = (signum a1, signum a2)
-    abs (a1, a2) = (abs a1, abs a2)
-
-instance Fractional (Sig2, Sig2) where
-    recip (a1, a2) = (recip a1, recip a2)
-    fromRational n = (fromRational n, fromRational n)
-
-instance Num (Sig2, Sig2, Sig2) where
-    (a1, a2, a3) + (b1, b2, b3) = (a1 + b1, a2 + b2, a3 + b3)
-    (a1, a2, a3) * (b1, b2, b3) = (a1 * b1, a2 * b2, a3 * b3)
-    negate (a1, a2, a3) = (negate a1, negate a2, negate a3)
-
-    fromInteger n = (fromInteger n, fromInteger n, fromInteger n)
-    signum (a1, a2, a3) = (signum a1, signum a2, signum a3)
-    abs (a1, a2, a3) = (abs a1, abs a2, abs a3)
-
-instance Fractional (Sig2, Sig2, Sig2) where
-    recip (a1, a2, a3) = (recip a1, recip a2, recip a3)
-    fromRational n = (fromRational n, fromRational n, fromRational n)
-
-instance Num (Sig2, Sig2, Sig2, Sig2) where
-    (a1, a2, a3, a4) + (b1, b2, b3, b4) = (a1 + b1, a2 + b2, a3 + b3, a4 + b4)
-    (a1, a2, a3, a4) * (b1, b2, b3, b4) = (a1 * b1, a2 * b2, a3 * b3, a4 * b4)
-    negate (a1, a2, a3, a4) = (negate a1, negate a2, negate a3, negate a4)
-
-    fromInteger n = (fromInteger n, fromInteger n, fromInteger n, fromInteger n)
-    signum (a1, a2, a3, a4) = (signum a1, signum a2, signum a3, signum a4)
-    abs (a1, a2, a3, a4) = (abs a1, abs a2, abs a3, abs a4)
-
-instance Fractional (Sig2, Sig2, Sig2, Sig2) where
-    recip (a1, a2, a3, a4) = (recip a1, recip a2, recip a3, recip a4)
-    fromRational n = (fromRational n, fromRational n, fromRational n, fromRational n)
-
-instance Num (Sig2, Sig2, Sig2, Sig2, Sig2) where
-    (a1, a2, a3, a4, a5) + (b1, b2, b3, b4, b5) = (a1 + b1, a2 + b2, a3 + b3, a4 + b4, a5 + b5)
-    (a1, a2, a3, a4, a5) * (b1, b2, b3, b4, b5) = (a1 * b1, a2 * b2, a3 * b3, a4 * b4, a5 * b5)
-    negate (a1, a2, a3, a4, a5) = (negate a1, negate a2, negate a3, negate a4, negate a5)
-
-    fromInteger n = (fromInteger n, fromInteger n, fromInteger n, fromInteger n, fromInteger n)
-    signum (a1, a2, a3, a4, a5) = (signum a1, signum a2, signum a3, signum a4, signum a5)
-    abs (a1, a2, a3, a4, a5) = (abs a1, abs a2, abs a3, abs a4, abs a5)
-
-instance Fractional (Sig2, Sig2, Sig2, Sig2, Sig2) where
-    recip (a1, a2, a3, a4, a5) = (recip a1, recip a2, recip a3, recip a4, recip a5)
-    fromRational n = (fromRational n, fromRational n, fromRational n, fromRational n, fromRational n)
-
-instance Num (Sig2, Sig2, Sig2, Sig2, Sig2, Sig2) where
-    (a1, a2, a3, a4, a5, a6) + (b1, b2, b3, b4, b5, b6) = (a1 + b1, a2 + b2, a3 + b3, a4 + b4, a5 + b5, a6 + b6)
-    (a1, a2, a3, a4, a5, a6) * (b1, b2, b3, b4, b5, b6) = (a1 * b1, a2 * b2, a3 * b3, a4 * b4, a5 * b5, a6 * b6)
-    negate (a1, a2, a3, a4, a5, a6) = (negate a1, negate a2, negate a3, negate a4, negate a5, negate a6)
-
-    fromInteger n = (fromInteger n, fromInteger n, fromInteger n, fromInteger n, fromInteger n, fromInteger n)
-    signum (a1, a2, a3, a4, a5, a6) = (signum a1, signum a2, signum a3, signum a4, signum a5, signum a6)
-    abs (a1, a2, a3, a4, a5, a6) = (abs a1, abs a2, abs a3, abs a4, abs a5, abs a6)
-
-instance Fractional (Sig2, Sig2, Sig2, Sig2, Sig2, Sig2) where
-    recip (a1, a2, a3, a4, a5, a6) = (recip a1, recip a2, recip a3, recip a4, recip a5, recip a6)
-    fromRational n = (fromRational n, fromRational n, fromRational n, fromRational n, fromRational n, fromRational n)

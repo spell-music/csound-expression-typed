@@ -79,6 +79,7 @@ Library
     Csound.Typed.Types.Lift
     Csound.Typed.Types.Array
     Csound.Typed.Types.MonoArg
+    Csound.Typed.Types.SigSpace
 
     Csound.Typed.Plugins    
 
