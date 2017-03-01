@@ -1,7 +1,7 @@
 module Csound.Typed.Plugins.Iain(  
     pitchShifterDelay,
     fxAnalogDelay, fxDistortion, fxEnvelopeFollower, fxFlanger, fxFreqShifter, fxLoFi, 
-    fxPanTrem, fxPhaser, fxPitchShifter, fxReverse, fxRingModulator, fxChorus2
+    fxPanTrem, fxMonoTrem, fxPhaser, fxPitchShifter, fxReverse, fxRingModulator, fxChorus2
 ) where
 
 import Data.Boolean
@@ -13,7 +13,7 @@ import Csound.Typed.Types
 import Csound.Typed.GlobalState
 import qualified Csound.Typed.GlobalState.Elements as E(pitchShifterDelayPlugin, 
     analogDelayPlugin, distortionPlugin, envelopeFolollowerPlugin, flangerPlugin, freqShifterPlugin,
-    loFiPlugin, panTermPlugin, phaserPlugin, pitchShifterPlugin, reversePlugin, ringModulatorPlugin, stChorusPlugin)
+    loFiPlugin, panTremPlugin, monoTremPlugin, phaserPlugin, pitchShifterPlugin, reversePlugin, ringModulatorPlugin, stChorusPlugin)
 
 pitchShifterDelay :: D -> (Sig, Sig) -> Sig -> Sig -> Sig -> Sig
 pitchShifterDelay imaxdlt (fb1, fb2) kdel ktrans ain = csdPitchShifterDelay ain ktrans kdel fb1 fb2 imaxdlt
@@ -184,9 +184,27 @@ fxLoFi kbits kfold ain = fromGE $ do
 -- ; kwave  --  waveform used by the lfo (0=sine 1=triangle 2=square)
 fxPanTrem :: Sig -> Sig -> Sig -> Sig -> Sig2 -> Sig2
 fxPanTrem krate kdepth kmode kwave (ainL, ainR) = toTuple $ do
-    addUdoPlugin E.panTermPlugin
+    addUdoPlugin E.panTremPlugin
     f <$> toGE ainL <*> toGE ainR <*> toGE krate <*> toGE kdepth <*> toGE kmode <*> toGE kwave
     where f ainL ainR krate kdepth kmode kwave = ($ 2) $ mopcs "PanTrem" ([Ar,Ar], [Ar,Ar, Kr,Kr,Kr,Kr]) [ainL, ainR, krate, kdepth, kmode, kwave]
+
+-- ; Tremolo
+-- ; ----------------
+-- ; Tremolo effect
+-- ;
+-- ; aout MonoTrem  ain,krate,kdepth,kwave
+-- ;
+-- ; Performance
+-- ; -----------
+-- ; ain    --  input audio
+-- ; krate  --  rate control of the lfo of the effect *NOT IN HERTZ* (range 0 to 1)
+-- ; kdepth --  depth of the lfo of the effect (range 0 to 1)
+-- ; kwave  --  waveform used by the lfo (0=sine 1=triangle 2=square)
+fxMonoTrem :: Sig -> Sig -> Sig -> Sig -> Sig
+fxMonoTrem krate kdepth kwave ain = fromGE $ do
+    addUdoPlugin E.monoTremPlugin
+    f <$> toGE ain <*> toGE krate <*> toGE kdepth <*> toGE kwave
+    where f ain krate kdepth kwave = opcs "MonoTrem" [(Ar, [Ar,Kr,Kr,Kr])] [ain, krate, kdepth, kwave]
 
 -- ; Phaser
 -- ; ----------------

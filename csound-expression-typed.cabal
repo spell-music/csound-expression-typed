@@ -42,6 +42,7 @@ Data-Files :
     data/opcodes/MultiFX/FreqShifter.udo
     data/opcodes/MultiFX/LoFi.udo
     data/opcodes/MultiFX/PanTrem.udo
+    data/opcodes/MultiFX/MonoTrem.udo
     data/opcodes/MultiFX/Phaser.udo
     data/opcodes/MultiFX/PitchShifter.udo
     data/opcodes/MultiFX/Reverse.udo
