@@ -1,18 +1,18 @@
-{-# Language FlexibleInstances #-}
+{-# Language FlexibleInstances, ScopedTypeVariables #-}
 module Csound.Typed.Types.Array(
     Arr(..), 
     newLocalArr, newGlobalArr, newLocalCtrlArr, newGlobalCtrlArr,
-    readArr, writeArr, modifyArr, mixArr,
+    fillLocalArr, fillGlobalArr, fillLocalCtrlArr, fillGlobalCtrlArr,
+    readArr, writeArr, writeInitArr, modifyArr, mixArr,
     -- * Misc functions to help the type inverence
     Arr1, DArr1, Arr2, DArr2, Arr3, DArr3,
     arr1, darr1, arr2, darr2, arr3, darr3,
 
-    -- * Array opcodes
-    fillLocalArrayNew, fillGlobalArrayNew, fillLocalCtrlArrayNew, fillGlobalCtrlArrayNew,
+    -- * Array opcodes    
     maparrayNew, lenarray, copyf2array, copya2ftab, minarray, maxarray, sumarray, 
     scalearray, slicearrayNew,
 
-    fillArrayCopy, maparrayCopy, slicearrayCopy,
+    maparrayCopy, slicearrayCopy,
 
     -- * Spectral opcodes
     SpecArr, 
@@ -30,7 +30,7 @@ module Csound.Typed.Types.Array(
 import Control.Monad
 import Control.Monad.Trans.Class
 
-import Csound.Dynamic hiding (writeArr, readArr, newLocalArrVar, newTmpArrVar)
+import Csound.Dynamic hiding (writeArr, writeInitArr, readArr, newLocalArrVar, newTmpArrVar, int)
 import qualified Csound.Dynamic as D
 
 import Csound.Typed.Types.Prim
@@ -85,29 +85,82 @@ darr3 = id
 -- Note that the data tpyes for indices and values can be tuples.
 newtype Arr ix a = Arr { unArr :: [Var] }
 
-newArrBy :: Tuple a => (Rate -> GE [E] -> SE Var) -> [D] -> [a] -> SE (Arr ix a)
-newArrBy mkVar sizes inits = fmap Arr $ mapM (\x -> mkVar x (mapM toGE sizes)) (tupleRates $ proxy inits)
-    where 
-        proxy :: [a] -> a
-        proxy = undefined
+newArrBy :: forall ix a . (Tuple a, Tuple ix) => (Rate -> GE [E] -> SE Var) -> [D] -> SE (Arr ix a)
+newArrBy mkVar sizes = 
+    fmap Arr $ mapM (\x -> mkVar x (mapM toGE sizes)) (tupleRates $ (undefined :: a))
+    
+getIndices :: Tuple ix => [Int] -> [ix]
+getIndices xs = fmap (toTuple . return . fmap D.int) $ getIntIndices xs
+
+getIntIndices :: [Int] -> [[Int]]
+getIntIndices xs = fmap reverse $ foldl go [] xs
+    where
+        go :: [[Int]] -> Int -> [[Int]]
+        go res n = case res of
+            [] -> fmap (\x -> [x]) ix
+            xs -> [ first : rest | first <- ix, rest <- xs ]
+            where ix = [0 .. n - 1]
+
+fillArrBy :: (Tuple a, Tuple ix) => (Rate -> GE [E] -> SE Var) -> [Int] -> [a] -> SE (Arr ix a)
+fillArrBy mkVar sizes inits = do
+    arr <- newArrBy mkVar (fmap int sizes)
+    zipWithM_  (writeInitArr arr) (getIndices sizes) inits
+    return arr
 
 -- | Creates an array that is local to the body of Csound instrument where it's defined.
 -- The array contains audio signals.
-newLocalArr :: Tuple a => [D] -> [a] -> SE (Arr ix a)
+--
+-- > newLocalArr sizes
+newLocalArr :: (Tuple a, Tuple ix) => [D] -> SE (Arr ix a)
 newLocalArr = newArrBy newLocalArrVar
 
 -- | Creates a global array. The array contains audio signals.
-newGlobalArr :: Tuple a => [D] -> [a] -> SE (Arr ix a)
+--
+-- > newGlobalArr sizes
+newGlobalArr :: (Tuple a, Tuple ix) => [D] -> SE (Arr ix a)
 newGlobalArr = newArrBy newGlobalArrVar
 
 -- | Creates an array that is local to the body of Csound instrument where it's defined.
 -- The array contains control signals.
-newLocalCtrlArr :: Tuple a => [D] -> [a] -> SE (Arr ix a)
-newLocalCtrlArr = newArrBy $ newLocalArrVar . toCtrlRate
+--
+-- > newLocalCtrlArr sizes
+newLocalCtrlArr :: (Tuple a, Tuple ix) => [D] -> SE (Arr ix a)
+newLocalCtrlArr = newArrBy newLocalCtrlArrVar
 
 -- | Creates a global array. The array contains control signals.
-newGlobalCtrlArr :: Tuple a => [D] -> [a] -> SE (Arr ix a)
-newGlobalCtrlArr = newArrBy $ newGlobalArrVar . toCtrlRate
+--
+-- > newGlobalCtrlArr sizes
+newGlobalCtrlArr :: (Tuple a, Tuple ix) => [D] -> SE (Arr ix a)
+newGlobalCtrlArr = newArrBy newGlobalCtrlArrVar 
+
+-- | Creates an array that is local to the body of Csound instrument where it's defined.
+-- The array contains audio signals. It fills the array from the list of values (the last argument).
+--
+-- > fillLocalArr sizes initValues = ...
+fillLocalArr :: (Tuple a, Tuple ix) => [Int] -> [a] -> SE (Arr ix a)
+fillLocalArr = fillArrBy newLocalArrVar
+
+-- | Creates a global array. The array contains audio signals. It fills the array from the list of values (the last argument).
+--
+-- > fillGlobalArr sizes initValues = ...
+fillGlobalArr :: (Tuple a, Tuple ix) => [Int] -> [a] -> SE (Arr ix a)
+fillGlobalArr = fillArrBy newGlobalArrVar
+
+-- | Creates an array that is local to the body of Csound instrument where it's defined.
+-- The array contains control signals. It fills the array from the list of values (the last argument).
+--
+-- > fillLocalCtrlArr sizes initValues = ...
+fillLocalCtrlArr :: (Tuple a, Tuple ix) => [Int] -> [a] -> SE (Arr ix a)
+fillLocalCtrlArr = fillArrBy newLocalCtrlArrVar
+
+-- | Creates a global array. The array contains control signals. It fills the array from the list of values (the last argument).
+--
+-- > fillGlobalCtrlArr sizes initValues = ...
+fillGlobalCtrlArr :: (Tuple a, Tuple ix) => [Int] -> [a] -> SE (Arr ix a)
+fillGlobalCtrlArr = fillArrBy newGlobalCtrlArrVar
+
+newLocalCtrlArrVar  = newLocalArrVar  . toCtrlRate
+newGlobalCtrlArrVar = newGlobalArrVar . toCtrlRate
 
 toCtrlRate x = case x of 
     Ar -> Kr
@@ -132,6 +185,16 @@ writeArr (Arr vars) ixs b = SE $ hideGEinDep $ do
     where
         write ::  Var -> [E] -> E -> Dep ()
         write = D.writeArr
+
+-- | Writes data to the array.
+writeInitArr :: (Tuple ix, Tuple a) => Arr ix a -> ix -> a -> SE ()
+writeInitArr (Arr vars) ixs b = SE $ hideGEinDep $ do
+    ixsExp <- fromTuple ixs
+    bsExp <- fromTuple b
+    return $ zipWithM_ (\var value -> write var ixsExp value) vars bsExp
+    where
+        write ::  Var -> [E] -> E -> Dep ()
+        write = D.writeInitArr
 
 -- | Updates the value of the array with pure function.
 modifyArr :: (Tuple a, Tuple ix) => Arr ix a -> ix -> (a -> a) -> SE ()
@@ -160,30 +223,6 @@ subArrayNew = binOp "-"
 -- | Division of two numeric arrays and save the result in the third array.
 divArrayNew :: (Tuple b, Num b) => Arr a b -> Arr a b -> SE (Arr a b)
 divArrayNew = binOp "/"
-
--- | Creates a new local 1-D array with data taken from the list.
-fillLocalArrayNew  :: [D] -> SE (Arr Sig Sig)
-fillLocalArrayNew = fillArrayBy Ar newLocalArrVar
-
--- | Creates a new global 1-D array with data taken from the list.
-fillGlobalArrayNew :: [D] -> SE (Arr Sig Sig)
-fillGlobalArrayNew = fillArrayBy Ar newGlobalArrVar
-
--- | Creates a new local control-rate 1-D array with data taken from the list.
-fillLocalCtrlArrayNew  :: [D] -> SE (Arr Sig Sig)
-fillLocalCtrlArrayNew = fillArrayBy Kr newLocalArrVar
-
--- | Creates a new global control-rate 1-D array with data taken from the list.
-fillGlobalCtrlArrayNew :: [D] -> SE (Arr Sig Sig)
-fillGlobalCtrlArrayNew = fillArrayBy Kr newGlobalArrVar
-
-fillArrayBy :: Rate -> (Rate -> GE [E] -> SE Var) -> [D] -> SE (Arr Sig Sig)
-fillArrayBy rate mkVar inits = SE $ fmap Arr $ hideGEinDep $ do        
-    initExp <- mapM toGE inits
-    return $ do
-        outVar <- unSE $ newTmpArrVar rate    
-        opcsArr isArrayInit outVar "fillarray" [(rate, replicate (length inits) Ir)] initExp
-        return [outVar]
 
 lenarray :: Arr a b -> D
 lenarray (Arr vs) = fromGE $ return $ f (inlineVar $ head vs)
@@ -415,13 +454,6 @@ extractWith name rates (Arr vs) arg = SE $ fmap (toTuple . return) $ hideGEinDep
 
 ---------------------------------------------------
 -- opcodes with copy
-
--- | Copies data from the list to the array.
-fillArrayCopy :: [D] -> Arr Sig Sig -> SE ()
-fillArrayCopy inits (Arr outs) = SE $ hideGEinDep $ do
-    initExp <- mapM toGE inits
-    return $ opcsArr noArrayInit outVar "fillarray" [(varRate outVar, replicate (length inits) Ir)] initExp
-    where outVar = head outs
 
 -- | Transforms the dta of the array and copies it to the second array.
 maparrayCopy :: Arr a b -> Str -> Arr a b -> SE ()
