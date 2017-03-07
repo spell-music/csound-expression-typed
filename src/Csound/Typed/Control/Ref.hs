@@ -4,7 +4,7 @@ module Csound.Typed.Control.Ref(
     newCtrlRef, newGlobalCtrlRef,
     globalSensorsSE, newClearableGlobalRef, newTab, newGlobalTab,
     -- conditionals
-    whileSE
+    whileRef
 ) where
 
 import Data.Boolean
@@ -12,7 +12,7 @@ import Control.DeepSeq(deepseq)
 
 import Control.Monad
 import Control.Monad.Trans.Class
-import Csound.Dynamic hiding (when1, newLocalVars, writeArr, readArr)
+import Csound.Dynamic hiding (when1, newLocalVars, writeArr, readArr, whileRef)
 
 import Csound.Typed.Types.Prim
 import Csound.Typed.Types.Tuple
@@ -171,6 +171,7 @@ ftgentmp b1 b2 b3 b4 b5 b6 = fmap ( Tab . return) $ SE $ (depT =<<) $ lift $ f <
 
 ------------------------------------------------
 
+{-
 whileSE :: SE BoolSig -> SE () -> SE ()
 whileSE mcond body = do      
     ref <- newCtrlRef $ (0 :: Sig)
@@ -191,3 +192,20 @@ whileRefBegin (Ref [var]) = fromDep_ $ D.whileBegin ((D.prim $ D.PrimVar D.Kr va
 
 whileRefEnd :: SE ()
 whileRefEnd = fromDep_ D.whileEnd
+-}
+--------------------------------------------------------------------
+
+whileRef :: Tuple st => st -> (st -> SE BoolSig) -> (st -> SE st) -> SE ()
+whileRef initVal cond body = do
+    refSt   <- newRef initVal
+    refCond <- newRef =<< condSig =<< readRef refSt
+    whileRefBegin refCond
+    writeRef refSt   =<< body    =<< readRef refSt
+    writeRef refCond =<< condSig =<< readRef refSt
+    fromDep_ whileEnd
+    where         
+        condSig = fmap (\b -> ifB b 1 0) . cond
+
+
+whileRefBegin :: Ref Sig -> SE ()
+whileRefBegin (Ref vars) = fromDep_ $ D.whileRef $ head vars
