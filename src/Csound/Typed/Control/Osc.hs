@@ -39,7 +39,7 @@ initOsc :: OscPort -> OscRef
 initOsc port = OscRef $ fromGE $ getOscPortHandle port
 
 -- | Listens for the OSC-messages. The first argument is OSC-reference.
--- We can create it with the function @oscInit@. The next two arguments are strings.
+-- We can create it with the function @initOsc@. The next two arguments are strings.
 -- The former specifies the path-like address to listen the messages. It can be:
 --
 -- > /foo/bar/baz
@@ -144,9 +144,11 @@ instance (OscVal a, OscVal b, OscVal c, OscVal d, OscVal e) => OscVal (a, b, c, 
         refE <- getOscRef e
         return $ concatRef5 refA refB refC refD refE
 
+-- | Listens for tuples of continuous signals read from OSC-channel.
+--
+-- > listenOscVal ref address initValue 
 listenOscVal :: (Tuple a, OscVal a) => OscRef -> String -> a -> SE a
 listenOscVal port path initVal = do
     ref <- getOscRef initVal
     runEvt (listenOsc port path (getOscTypes initVal)) $ \a -> writeRef ref a
     readRef ref
-
