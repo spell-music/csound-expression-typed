@@ -1,10 +1,11 @@
+{-# Language ScopedTypeVariables, FlexibleContexts #-}
 module Csound.Typed.Control.Ref(
     Ref(..), writeRef, readRef, newRef, mixRef, modifyRef, sensorsSE, newGlobalRef,
     concatRef, concatRef3, concatRef4, concatRef5,
     newCtrlRef, newGlobalCtrlRef,
     globalSensorsSE, newClearableGlobalRef, newTab, newGlobalTab,
     -- conditionals
-    whileRef
+    whileRef, whileRefD
 ) where
 
 import Data.Boolean
@@ -195,17 +196,30 @@ whileRefEnd = fromDep_ D.whileEnd
 -}
 --------------------------------------------------------------------
 
-whileRef :: Tuple st => st -> (st -> SE BoolSig) -> (st -> SE st) -> SE ()
+whileRef :: forall st . Tuple st => st -> (st -> SE BoolSig) -> (st -> SE st) -> SE ()
 whileRef initVal cond body = do
-    refSt   <- newRef initVal
+    refSt   <- newCtrlRef initVal
     refCond <- newRef =<< condSig =<< readRef refSt
     whileRefBegin refCond
     writeRef refSt   =<< body    =<< readRef refSt
     writeRef refCond =<< condSig =<< readRef refSt
     fromDep_ whileEnd
-    where         
-        condSig = fmap (\b -> ifB b 1 0) . cond
+    where  
+        condSig :: st -> SE Sig               
+        condSig   = fmap (\b -> ifB b 1 0) . cond
 
 
-whileRefBegin :: Ref Sig -> SE ()
+whileRefD :: forall st . Tuple st => st -> (st -> SE BoolD) -> (st -> SE st) -> SE ()
+whileRefD initVal cond body = do
+    refSt   <- newCtrlRef initVal
+    refCond <- newRef =<< condSig =<< readRef refSt
+    whileRefBegin refCond
+    writeRef refSt   =<< body    =<< readRef refSt
+    writeRef refCond =<< condSig =<< readRef refSt
+    fromDep_ whileEnd
+    where   
+        condSig :: st -> SE D              
+        condSig   = fmap (\b -> ifB b 1 0) . cond
+
+whileRefBegin :: SigOrD a => Ref a -> SE ()
 whileRefBegin (Ref vars) = fromDep_ $ D.whileRef $ head vars

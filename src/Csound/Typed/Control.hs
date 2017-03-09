@@ -24,7 +24,9 @@ module Csound.Typed.Control (
     -- * Band-limited oscillators
     module Csound.Typed.Control.Vco,
     -- * Imperative instruments
-    module Csound.Typed.Control.InstrRef
+    module Csound.Typed.Control.InstrRef,
+    -- * Array folding and traversals    
+    module Csound.Typed.Control.ArrayTraverse
 ) where
 
 import Csound.Typed.GlobalState.SE
@@ -39,6 +41,7 @@ import Csound.Typed.Control.Channel
 import Csound.Typed.Control.Sf2
 import Csound.Typed.Control.Vco
 import Csound.Typed.Control.InstrRef
+import Csound.Typed.Control.ArrayTraverse
 
 import Csound.Typed.Types
 import Csound.Typed.GlobalState

@@ -3,6 +3,7 @@ module Csound.Typed.Types.Prim(
     Sig(..), unSig, D(..), unD, Tab(..), unTab, Str(..), Spec(..), Wspec(..), renderTab,
     BoolSig(..), unBoolSig, BoolD(..), unBoolD, Unit(..), unit, Val(..), hideGE, SigOrD,
     Sig2, Sig3, Sig4, Sig5, Sig6, Sig7, Sig8,
+    D2, D3, D4, D5, D6,
 
     -- ** Tables
     preTab, preStringTab, TabSize(..), TabArgs(..), updateTabSize,
@@ -77,6 +78,11 @@ newtype Spec  = Spec  { unSpec  :: GE E }
 -- | Another type for spectrum. It's @wsig@ in the Csound.
 newtype Wspec = Wspec { unWspec :: GE E }
 
+type D2 = (D, D)
+type D3 = (D, D, D)
+type D4 = (D, D, D, D)
+type D5 = (D, D, D, D, D)
+type D6 = (D, D, D, D, D, D)
 
 type Sig2 = (Sig, Sig)
 type Sig3 = (Sig, Sig, Sig)

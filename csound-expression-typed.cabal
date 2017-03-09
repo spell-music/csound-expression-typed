@@ -110,6 +110,7 @@ Library
     Csound.Typed.Control.Ref    
     Csound.Typed.Control.Instr
     Csound.Typed.Control.InstrRef
+    Csound.Typed.Control.ArrayTraverse
 
     Csound.Typed.Gui.Gui
     Csound.Typed.Gui.Widget

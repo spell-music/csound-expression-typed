@@ -224,9 +224,9 @@ subArrayNew = binOp "-"
 divArrayNew :: (Tuple b, Num b) => Arr a b -> Arr a b -> SE (Arr a b)
 divArrayNew = binOp "/"
 
-lenarray :: Arr a b -> D
+lenarray :: SigOrD c => Arr a b -> c
 lenarray (Arr vs) = fromGE $ return $ f (inlineVar $ head vs)
-    where f a = opcs "lenarray" [(Ir, [Xr])] [a]
+    where f a = opcs "lenarray" [(Kr, [Xr, Ir]), (Ir, [Xr, Ir])] [a]
 
 -- | Copies table to array.
 copyf2array :: Arr Sig Sig -> Tab -> SE ()
@@ -609,3 +609,4 @@ convert2Copy name (Arr xs) (Arr ys) (Arr outs) = mapM_ go $ zip3 xs ys outs
     where
         go (x, y, outVar) = SE $ opcsArr noArrayInit outVar name idRate2 [inlineVar x, inlineVar y]
         idRate2 = fmap (\r -> (r, [r, r])) [Kr, Ar, Ir, Sr, Fr]
+
