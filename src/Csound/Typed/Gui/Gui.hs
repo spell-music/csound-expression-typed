@@ -7,7 +7,7 @@ module Csound.Typed.Gui.Gui (
 
     -- * Layout
     hor, ver, space, sca, horSca, verSca,     
-    padding, margin,
+    padding, margin, resizeGui,
     -- * Props
     props, forceProps,
     Prop(..), BorderType(..), Color,
@@ -187,12 +187,19 @@ data Elem
 
 data Props = Props 
     { propsBorder   :: Maybe BorderType
+    , propsScaleFactor :: Maybe ScaleFactor
     , otherProps    :: [Prop] }
 
+type ScaleFactor = (Double, Double)
+
 instance Monoid Props where
-    mempty = Props Nothing []
-    mappend a b = Props { propsBorder = (propsBorder a) <|> (propsBorder b)
+    mempty = Props Nothing Nothing []
+    mappend a b = Props { propsBorder = propsBorder a <|> propsBorder b
+                        , propsScaleFactor = propsScaleFactor a <|> propsScaleFactor b
                         , otherProps  = mappend (otherProps a) (otherProps b) }
+
+instance Default Props where
+    def = mempty
 
 -- | Properties of the widgets.
 data Prop
@@ -333,14 +340,18 @@ margin n = onLowGui1 (Box.margin n)
 
 -- | Sets the properties for a GUI element.
 props :: [Prop] -> Gui -> Gui
-props ps = onLowGui1 (Box.appendContext (Props Nothing ps))
+props ps = onLowGui1 (Box.appendContext $ def { otherProps = ps })
+
+-- | Rescales the default sizes for the UI elements.
+resizeGui :: ScaleFactor -> Gui -> Gui
+resizeGui factorXY = onLowGui1 (Box.appendContext $ def { propsScaleFactor = Just factorXY })
 
 -- | Sets the properties for a GUI element on all levels.
 forceProps :: [Prop] -> Gui -> Gui
 forceProps = error "forceProps: TODO"
 
 setBorder :: BorderType -> Gui -> Gui
-setBorder a = onLowGui1 (Box.appendContext (Props (Just a) []))
+setBorder a = onLowGui1 (Box.appendContext $ def { propsBorder = Just a })
 
 type GuiMap = IM.IntMap Gui
 
@@ -858,30 +869,38 @@ withRelWinMargin r = r
 bestRect :: Gui -> Rect
 bestRect 
     = appendWinMargin . Box.boundingRect 
-    . mapWithOrient (\curOrient x -> uncurry noShiftRect $ bestElemSizes curOrient $ elemContent x)
+    . mapWithOrientAndScale (\curOrient curScaleFactor x -> uncurry noShiftRect $ bestElemSizesRescaled curScaleFactor $ bestElemSizes curOrient $ elemContent x)
     . unGui
     where noShiftRect w h = Rect { px = 0, py = 0, width = w, height = h }
         
-mapWithOrient :: (Orient -> a -> b) -> Box.Scene ctx a -> Box.Scene ctx b
-mapWithOrient f = iter Hor
+mapWithOrientAndScale :: (Orient -> ScaleFactor -> a -> b) -> Box.Scene Props a -> Box.Scene Props b
+mapWithOrientAndScale f = iter Hor (1, 1)
     where 
-        iter curOrient x = case x of
-            Box.Prim a          -> Box.Prim $ f curOrient a
+        iter curOrient curScale x = case x of
+            Box.Prim a          -> Box.Prim $ f curOrient curScale a
             Box.Space           -> Box.Space
-            Box.Scale d a       -> Box.Scale d $ iter curOrient a
-            Box.Hor offs as     -> Box.Hor offs $ fmap (iter Hor) as
-            Box.Ver offs as     -> Box.Ver offs $ fmap (iter Ver) as
-            Box.Context ctx a   -> Box.Context ctx $ iter curOrient a
-            
+            Box.Scale d a       -> Box.Scale d $ iter curOrient curScale a
+            Box.Hor offs as     -> Box.Hor offs $ fmap (iter Hor curScale) as
+            Box.Ver offs as     -> Box.Ver offs $ fmap (iter Ver curScale) as
+            Box.Context ctx a   -> case propsScaleFactor ctx of
+                    Nothing -> Box.Context ctx $ iter curOrient curScale a
+                    Just newScale -> Box.Context ctx $ iter curOrient (mulFactors curScale newScale) a
+            where 
+                mulFactors (x1, y1) (x2, y2) = (x1 * x2, y1 * y2)
+       
+bestElemSizesRescaled :: ScaleFactor -> (Int, Int) -> (Int, Int)
+bestElemSizesRescaled (scaleX, scaleY) (sizeX, sizeY) = (mul scaleX sizeX, mul scaleY sizeY) 
+    where mul double int = round $ double * fromIntegral int
+
 bestElemSizes :: Orient -> Elem -> (Int, Int)
 bestElemSizes orient x = case x of
     -- valuators
-    Count   _ _ _   -> (150, 35)
-    Joy     _ _     -> (350, 350)  
-    Knob    _       -> (170, 170)
-    Roller  _ _     -> inVer (250, 35)
-    Slider  _       -> inVer (300, 35)
-    Text    _ _     -> (120, 35)
+    Count   _ _ _   -> (120, 30)
+    Joy     _ _     -> (200, 200)  
+    Knob    _       -> (80, 80)
+    Roller  _ _     -> inVer (150, 30)
+    Slider  _       -> inVer (150, 25)
+    Text    _ _     -> (100, 35)
 
     -- other widgets  
     Box     label    -> 
@@ -889,11 +908,11 @@ bestElemSizes orient x = case x of
             numOfLines = succ $ div (length label) symbolsPerLine
         in  (xBox 15 symbolsPerLine, yBox 15 numOfLines)            
 
-    ButBank xn yn   -> (xn * 80, yn * 35)
-    Button _        -> (80, 35) 
-    Toggle          -> (80, 35) 
-    Value           -> (100, 35)
-    Vkeybd          -> (1280, 240)
+    ButBank xn yn   -> (xn * 50, yn * 27)
+    Button _        -> (50, 30) 
+    Toggle          -> (50, 30) 
+    Value           -> (70, 30)
+    Vkeybd          -> (1080, 240)
     
     -- error
     GuiVar h        -> orphanGuiVar h
