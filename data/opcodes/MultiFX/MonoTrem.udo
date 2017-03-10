@@ -30,7 +30,6 @@ opcode  MonoTrem,a,aKKK
     
     klfo    =   klfo+(0.5-(kdepth*0.5)) ;MODIFY LFO AT ZERO DEPTH VALUE IS 1 AND AT MAX DEPTH CENTRE OF MODULATION IS 0.5
     alfo    interp  klfo                ;INTERPOLATE K-RATE LFO AND CREATE A-RATE VARIABLE
-    aout   =   ain*(alfo^2)             ;REDEFINE GLOBAL AUDIO LEFT CHANNEL SIGNAL WITH TREMELO
-    endif                               ;END OF THIS CONDITIONAL BRANCH
+    aout   =   ain*(alfo^2)             ;REDEFINE GLOBAL AUDIO LEFT CHANNEL SIGNAL WITH TREMELO    
     xout    aout                        ;SEND AUDIO BACK TO CALLER INSTRUMENT
 endop
