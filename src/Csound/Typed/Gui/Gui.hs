@@ -908,10 +908,10 @@ bestElemSizes orient x = case x of
             numOfLines = succ $ div (length label) symbolsPerLine
         in  (xBox 15 symbolsPerLine, yBox 15 numOfLines)            
 
-    ButBank xn yn   -> (xn * 50, yn * 27)
-    Button _        -> (50, 30) 
-    Toggle          -> (50, 30) 
-    Value           -> (70, 30)
+    ButBank xn yn   -> (xn * 70, yn * 35)
+    Button _        -> (75, 35) 
+    Toggle          -> (75, 35) 
+    Value           -> (80, 35)
     Vkeybd          -> (1080, 240)
     
     -- error
