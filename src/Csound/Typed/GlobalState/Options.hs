@@ -1,6 +1,6 @@
 module Csound.Typed.GlobalState.Options (
     Options(..),
-    defGain, defSampleRate, defBlockSize, defTabFi,
+    defGain, defSampleRate, defBlockSize, defTabFi, defScaleUI,
     -- * Table fidelity
     TabFi(..), fineFi, coarseFi,
     -- ** Gen identifiers
@@ -33,16 +33,18 @@ import Csound.Dynamic hiding (csdFlags)
 -- > blockSize  = 64
 -- > gain       = 0.5
 -- > tabFi      = fineFi 13 [(idLins, 11), (idExps, 11), (idConsts, 9), (idSplines, 11), (idStartEnds, 12)] }
+-- > scaleUI    = (1, 1)
 data Options = Options 
-    { csdFlags          :: Flags        -- ^ Csound command line flags
-    , csdSampleRate     :: Maybe Int          -- ^ The sample rate
-    , csdBlockSize      :: Maybe Int          -- ^ The number of audio samples in one control step
-    , csdGain           :: Maybe Double       -- ^ A gain of the final output
-    , csdTabFi          :: Maybe TabFi        -- ^ Default fidelity of the arrays   
+    { csdFlags          :: Flags                    -- ^ Csound command line flags
+    , csdSampleRate     :: Maybe Int                -- ^ The sample rate
+    , csdBlockSize      :: Maybe Int                -- ^ The number of audio samples in one control step
+    , csdGain           :: Maybe Double             -- ^ A gain of the final output
+    , csdTabFi          :: Maybe TabFi              -- ^ Default fidelity of the arrays   
+    , csdScaleUI        :: Maybe (Double, Double)   -- ^ Scale factors for UI-window 
     }
    
 instance Default Options where
-    def = Options def def def def def
+    def = Options def def def def def def
 
 instance Monoid Options where
     mempty = def
@@ -51,7 +53,11 @@ instance Monoid Options where
         , csdSampleRate     = csdSampleRate a <|> csdSampleRate b
         , csdBlockSize      = csdBlockSize a <|> csdBlockSize b
         , csdGain           = csdGain a <|> csdGain b
-        , csdTabFi          = csdTabFi a <|> csdTabFi b }
+        , csdTabFi          = csdTabFi a <|> csdTabFi b
+        , csdScaleUI        = csdScaleUI a <|> csdScaleUI b }
+
+defScaleUI :: Options -> (Double, Double)
+defScaleUI = maybe (1, 1) id . csdScaleUI
 
 defGain :: Options -> Double
 defGain = maybe 0.8 id . csdGain

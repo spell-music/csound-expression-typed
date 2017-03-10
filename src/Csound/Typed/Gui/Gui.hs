@@ -365,20 +365,20 @@ restoreTree m x = Gui $ (unGui x) >>= rec
             _        -> return elem
 
 
-guiStmt :: Monad m => [Panel] -> DepT m ()
-guiStmt panels = depT_ $ noRate phi
-    where phi
+guiStmt :: Monad m => ScaleFactor -> [Panel] -> DepT m ()
+guiStmt defaultScaleUI panels = depT_ $ noRate (phi defaultScaleUI)
+    where phi scaleUI
             | null panels = EmptyExp
-            | otherwise   = Verbatim $ show $ vcat [vcat $ fmap drawGui panels, text "FLrun"]
+            | otherwise   = Verbatim $ show $ vcat [vcat $ fmap (drawGui scaleUI) panels, text "FLrun"]
 
-drawGui :: Panel -> Doc
-drawGui x = case x of
+drawGui :: ScaleFactor -> Panel -> Doc
+drawGui defaultScaleUI x = case x of
     Single w    isKeybd -> panel isKeybd boundingRect $ drawWin (withWinMargin boundingRect) w
     Tabs _ _ ws isKeybd -> panel isKeybd tabPanelRect $ case ws of 
         [] -> empty
         _  -> onTabs mainTabRect $ vcat $ fmap (uncurry $ drawTab shift) tabsRs        
-    where boundingRect = panelRect (fmap fst tabsRs) x
-          tabsRs = tabsRects x  
+    where boundingRect = panelRect defaultScaleUI (fmap fst tabsRs) x
+          tabsRs = tabsRects defaultScaleUI x  
           (mainTabRect, shift) = mainTabRectAndShift boundingRect
     
           tabPanelRect = Rect 
@@ -408,9 +408,9 @@ panelTitle x = case x of
     Single w _       -> winTitle w
     Tabs title _ _ _ -> title
 
-panelRect :: [Rect] -> Panel -> Rect
-panelRect rs x = case x of
-    Single w _       -> winBoundingRect w
+panelRect :: ScaleFactor -> [Rect] -> Panel -> Rect
+panelRect defaultScaleUI rs x = case x of
+    Single w _       -> winBoundingRect defaultScaleUI w
     Tabs _ mrect _ _ -> case rs of
         [] -> Box.zeroRect
         _  -> maybe (foldr boundingRect (head rs) rs) id mrect
@@ -433,13 +433,13 @@ mainTabRectAndShift r = (res, (dx, dy))
     
 
 
-tabsRects :: Panel -> [(Rect, Win)]
-tabsRects x = case x of
+tabsRects :: ScaleFactor -> Panel -> [(Rect, Win)]
+tabsRects defaultScaleUI x = case x of
     Single _ _    -> []
-    Tabs _ _ ws _ -> zip (fmap winBoundingRect ws) ws
+    Tabs _ _ ws _ -> zip (fmap (winBoundingRect defaultScaleUI) ws) ws
 
-winBoundingRect :: Win -> Rect
-winBoundingRect w = maybe (shiftBy 50 $ bestRect $ winGui w) id $ winRect w
+winBoundingRect :: ScaleFactor -> Win -> Rect
+winBoundingRect defaultScaleUI w = maybe (shiftBy 50 $ bestRect defaultScaleUI $ winGui w) id $ winRect w
     where shiftBy n r = r { px = n + px r, py = n + py r }      
 
 drawTab :: (Int, Int) -> Rect -> Win -> Doc
@@ -866,15 +866,15 @@ withRelWinMargin r = r
     , width  = width  r - 2 * winMargin 
     }
 
-bestRect :: Gui -> Rect
-bestRect 
+bestRect :: ScaleFactor -> Gui -> Rect
+bestRect defaultScaleUI
     = appendWinMargin . Box.boundingRect 
-    . mapWithOrientAndScale (\curOrient curScaleFactor x -> uncurry noShiftRect $ bestElemSizesRescaled curScaleFactor $ bestElemSizes curOrient $ elemContent x)
+    . mapWithOrientAndScale defaultScaleUI (\curOrient curScaleFactor x -> uncurry noShiftRect $ bestElemSizesRescaled curScaleFactor $ bestElemSizes curOrient $ elemContent x)
     . unGui
     where noShiftRect w h = Rect { px = 0, py = 0, width = w, height = h }
         
-mapWithOrientAndScale :: (Orient -> ScaleFactor -> a -> b) -> Box.Scene Props a -> Box.Scene Props b
-mapWithOrientAndScale f = iter Hor (1, 1)
+mapWithOrientAndScale :: ScaleFactor -> (Orient -> ScaleFactor -> a -> b) -> Box.Scene Props a -> Box.Scene Props b
+mapWithOrientAndScale defaultScaleUI f = iter Hor defaultScaleUI
     where 
         iter curOrient curScale x = case x of
             Box.Prim a          -> Box.Prim $ f curOrient curScale a

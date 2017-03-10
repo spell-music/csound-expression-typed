@@ -16,6 +16,7 @@ import Data.Ord
 import Data.List(sortBy, groupBy)
 import qualified Data.IntMap as IM
 import Control.Monad.IO.Class
+import Control.Monad.Trans.Class
 
 import Text.PrettyPrint.Leijen(displayS, renderPretty)
 
@@ -98,6 +99,7 @@ renderHistory mnchnls_i nchnls opt = do
 
 getInstr0 :: Maybe Int -> Int -> Options -> Dep () -> History -> Dep ()
 getInstr0 mnchnls_i nchnls opt udos hist = do
+    defaultScaleUI <- fmap defScaleUI $ lift getOptions
     globalConstants
     midiAssigns
     midiInitCtrls
@@ -107,7 +109,7 @@ getInstr0 mnchnls_i nchnls opt udos hist = do
     chnUpdateUdo
     udos
     sf2
-    guiStmt $ getPanels hist
+    guiStmt defaultScaleUI $ getPanels hist
     where
         globalConstants = do
             setSr       $ defSampleRate opt
