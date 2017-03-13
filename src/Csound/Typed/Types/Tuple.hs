@@ -148,7 +148,7 @@ ar1 = id;   ar2 = id;   ar4 = id;   ar6 = id;   ar8 = id
 -- out instances
 
 -- | The tuples of signals.
-class (Tuple a, Num a, Fractional a, SigSpace a, BindSig a) => Sigs a where
+class (Tuple a, Num a, Fractional a, SigSpace a, BindSig a,  SigSpace2 a, BindSig2 a) => Sigs a where
 
 instance Sigs Sig
 instance Sigs Sig2
