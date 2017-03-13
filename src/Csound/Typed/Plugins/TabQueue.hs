@@ -4,6 +4,7 @@ module Csound.Typed.Plugins.TabQueue(
 
 import Data.Boolean
 import Control.Monad.Trans.Class
+import Control.Applicative
 
 import Csound.Dynamic
 

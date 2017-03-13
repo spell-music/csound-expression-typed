@@ -12,6 +12,7 @@ import Data.Boolean
 import Control.DeepSeq(deepseq)
 
 import Control.Monad
+import Control.Applicative
 import Control.Monad.Trans.Class
 import Csound.Dynamic hiding (when1, newLocalVars, writeArr, readArr, whileRef)
 

@@ -4,6 +4,7 @@ module Csound.Typed.Control.InstrRef(
     newOutInstr, noteOn, noteOff
 ) where    
 
+import Control.Applicative
 import Data.Default
 import Csound.Dynamic(InstrId(..))
 import qualified Csound.Typed.GlobalState.Elements as C

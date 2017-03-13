@@ -7,6 +7,7 @@ module Csound.Typed.Control.Api(
 
 import Data.Boolean
 import Control.Monad.Trans.Class
+import Control.Applicative
 
 import qualified Csound.Dynamic as D
 import Csound.Dynamic(Rate(..), opcs, depT_)

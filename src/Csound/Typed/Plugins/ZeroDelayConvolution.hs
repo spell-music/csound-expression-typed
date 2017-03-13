@@ -5,6 +5,7 @@ module Csound.Typed.Plugins.ZeroDelayConvolution(
 import Data.Boolean
 import Data.Default
 import Control.Monad.Trans.Class
+import Control.Applicative
 
 import Csound.Dynamic
 

@@ -18,6 +18,7 @@ module Csound.Typed.Plugins.Zdf(
 
 import Data.Boolean
 import Control.Monad.Trans.Class
+import Control.Applicative
 
 import Csound.Dynamic
 

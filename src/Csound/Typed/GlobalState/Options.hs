@@ -17,6 +17,7 @@ module Csound.Typed.GlobalState.Options (
     idPadsynth, idTanh, idExp, idSone, idFarey, idWave
 ) where
 
+import Data.Monoid
 import Control.Applicative
 import Data.Default
 

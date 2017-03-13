@@ -20,6 +20,7 @@ import Prelude hiding (show, min, max)
 
 import Data.Maybe
 import Control.Monad.Trans.Writer.Strict
+import Control.Applicative
 
 import Csound.Typed.Gui.Cabbage.CabbageLang	
 
