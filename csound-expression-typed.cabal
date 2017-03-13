@@ -48,6 +48,7 @@ Data-Files :
     data/opcodes/MultiFX/Reverse.udo
     data/opcodes/MultiFX/RingModulator.udo
     data/opcodes/MultiFX/StChorus.udo 
+    data/opcodes/MultiFX/StereoPingPongDelay.udo 
 
 
 Homepage:        https://github.com/anton-k/csound-expression-typed

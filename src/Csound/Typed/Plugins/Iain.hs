@@ -1,7 +1,7 @@
 module Csound.Typed.Plugins.Iain(  
     pitchShifterDelay,
     fxAnalogDelay, fxDistortion, fxEnvelopeFollower, fxFlanger, fxFreqShifter, fxLoFi, 
-    fxPanTrem, fxMonoTrem, fxPhaser, fxPitchShifter, fxReverse, fxRingModulator, fxChorus2
+    fxPanTrem, fxMonoTrem, fxPhaser, fxPitchShifter, fxReverse, fxRingModulator, fxChorus2, fxPingPong
 ) where
 
 import Data.Boolean
@@ -14,7 +14,7 @@ import Csound.Typed.Types
 import Csound.Typed.GlobalState
 import qualified Csound.Typed.GlobalState.Elements as E(pitchShifterDelayPlugin, 
     analogDelayPlugin, distortionPlugin, envelopeFolollowerPlugin, flangerPlugin, freqShifterPlugin,
-    loFiPlugin, panTremPlugin, monoTremPlugin, phaserPlugin, pitchShifterPlugin, reversePlugin, ringModulatorPlugin, stChorusPlugin)
+    loFiPlugin, panTremPlugin, monoTremPlugin, phaserPlugin, pitchShifterPlugin, reversePlugin, ringModulatorPlugin, stChorusPlugin, stereoPingPongDelayPlugin)
 
 pitchShifterDelay :: D -> (Sig, Sig) -> Sig -> Sig -> Sig -> Sig
 pitchShifterDelay imaxdlt (fb1, fb2) kdel ktrans ain = csdPitchShifterDelay ain ktrans kdel fb1 fb2 imaxdlt
@@ -299,3 +299,15 @@ fxChorus2 krate kdepth kwidth (ainL, ainR) = toTuple $ do
     addUdoPlugin E.stChorusPlugin
     f <$> toGE ainL <*> toGE ainR <*> toGE krate <*> toGE kdepth <*> toGE kwidth 
     where f ainL ainR krate kdepth kwidth = ($ 2) $ mopcs "StChorus" ([Ar,Ar], [Ar,Ar,Kr,Kr,Kr]) [ainL, ainR, krate, kdepth, kwidth] 
+
+-- aInL, aInR, kdelayTime, kFeedback, kMix, iMaxDelayTime xin
+
+-- | Stereo ping-pong delay effect
+--
+-- > fxPingPong maxDelayTime kmix width tone time feedback (ainL, ainR)
+fxPingPong :: D -> Sig -> Sig -> Sig -> Sig -> Sig -> Sig2 -> Sig2
+fxPingPong iMaxDelTime kmix kwidth ktone ktime kfeedback (ainL, ainR) = toTuple $ do
+    addUdoPlugin E.stereoPingPongDelayPlugin
+    f <$> toGE ainL <*> toGE ainR <*> toGE ktime <*> toGE kfeedback <*> toGE kmix <*> toGE kwidth <*> toGE ktone <*> toGE iMaxDelTime
+    where f ainL ainR ktime kfeedback kmix kwidth ktone iMaxDelTime = ($ 2) $ mopcs "StereoPingPongDelay" ([Ar,Ar], [Ar,Ar,Kr,Kr,Kr,Kr,Kr,Ir]) [ainL, ainR, ktime, kfeedback, kmix, kwidth, ktone, iMaxDelTime]
+

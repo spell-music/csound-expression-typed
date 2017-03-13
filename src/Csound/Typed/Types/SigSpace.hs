@@ -9,7 +9,7 @@ module Csound.Typed.Types.SigSpace(
     cfd, genCfds, cfd4, cfds,
 
     -- * Stereo sig-space
-    SigSpace2, BindSig2, mul2, mul2
+    SigSpace2(..), BindSig2(..), mul2, mul2',
 ) where
 
 import Control.Monad
