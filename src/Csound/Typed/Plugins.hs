@@ -34,7 +34,10 @@ module Csound.Typed.Plugins(
 
     -- Iain's fxs
     fxAnalogDelay, fxDistortion, fxEnvelopeFollower, fxFlanger, fxFreqShifter, fxLoFi, 
-    fxPanTrem, fxMonoTrem, fxPhaser, fxPitchShifter, fxReverse, fxRingModulator, fxChorus2, fxPingPong
+    fxPanTrem, fxMonoTrem, fxPhaser, fxPitchShifter, fxReverse, fxRingModulator, fxChorus2, fxPingPong,
+
+    -- utilities
+    delay1k
 
 ) where
 
@@ -46,3 +49,4 @@ import Csound.Typed.Plugins.Korg35
 import Csound.Typed.Plugins.SolinaChorus
 import Csound.Typed.Plugins.ZeroDelayConvolution
 import Csound.Typed.Plugins.Iain
+import Csound.Typed.Plugins.Utilities

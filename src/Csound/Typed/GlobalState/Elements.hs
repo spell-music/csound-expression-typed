@@ -38,7 +38,9 @@ module Csound.Typed.GlobalState.Elements(
     diodePlugin, korg35Plugin, zeroDelayConvolutionPlugin,
     pitchShifterDelayPlugin,
     analogDelayPlugin, distortionPlugin, envelopeFolollowerPlugin, flangerPlugin, freqShifterPlugin,
-    loFiPlugin, panTremPlugin, monoTremPlugin, phaserPlugin, pitchShifterPlugin, reversePlugin, ringModulatorPlugin, stChorusPlugin, stereoPingPongDelayPlugin    
+    loFiPlugin, panTremPlugin, monoTremPlugin, phaserPlugin, pitchShifterPlugin, reversePlugin, 
+    ringModulatorPlugin, stChorusPlugin, stereoPingPongDelayPlugin,    
+    delay1kPlugin,
 ) where
 
 import Data.List
@@ -584,3 +586,5 @@ reversePlugin = UdoPlugin "MultiFX/Reverse"
 ringModulatorPlugin = UdoPlugin "MultiFX/RingModulator"
 stChorusPlugin = UdoPlugin "MultiFX/StChorus"
 stereoPingPongDelayPlugin = UdoPlugin "MultiFX/StereoPingPongDelay"
+
+delay1kPlugin = UdoPlugin "Utility/Delay1k"

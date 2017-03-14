@@ -49,6 +49,7 @@ Data-Files :
     data/opcodes/MultiFX/RingModulator.udo
     data/opcodes/MultiFX/StChorus.udo 
     data/opcodes/MultiFX/StereoPingPongDelay.udo 
+    data/opcodes/Utility/Delay1k.udo 
 
 
 Homepage:        https://github.com/anton-k/csound-expression-typed
@@ -131,6 +132,7 @@ Library
     Csound.Typed.Plugins.SolinaChorus
     Csound.Typed.Plugins.ZeroDelayConvolution
     Csound.Typed.Plugins.Iain
+    Csound.Typed.Plugins.Utilities
 
     Paths_csound_expression_typed
 
