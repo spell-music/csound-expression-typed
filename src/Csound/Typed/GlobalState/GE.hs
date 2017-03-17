@@ -36,6 +36,8 @@ module Csound.Typed.GlobalState.GE(
     getKeyEventListener,
     -- * OSC
     getOscPortHandle,
+    -- * Macros
+    MacrosInit(..), readMacrosDouble, readMacrosString, readMacrosInt,
     -- * Cabbage Guis
     cabbage,
     -- * Hrtf pan
@@ -58,7 +60,8 @@ import Control.Monad.Trans.Class
 import Control.Monad.Trans.State.Strict
 import Control.Monad.Trans.Reader
 
-import Csound.Dynamic 
+import Csound.Dynamic hiding (readMacrosDouble, readMacrosString, readMacrosInt) 
+import qualified Csound.Dynamic as D(readMacrosDouble, readMacrosString, readMacrosInt)
 
 import Csound.Typed.GlobalState.Options
 import Csound.Typed.GlobalState.Cache
@@ -121,10 +124,11 @@ data History = History
     , cache             :: Cache GE
     , guis              :: Guis
     , oscListenPorts    :: OscListenPorts
-    , cabbageGui        :: Maybe Cabbage.Lang }
+    , cabbageGui        :: Maybe Cabbage.Lang
+    , macrosInits       :: MacrosInits }
 
 instance Default History where
-    def = History def def def def def def def def def def def def def def def (return ()) def def def def def
+    def = History def def def def def def def def def def def def def def def (return ()) def def def def def def
 
 data Msg = Msg
 data MidiAssign = MidiAssign MidiType Channel InstrId
@@ -559,6 +563,24 @@ getHrtfFiles = do
 hrtfFileNames :: Int -> IO (String, String)
 hrtfFileNames sr = liftA2 (,) (getDataFileName (name "left" sr)) (getDataFileName (name "right" sr))
     where name dir n = concat ["data/hrtf-", show n, "-", dir, ".dat"]
+
+-----------------------------------------------
+-- read macros
+
+readMacrosDouble :: String -> Double -> GE E
+readMacrosDouble = readMacrosBy D.readMacrosDouble MacrosInitDouble
+
+readMacrosString :: String -> String -> GE E
+readMacrosString = readMacrosBy D.readMacrosString MacrosInitString
+
+readMacrosInt :: String -> Int -> GE E
+readMacrosInt    = readMacrosBy D.readMacrosInt    MacrosInitInt
+
+readMacrosBy :: (String ->  E) -> (String -> a -> MacrosInit) -> String -> a -> GE E
+readMacrosBy reader allocator name initValue = do
+    onMacrosInits $ initMacros $ allocator name initValue
+    return $ reader name
+    where onMacrosInits = onHistory macrosInits (\val h -> h { macrosInits = val }) 
 
 -----------------------------------------------
 -- udo plugins

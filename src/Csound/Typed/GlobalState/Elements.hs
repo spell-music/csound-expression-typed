@@ -31,6 +31,8 @@ module Csound.Typed.GlobalState.Elements(
     subinstr, subinstr_, event_i, event, safeOut, autoOff, changed,
     -- * OSC listen ports
     OscListenPorts, getOscPortVar,
+    -- * Macros inits
+    MacrosInits, MacrosInit(..), initMacros,
     -- * Udo plugins
     UdoPlugin, addUdoPlugin, getUdoPluginNames,
     tabQueuePlugin, tabQueue2Plugin,
@@ -543,6 +545,20 @@ getOscPortVar port = state $ \st@(OscListenPorts m, globals) -> case IM.lookup p
 
 allocOscPortVar :: Int -> State Globals Var
 allocOscPortVar oscPort = newGlobalVar PersistentGlobalVar Ir $ oscInit (fromIntegral oscPort)
+
+----------------------------------------------------------
+-- macros arguments
+
+type MacrosInits = M.Map String MacrosInit
+
+data MacrosInit 
+    = MacrosInitDouble { macrosInitName :: String, macrosInitValueDouble :: Double }
+    | MacrosInitString { macrosInitName :: String, macrosInitValueString :: String }
+    | MacrosInitInt    { macrosInitName :: String, macrosInitValueInt    :: Int  }
+    deriving (Show, Eq, Ord)
+
+initMacros :: MacrosInit -> State MacrosInits ()
+initMacros macrosInit = modify $ \xs -> M.insert (macrosInitName macrosInit)  macrosInit xs 
 
 --------------------------------------------------------
 -- Udo plugins 

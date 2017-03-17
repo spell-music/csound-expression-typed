@@ -15,6 +15,7 @@ import Data.Monoid
 import Data.Ord
 import Data.List(sortBy, groupBy)
 import qualified Data.IntMap as IM
+import Control.Monad
 import Control.Monad.IO.Class
 import Control.Monad.Trans.Class
 
@@ -99,6 +100,7 @@ renderHistory mnchnls_i nchnls opt = do
 
 getInstr0 :: Maybe Int -> Int -> Options -> Dep () -> History -> Dep ()
 getInstr0 mnchnls_i nchnls opt udos hist = do
+    macroses
     defaultScaleUI <- fmap defScaleUI $ lift getOptions
     globalConstants
     midiAssigns
@@ -108,7 +110,7 @@ getInstr0 mnchnls_i nchnls opt udos hist = do
     userInstr0 hist
     chnUpdateUdo
     udos
-    sf2
+    sf2    
     guiStmt defaultScaleUI $ getPanels hist
     where
         globalConstants = do
@@ -128,6 +130,13 @@ getInstr0 mnchnls_i nchnls opt udos hist = do
             where 
                 getName = sfName . fst
                 phi as = (getName $ head as, fmap (\(sf, index) -> (sfBank sf, sfProgram sf, index)) as)
+
+        macroses = forM_ (fmap snd $ M.toList $ macrosInits hist) $ \x -> case x of
+            MacrosInitDouble name value -> initMacrosDouble name value
+            MacrosInitString name value -> initMacrosString name value
+            MacrosInitInt    name value -> initMacrosInt    name value
+
+            
 
 reactOnMidi :: History -> Flags -> Flags
 reactOnMidi h flags

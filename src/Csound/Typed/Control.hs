@@ -26,7 +26,9 @@ module Csound.Typed.Control (
     -- * Imperative instruments
     module Csound.Typed.Control.InstrRef,
     -- * Array folding and traversals    
-    module Csound.Typed.Control.ArrayTraverse
+    module Csound.Typed.Control.ArrayTraverse,
+    -- * Reads global config arguments from command line
+    module Csound.Typed.Control.MacrosArgs
 ) where
 
 import Csound.Typed.GlobalState.SE
@@ -42,6 +44,7 @@ import Csound.Typed.Control.Sf2
 import Csound.Typed.Control.Vco
 import Csound.Typed.Control.InstrRef
 import Csound.Typed.Control.ArrayTraverse
+import Csound.Typed.Control.MacrosArgs
 
 import Csound.Typed.Types
 import Csound.Typed.GlobalState
@@ -73,7 +76,6 @@ setDur mdt as = toTuple $ do
     vals <- fromTuple as
     setDurationForce dt
     return vals
-
 
 -- | Gets new id.
 freshId :: SE D
