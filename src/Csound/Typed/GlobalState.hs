@@ -4,6 +4,7 @@ module Csound.Typed.GlobalState (
     module Csound.Typed.GlobalState.SE,
     module Csound.Typed.GlobalState.Instr,
     module Csound.Typed.GlobalState.Cache,    
+    module Csound.Typed.GlobalState.Port,
     -- * Reexports dynamic    
     BandLimited(..), readBandLimited, readHardSyncBandLimited, renderBandLimited,
     Instrs(..), IdMap(..), getInstrIds,
@@ -31,3 +32,4 @@ import Csound.Typed.GlobalState.Instr
 import Csound.Typed.GlobalState.Cache
 import Csound.Typed.GlobalState.Elements
 import Csound.Typed.GlobalState.Opcodes
+import Csound.Typed.GlobalState.Port

@@ -1,7 +1,7 @@
 module Csound.Typed.GlobalState.Opcodes(
     sprintf,
     -- * channel opcodes    
-    ChnRef(..), chnRefFromParg, chnRefAlloc, readChn, writeChn, freeChn, chnName, chnget, chnset,
+    ChnRef(..), chnRefFromParg, chnRefAlloc, readChn, writeChn, freeChn, chnName, chnget, chnset, chngetK, chnsetK, initSig, active, activeKr,
     readChnEvtLoop,
     chnUpdateUdo, masterUpdateChnAlive, servantUpdateChnAlive,
     masterUpdateChnRetrig, servantUpdateChnRetrig,
@@ -76,10 +76,10 @@ chnName name chnId = sprintf formatString [chnId]
     where formatString = str $ 'p' : show name ++ "_" ++ "%d"
 
 masterUpdateChnAlive :: Monad m => ChnRef -> E -> DepT m ()
-masterUpdateChnAlive ref count = chnsetK count (chnAliveName $ chnRefId ref)    
+masterUpdateChnAlive ref count = chnsetK (chnAliveName $ chnRefId ref) count
 
 masterUpdateChnRetrig :: Monad m => ChnRef -> E -> DepT m ()
-masterUpdateChnRetrig ref count = chnsetK count (chnRetrigName $ chnRefId ref)    
+masterUpdateChnRetrig ref count = chnsetK (chnRetrigName $ chnRefId ref) count
 
 servantUpdateChnAlive :: Monad m => Int -> DepT m ()
 servantUpdateChnAlive pargId = do
@@ -87,7 +87,7 @@ servantUpdateChnAlive pargId = do
     kAlive <- chngetK sName
     when1 Kr (kAlive <* -10) $ do
         turnoff
-    chnsetK (kAlive - 1) sName
+    chnsetK sName (kAlive - 1)
 
 getRetrigVal :: Int -> E
 getRetrigVal pargId = pn $ pargId + 1
@@ -104,7 +104,7 @@ servantUpdateChnEvtLoop :: Monad m => Int -> DepT m ()
 servantUpdateChnEvtLoop pargId = do
     let sName = chnEvtLoopName (pn pargId) 
     kEvtLoop <- chngetK sName
-    chnsetK (ifB (kEvtLoop ==* 0) 1 0) sName
+    chnsetK sName (ifB (kEvtLoop ==* 0) 1 0)
     turnoff
 
 readChnEvtLoop :: Monad m => ChnRef -> DepT m E
@@ -142,7 +142,7 @@ chngetK :: Monad m => E -> DepT m E
 chngetK name = depT $ opcs "chnget" [(Kr, [Sr])] [name]
 
 chnsetK :: Monad m => E -> E -> DepT m ()
-chnsetK val name = depT_ $ opcsNoInlineArgs "chnset" [(Xr, [Kr, Sr])] [val, name]
+chnsetK name val = depT_ $ opcsNoInlineArgs "chnset" [(Xr, [Kr, Sr])] [val, name]
 
 chnclear :: Monad m => E -> DepT m ()
 chnclear name = depT_ $ opcs "chnclear" [(Xr, [Sr])] [name]
@@ -243,6 +243,9 @@ autoOff dt a = do
 
 follow :: E -> E -> E
 follow asig dt = opcs "follow" [(Ar, [Ar, Ir])] [asig, dt]
+
+initSig :: E -> E
+initSig a = opcs "init" [(Kr, [Ir])] [a]
 
 turnoff :: Monad m => DepT m ()
 turnoff = depT_ $ opcs "turnoff" [(Xr, [])] []
@@ -392,6 +395,9 @@ active instrId = opcs "active" [(Kr, [Ir]), (Ir, [Ir])] [instrId]
 
 activeIr :: E -> E    
 activeIr instrId = opcs "active" [(Ir, [Ir])] [instrId]
+
+activeKr :: E -> E    
+activeKr instrId = opcs "active" [(Kr, [Ir])] [instrId]
 
 port :: E -> E -> E
 port a b = opcs "portk" [(Kr, [Kr, Ir])] [a, b]

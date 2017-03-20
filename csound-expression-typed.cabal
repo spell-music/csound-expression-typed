@@ -95,7 +95,8 @@ Library
     Csound.Typed.GlobalState.InstrApi
     Csound.Typed.GlobalState.Cache
     Csound.Typed.GlobalState.Elements
-    Csound.Typed.GlobalState.Opcodes    
+    Csound.Typed.GlobalState.Opcodes  
+    Csound.Typed.GlobalState.Port  
     Csound.Typed.InnerOpcodes
 
     Csound.Typed.Types.TupleHelpers

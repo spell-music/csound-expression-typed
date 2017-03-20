@@ -25,6 +25,7 @@ import Csound.Typed.GlobalState.Opcodes(primInstrId)
 import Csound.Typed.Control.Instr
 import Csound.Typed.Control.Mix(Sco)
 import qualified Csound.Typed.GlobalState.InstrApi as I
+import qualified Csound.Typed.GlobalState.Port as I
 
 import Csound.Typed.Control.Ref
 import Csound.Typed.Constants(infiniteDur)
@@ -37,8 +38,7 @@ renderEvts = fmap (fmap unEvt . T.render)
 sched :: (Arg a, Sigs b) => (a -> SE b) -> Evt (Sco a) -> b
 sched instr evts = apInstr0 $ do    
     instrId <- saveSourceInstrCachedWithLivenessWatch (funArity instr) (insExp instr)
-    saveEvtInstr (arityOuts $ funArity instr) instrId (renderEvts evts)
-    where unEvt e = (T.eventStart e, T.eventDur e, T.eventContent e)
+    saveEvtInstr (arityOuts $ funArity instr) instrId (renderEvts evts)    
 
 -- | Triggers a procedure on the event stream.
 sched_ :: (Arg a) => (a -> SE ()) -> Evt (Sco a) -> SE ()
@@ -317,7 +317,7 @@ monoSchedHarp evts = monoSchedUntil evts mempty
 evtPort :: (Arg a, Sigs p) => ((a, I.Port p) -> SE ()) -> Evt (Sco a) -> (I.Port p -> SE b) -> SE b
 evtPort instr evts read = do
     port <- I.freePort
-    let idx = I.newInstr instr
+    idx <- I.newInstrLinked instr
     runSco evts $ go idx port
     read port
     where
