@@ -110,7 +110,8 @@ getInstr0 mnchnls_i nchnls opt udos hist = do
     userInstr0 hist
     chnUpdateUdo
     udos
-    sf2    
+    sf2 
+    jackos   
     guiStmt defaultScaleUI $ getPanels hist
     where
         globalConstants = do
@@ -136,7 +137,8 @@ getInstr0 mnchnls_i nchnls opt udos hist = do
             MacrosInitString name value -> initMacrosString name value
             MacrosInitInt    name value -> initMacrosInt    name value
 
-            
+        jackos = maybe (return ()) (verbatim . renderJacko) $ csdJacko opt
+                   
 
 reactOnMidi :: History -> Flags -> Flags
 reactOnMidi h flags

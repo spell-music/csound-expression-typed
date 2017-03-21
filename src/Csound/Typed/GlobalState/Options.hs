@@ -1,8 +1,8 @@
 module Csound.Typed.GlobalState.Options (
     Options(..),
-    defGain, defSampleRate, defBlockSize, defTabFi, defScaleUI,
+    defGain, defSampleRate, defBlockSize, defTabFi, defScaleUI,    
     -- * Table fidelity
-    TabFi(..), fineFi, coarseFi,
+    TabFi(..), fineFi, coarseFi, 
     -- ** Gen identifiers
     -- | Low level Csound integer identifiers for tables. These names can be used in the function 'Csound.Base.fineFi'
     -- *** Integer identifiers
@@ -14,7 +14,9 @@ module Csound.Typed.GlobalState.Options (
     idExpsBreakPoints, idLinsBreakPoints, idReadTrajectoryFile, idMixSines1, idMixSines2,
     idRandHist, idRandPairs, idRandRanges, idPvocex, idTuning, idMultichannel,    
     -- *** String identifiers
-    idPadsynth, idTanh, idExp, idSone, idFarey, idWave
+    idPadsynth, idTanh, idExp, idSone, idFarey, idWave,
+    -- * Jacko
+    Jacko(..), JackoConnect, renderJacko
 ) where
 
 import Data.Monoid
@@ -42,10 +44,11 @@ data Options = Options
     , csdGain           :: Maybe Double             -- ^ A gain of the final output
     , csdTabFi          :: Maybe TabFi              -- ^ Default fidelity of the arrays   
     , csdScaleUI        :: Maybe (Double, Double)   -- ^ Scale factors for UI-window 
+    , csdJacko          :: Maybe Jacko
     }
    
 instance Default Options where
-    def = Options def def def def def def
+    def = Options def def def def def def def
 
 instance Monoid Options where
     mempty = def
@@ -55,7 +58,8 @@ instance Monoid Options where
         , csdBlockSize      = csdBlockSize a <|> csdBlockSize b
         , csdGain           = csdGain a <|> csdGain b
         , csdTabFi          = csdTabFi a <|> csdTabFi b
-        , csdScaleUI        = csdScaleUI a <|> csdScaleUI b }
+        , csdScaleUI        = csdScaleUI a <|> csdScaleUI b 
+        , csdJacko          = csdJacko a <|> csdJacko b }
 
 defScaleUI :: Options -> (Double, Double)
 defScaleUI = maybe (1, 1) id . csdScaleUI
@@ -175,3 +179,52 @@ idPadsynth = "padsynth"
 -- not implemented yet (hard to implement within the current model)
 
 idPolynomFuns = 15
+
+
+----------------------------------------------------------
+-- Jacko
+
+type JackoConnect = (String, String)
+
+-- | Describes the Jacko header. All information that is going to be set in the global settings for Jacko opcodes.
+-- The jacko opcodes allows us to easily turn our app into Jack-client. We can also do it with command line flags.
+-- But the Jacko opcodes provide more options.
+--
+-- see the Csound docs for details: <http://csound.github.io/docs/manual/JackoOpcodes.html>
+data Jacko = Jacko 
+    { jackoClient       :: String
+    , jackoServer       :: String
+    , jackoAudioIns     :: [JackoConnect]
+    , jackoAudioOuts    :: [JackoConnect]
+    , jackoMidiIns      :: [JackoConnect]
+    , jackoMidiOuts     :: [JackoConnect]
+    , jackoFreewheel    :: Bool
+    , jackoInfo         :: Bool }
+
+instance Default Jacko where
+    def = Jacko 
+        { jackoClient       = "csound-exp"
+        , jackoServer       = "default"
+        , jackoAudioIns     = []
+        , jackoAudioOuts    = []
+        , jackoMidiIns      = []
+        , jackoMidiOuts     = []
+        , jackoFreewheel    = False
+        , jackoInfo         = False }    
+
+renderJacko :: Jacko -> String
+renderJacko spec = unlines $ filter ( /= "")
+    [ "JackoInit " ++ (str $ jackoServer spec) ++ ", " ++ (str $ jackoClient spec)
+    , if (jackoFreewheel spec) then "JackoFreewheel 1" else ""
+    , if (jackoInfo spec) then "JackoInfo" else ""
+    , renderConnections "JackoAudioInConnect" $ jackoAudioIns spec
+    , renderConnections "JackoAudioOutConnect" $ jackoAudioOuts spec
+    , renderConnections "JackoMidiInConnect" $ jackoMidiIns spec
+    , renderConnections "JackoMidiOutConnect" $ jackoMidiOuts spec
+    , "JackoOn" ]
+    where 
+        renderConnections name links = unlines $ fmap (renderLink name) links
+
+        renderLink name (a, b) = name ++ " " ++ (str a) ++ ", " ++  (str b)
+
+        str x = "\"" ++ x ++ "\""
