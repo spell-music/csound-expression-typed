@@ -1,7 +1,7 @@
 module Csound.Typed.GlobalState.Opcodes(
     sprintf,
     -- * channel opcodes    
-    ChnRef(..), chnRefFromParg, chnRefAlloc, readChn, writeChn, freeChn, chnName, chnget, chnset, chngetK, chnsetK, initSig, active, activeKr,
+    ChnRef(..), chnRefFromParg, chnRefAlloc, readChn, writeChn, overWriteChn, freeChn, chnName, chnget, chnset, chngetK, chnsetK, initSig, active, activeKr,
     readChnEvtLoop,
     chnUpdateUdo, masterUpdateChnAlive, servantUpdateChnAlive,
     masterUpdateChnRetrig, servantUpdateChnRetrig,
@@ -65,6 +65,9 @@ readChn ref = do
 
 writeChn :: Monad m => ChnRef -> [E] -> DepT m ()
 writeChn ref sigs = zipWithM_ chnmix sigs $ chnRefNames ref
+
+overWriteChn :: Monad m => ChnRef -> [E] -> DepT m ()
+overWriteChn ref sigs = zipWithM_ chnset (chnRefNames ref) sigs
     
 clearChn :: Monad m => ChnRef -> DepT m ()
 clearChn = mapM_ chnclear . chnRefNames

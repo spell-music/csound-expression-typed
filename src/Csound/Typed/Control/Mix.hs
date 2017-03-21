@@ -1,13 +1,17 @@
-{-# Language FlexibleContexts #-}
+{-# Language FlexibleContexts, ScopedTypeVariables #-}
 module Csound.Typed.Control.Mix(
     Mix, 
-    sco, eff, mix, mixBy,
+    sco, eff, mix, mixBy, monoSco,
     sco_, mix_, mixBy_,
     Sco, CsdEventList(..), CsdEvent
 ) where
 
+import Data.Boolean
+
 import Control.Applicative
 import Control.Monad.IO.Class
+import Control.Monad.Trans.Class
+import Control.Monad
 import Data.Traversable
 import System.Mem.StableName
 
@@ -20,6 +24,7 @@ import Csound.Typed.Types
 import Csound.Typed.Types.MixSco
 import Csound.Typed.GlobalState hiding (notes)
 import Csound.Typed.Control.Instr
+import Csound.Typed.InnerOpcodes
 
 toCsdEventList :: Sco a -> CsdEventList a
 toCsdEventList = id
@@ -75,6 +80,25 @@ eff ef sigs = wrapSco sigs $ \events -> do
     instrId <- saveEffectInstr (funArity ef) (effExp ef)
     return $ Eff instrId notes (arityIns $ funArity ef)
 
+-- | Plays a bunch of notes with the given monophonic instrument. See details on type @MonoArg@.
+-- The scores contain the pairs of amplitude (0 to 1) and frequency (in Hz).
+--
+-- > res = monoSco instrument scores 
+monoSco :: forall a . Sigs a => (MonoArg -> SE a) -> Sco (D, D) -> Sco (Mix a)
+monoSco instr notes = wrapSco notes $ \events -> do
+    events' <- traverse toNote events        
+    argId <- saveSourceInstrCached_ (unitExp $ fmap (const unit) $ instrMonoArg toArg)
+    instrId <- saveEffectInstr ((funArity instr) { arityIns = 3 }) (effExp effInstr)
+    return $ MonoSnd instrId argId events'    
+    where 
+        instrMonoArg :: ((D, D), Port Sig3) -> SE ()
+        instrMonoArg ((amp, cps), port) =
+            modifyPort port $ \(_, _, notnum) -> (sig amp, sig cps, notnum + 1)            
+
+        effInstr :: Sigs a => (Sig, Sig, Sig) -> SE a
+        effInstr (amp, cps, notnum) = instr (MonoArg amp cps gate (changed [amp, cps, gate]))
+            where gate = ifB (notnum ==* 0) 0 1
+        
 -- | Renders a scores to the sound signals. we can use it inside the other instruments.
 mix :: (Sigs a) => Sco (Mix a) -> a
 mix a = flip apInstr unit $ do
