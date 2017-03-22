@@ -254,7 +254,7 @@ turnoff :: Monad m => DepT m ()
 turnoff = depT_ $ opcs "turnoff" [(Xr, [])] []
 
 turnoff2 :: Monad m => E -> DepT m ()
-turnoff2 instrId = depT_ $ opcs "turnoff2" [(Xr, [Ir, Ir, Ir])] [instrId, 0, 0]
+turnoff2 instrId = depT_ $ opcs "turnoff2" [(Xr, [Kr, Kr, Kr])] [instrId, 0, 0]
 
 exitnow :: Monad m => DepT m ()
 exitnow = depT_ $ opcs "exitnow" [(Xr, [])] []
