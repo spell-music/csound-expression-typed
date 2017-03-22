@@ -7,7 +7,7 @@ module Csound.Typed.Gui.Gui (
 
     -- * Layout
     hor, ver, space, sca, horSca, verSca,     
-    padding, margin, resizeGui,
+    padding, margin, ScaleFactor, resizeGui,
     -- * Props
     props, forceProps,
     Prop(..), BorderType(..), Color,
