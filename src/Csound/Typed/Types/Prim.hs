@@ -3,17 +3,18 @@ module Csound.Typed.Types.Prim(
     Sig(..), unSig, D(..), unD, Tab(..), unTab, Str(..), Spec(..), Wspec(..), renderTab,
     BoolSig(..), unBoolSig, BoolD(..), unBoolD, Unit(..), unit, Val(..), hideGE, SigOrD,
     Sig2, Sig3, Sig4, Sig5, Sig6, Sig7, Sig8,
+    Sig2_2, Sig2_3, Sig2_4, Sig2_5, Sig2_6, Sig2_7, Sig2_8,
     D2, D3, D4, D5, D6,
 
     -- ** Tables
     preTab, preStringTab, TabSize(..), TabArgs(..), updateTabSize,
     fromPreTab, getPreTabUnsafe, skipNorm, forceNorm,
     nsamp, ftlen, ftchnls, ftsr, ftcps,
-    TabList, tabList, fromTabList, fromTabListD,   
+    TabList, tabList, fromTabList, fromTabListD,
 
     -- ** constructors
-    double, int, text, 
-    
+    double, int, text,
+
     -- ** constants
     idur, getSampleRate, getControlRate, getBlockSize, getZeroDbfs,
 
@@ -25,7 +26,7 @@ module Csound.Typed.Types.Prim(
 
     -- ** numeric funs
     quot', rem', div', mod', ceil', floor', round', int', frac',
-   
+
     -- ** logic funs
     when1, whens, untilDo, whileDo, boolSig,
     equalsTo, notEqualsTo, lessThan, greaterThan, lessThanEquals, greaterThanEquals,
@@ -54,7 +55,7 @@ import Csound.Typed.GlobalState.Options
 import Csound.Typed.GlobalState.Opcodes(tableK, tableI)
 
 -- | Signals
-data Sig  
+data Sig
     = Sig  (GE E)
     | PrimSig Double
 
@@ -62,7 +63,7 @@ unSig :: Sig -> GE E
 unSig = toGE
 
 -- | Constant numbers
-data D    
+data D
     = D  (GE E)
     | PrimD Double
 
@@ -92,10 +93,18 @@ type Sig6 = (Sig, Sig, Sig, Sig, Sig, Sig)
 type Sig7 = (Sig, Sig, Sig, Sig, Sig, Sig, Sig)
 type Sig8 = (Sig, Sig, Sig, Sig, Sig, Sig, Sig, Sig)
 
+type Sig2_2 = (Sig2, Sig2)
+type Sig2_3 = (Sig2, Sig2, Sig2)
+type Sig2_4 = (Sig2, Sig2, Sig2, Sig2)
+type Sig2_5 = (Sig2, Sig2, Sig2, Sig2, Sig2)
+type Sig2_6 = (Sig2, Sig2, Sig2, Sig2, Sig2, Sig2)
+type Sig2_7 = (Sig2, Sig2, Sig2, Sig2, Sig2, Sig2, Sig2)
+type Sig2_8 = (Sig2, Sig2, Sig2, Sig2, Sig2, Sig2, Sig2, Sig2)
+
 -- Booleans
 
 -- | A signal of booleans.
-data BoolSig 
+data BoolSig
     = BoolSig (GE E)
     | PrimBoolSig Bool
 
@@ -103,7 +112,7 @@ unBoolSig :: BoolSig -> GE E
 unBoolSig = toGE
 
 -- | A constant boolean value.
-data BoolD   
+data BoolD
     = BoolD (GE E)
     | PrimBoolD Bool
 
@@ -120,7 +129,7 @@ type instance BooleanOf Spec = BoolD
 -- Procedures
 
 -- | Csound's empty tuple.
-newtype Unit = Unit { unUnit :: GE () } 
+newtype Unit = Unit { unUnit :: GE () }
 
 -- | Constructs Csound's empty tuple.
 unit :: Unit
@@ -136,7 +145,7 @@ instance Default Unit where
 -- tables
 
 -- | Tables (or arrays)
-data Tab  
+data Tab
     = Tab (GE E)
     | TabPre PreTab
 
@@ -152,11 +161,11 @@ data PreTab = PreTab
     , preTabArgs    :: TabArgs }
 
 -- Table size.
-data TabSize 
+data TabSize
     -- Size is fixed by the user.
     = SizePlain Int
     -- Size is relative to the renderer settings.
-    | SizeDegree 
+    | SizeDegree
     { hasGuardPoint :: Bool
     , sizeDegree    :: Int      -- is the power of two
     }
@@ -165,9 +174,9 @@ instance Default TabSize where
     def = SizeDegree
         { hasGuardPoint = False
         , sizeDegree = 0 }
-    
+
 -- Table arguments can be
-data TabArgs 
+data TabArgs
     -- absolute
     = ArgsPlain (Reader Int [Double])
 {-    -- or relative to the table size (used for tables that implement interpolation)
@@ -177,7 +186,7 @@ data TabArgs
     | FileAccess String [Double]
 
 renderPreTab :: PreTab -> GE E
-renderPreTab a = (fmap D.int . saveGen) =<< fromPreTab a 
+renderPreTab a = (fmap D.int . saveGen) =<< fromPreTab a
 
 getPreTabUnsafe :: String -> Tab -> PreTab
 getPreTabUnsafe msg x = case x of
@@ -200,20 +209,20 @@ getTabSizeBase tf tab = case preTabGen tab of
 defineTabSize :: Int -> TabSize -> Int
 defineTabSize base x = case x of
        SizePlain n -> n
-       SizeDegree guardPoint degree ->          
+       SizeDegree guardPoint degree ->
                 byGuardPoint guardPoint $
                 byDegree base degree
-    where byGuardPoint guardPoint 
+    where byGuardPoint guardPoint
             | guardPoint = (+ 1)
             | otherwise  = id
-            
-          byDegree zero n = 2 ^ max 0 (zero + n) 
+
+          byDegree zero n = 2 ^ max 0 (zero + n)
 
 defineTabArgs :: Int -> TabArgs -> ([Double], Maybe String)
 defineTabArgs size args = case args of
     ArgsPlain as -> (runReader as size, Nothing)
     FileAccess filename as -> (as, Just filename)
-          
+
 -- | Skips normalization (sets table size to negative value)
 skipNorm :: Tab -> Tab
 skipNorm x = case x of
@@ -247,12 +256,12 @@ updateTabSize phi x = case x of
 ----------------------------------------------------------------------------
 -- Tab of tabs
 
--- | Container list of tables 
+-- | Container list of tables
 data TabList = TabList { unTabList :: GE E }
 
 tabList :: [Tab] -> TabList
 tabList xs = TabList $ saveTabs =<< mapM fromPreTab (getPreTabs xs)
-    where 
+    where
         getPreTabs xs = case xs of
             []            -> []
             Tab    _ : as -> getPreTabs as
@@ -289,7 +298,7 @@ text = fromE . D.str
 -- constants
 
 -- | Querries a total duration of the note. It's equivallent to Csound's @p3@ field.
-idur :: D 
+idur :: D
 idur = fromE $ pn 3
 
 getSampleRate :: D
@@ -337,14 +346,14 @@ class Val a where
 hideGE :: Val a => GE a -> a
 hideGE = fromGE . join . fmap toGE
 
-instance Val Sig    where 
-    fromGE = Sig    
-    
+instance Val Sig    where
+    fromGE = Sig
+
     toGE x = case x of
         Sig a       -> a
         PrimSig d   -> return $ D.double d
 
-instance Val D      where 
+instance Val D      where
     fromGE  = D
     toGE x  = case x of
         D a     -> a
@@ -356,8 +365,8 @@ instance Val Wspec  where { fromGE = Wspec  ; toGE = unWspec}
 
 instance Val TabList where { fromGE = TabList; toGE = unTabList }
 
-instance Val Tab where 
-    fromGE = Tab 
+instance Val Tab where
+    fromGE = Tab
     toGE = unTab
 
 unTab :: Tab -> GE E
@@ -370,13 +379,13 @@ renderTab x = case x of
     TabPre a -> saveGen =<< fromPreTab a
     Tab _    -> error "table should be primitive"
 
-instance Val BoolSig where 
-    fromGE = BoolSig 
+instance Val BoolSig where
+    fromGE = BoolSig
     toGE x = case x of
         BoolSig a -> a
         PrimBoolSig b -> return $ if b then true else false
 
-instance Val BoolD   where 
+instance Val BoolD   where
     fromGE = BoolD
     toGE x = case x of
         BoolD a -> a
@@ -415,7 +424,7 @@ instance Default Sig    where def = 0
 instance Default D      where def = 0
 instance Default Tab    where def = fromE 0
 instance Default Str    where def = text ""
-instance Default Spec   where def = fromE 0 
+instance Default Spec   where def = fromE 0
 
 instance Default TabList where def = fromE 0
 
@@ -439,7 +448,7 @@ sigOn2 numFun exprFun xa xb = case (xa, xb) of
     _                      -> on2 exprFun xa xb
 
 
-instance Num Sig where 
+instance Num Sig where
     { (+) = sigOn2 (+) (+); (*) = sigOn2 (*) (*); negate = sigOn1 negate negate
     ; (-) = sigOn2 (\a b -> a - b) (\a b -> a - b)
     ; fromInteger = PrimSig . fromInteger; abs = sigOn1 abs abs; signum = sigOn1 signum signum }
@@ -454,7 +463,7 @@ dOn2 numFun exprFun xa xb = case (xa, xb) of
     (PrimD a, PrimD b) -> PrimD $ numFun a b
     _                      -> on2 exprFun xa xb
 
-instance Num D where 
+instance Num D where
     { (+) = dOn2 (+) (+); (*) = dOn2 (*) (*); negate = dOn1 negate negate
     ; (-) = dOn2 (\a b -> a - b) (\a b -> a - b)
     ; fromInteger = PrimD . fromInteger; abs = dOn1 abs abs; signum = dOn1 signum signum }
@@ -479,7 +488,7 @@ class IsPrim a where
 
 instance IsPrim Sig where
     type PrimOf Sig = Double
-    
+
     getPrim x = case x of
         PrimSig a -> Just a
         _         -> Nothing
@@ -488,7 +497,7 @@ instance IsPrim Sig where
 
 instance IsPrim D where
     type PrimOf D = Double
-    
+
     getPrim x = case x of
         PrimD a -> Just a
         _         -> Nothing
@@ -497,7 +506,7 @@ instance IsPrim D where
 
 instance IsPrim BoolSig where
     type PrimOf BoolSig = Bool
-    
+
     getPrim x = case x of
         PrimBoolSig a -> Just a
         _         -> Nothing
@@ -506,7 +515,7 @@ instance IsPrim BoolSig where
 
 instance IsPrim BoolD where
     type PrimOf BoolD = Bool
-    
+
     getPrim x = case x of
         PrimBoolD a -> Just a
         _         -> Nothing
@@ -528,8 +537,8 @@ floor' = op1 (\x -> fromIntegral ((floor x) :: Int)) floorE
 int' = op1 (\x -> fromIntegral ((truncate x) :: Int)) intE
 round' = op1 (\x -> fromIntegral ((round x) :: Int)) roundE
 quot' = op2 (\a b -> fromIntegral $ quot ((truncate a) :: Int) ((truncate b):: Int)) quot
-rem' = op2 (\a b -> fromIntegral $ rem ((truncate a) :: Int) ((truncate b):: Int)) rem  
-div' = op2 (\a b -> fromIntegral $ div ((truncate a) :: Int) ((truncate b):: Int)) div   
+rem' = op2 (\a b -> fromIntegral $ rem ((truncate a) :: Int) ((truncate b):: Int)) rem
+div' = op2 (\a b -> fromIntegral $ div ((truncate a) :: Int) ((truncate b):: Int)) div
 mod' = op2 (\a b -> fromIntegral $ mod ((truncate a) :: Int) ((truncate b):: Int)) mod
 
 -------------------------------------------------------------------------------
@@ -539,38 +548,38 @@ boolSigOn1 :: (Bool -> Bool) -> (E -> E) -> BoolSig -> BoolSig
 boolSigOn1 = op1
 
 boolSigOn2 :: (Bool -> Bool -> Bool) -> (E -> E -> E) -> BoolSig -> BoolSig -> BoolSig
-boolSigOn2 = op2 
+boolSigOn2 = op2
 
 boolDOn1 :: (Bool -> Bool) -> (E -> E) -> BoolD -> BoolD
 boolDOn1 = op1
 
 boolDOn2 :: (Bool -> Bool -> Bool) -> (E -> E -> E) -> BoolD -> BoolD -> BoolD
-boolDOn2 = op2 
+boolDOn2 = op2
 
 instance Boolean BoolSig  where { true = PrimBoolSig True;  false = PrimBoolSig False;  notB = boolSigOn1 not notB;  (&&*) = boolSigOn2 (&&) (&&*);  (||*) = boolSigOn2 (||) (||*) }
 instance Boolean BoolD    where { true = PrimBoolD   True;  false = PrimBoolD   False;  notB = boolDOn1   not notB;  (&&*) = boolDOn2   (&&) (&&*);  (||*) = boolDOn2   (||) (||*) }
 
-instance IfB Sig  where 
+instance IfB Sig  where
     ifB x a b = case x of
         PrimBoolSig cond -> if cond then a else b
         _                -> on3 ifB x a b
 
-instance IfB D    where 
+instance IfB D    where
     ifB x a b = case x of
         PrimBoolD cond -> if cond then a else b
         _              -> on3 ifB x a b
 
-instance IfB Tab  where 
+instance IfB Tab  where
     ifB x a b = case x of
         PrimBoolD cond -> if cond then a else b
         _              -> on3 ifB x a b
 
-instance IfB Str  where 
+instance IfB Str  where
     ifB x a b = case x of
         PrimBoolD cond -> if cond then a else b
         _              -> on3 ifB x a b
 
-instance IfB Spec where 
+instance IfB Spec where
     ifB x a b = case x of
         PrimBoolD cond -> if cond then a else b
         _              -> on3 ifB x a b
@@ -599,7 +608,7 @@ whens bodies el = case bodies of
         ifBegin (fst a)
         snd a
         elseIfs as
-        elseBegin 
+        elseBegin
         el
         foldl1 (>>) $ replicate (length bodies) ifEnd
     where elseIfs = mapM_ (\(p, body) -> elseBegin >> ifBegin p >> body)
@@ -631,7 +640,7 @@ whenDs bodies el = case bodies of
         ifBeginD (fst a)
         snd a
         elseIfs as
-        elseBegin 
+        elseBegin
         el
         foldl1 (>>) $ replicate (length bodies) ifEnd
     where elseIfs = mapM_ (\(p, body) -> elseBegin >> ifBeginD p >> body)
@@ -699,7 +708,7 @@ notEqualsTo :: EqB a => a -> a -> BooleanOf a
 notEqualsTo = (/=*)
 
 lessThan :: OrdB a => a -> a -> BooleanOf a
-lessThan = (<*) 
+lessThan = (<*)
 
 greaterThan :: OrdB a => a -> a -> BooleanOf a
 greaterThan = (>*)
@@ -921,3 +930,30 @@ instance Num (Sig2, Sig2, Sig2, Sig2, Sig2, Sig2) where
 instance Fractional (Sig2, Sig2, Sig2, Sig2, Sig2, Sig2) where
     recip (a1, a2, a3, a4, a5, a6) = (recip a1, recip a2, recip a3, recip a4, recip a5, recip a6)
     fromRational n = (fromRational n, fromRational n, fromRational n, fromRational n, fromRational n, fromRational n)
+
+instance Num (Sig2, Sig2, Sig2, Sig2, Sig2, Sig2, Sig2) where
+    (a1, a2, a3, a4, a5, a6, a7) + (b1, b2, b3, b4, b5, b6, b7) = (a1 + b1, a2 + b2, a3 + b3, a4 + b4, a5 + b5, a6 + b6, a7 + b7)
+    (a1, a2, a3, a4, a5, a6, a7) * (b1, b2, b3, b4, b5, b6, b7) = (a1 * b1, a2 * b2, a3 * b3, a4 * b4, a5 * b5, a6 * b6, a7 * b7)
+    negate (a1, a2, a3, a4, a5, a6, a7) = (negate a1, negate a2, negate a3, negate a4, negate a5, negate a6, negate a7)
+
+    fromInteger n = (fromInteger n, fromInteger n, fromInteger n, fromInteger n, fromInteger n, fromInteger n, fromInteger n)
+    signum (a1, a2, a3, a4, a5, a6, a7) = (signum a1, signum a2, signum a3, signum a4, signum a5, signum a6, signum a7)
+    abs (a1, a2, a3, a4, a5, a6, a7) = (abs a1, abs a2, abs a3, abs a4, abs a5, abs a6, abs a7)
+
+instance Fractional (Sig2, Sig2, Sig2, Sig2, Sig2, Sig2, Sig2) where
+    recip (a1, a2, a3, a4, a5, a6, a7) = (recip a1, recip a2, recip a3, recip a4, recip a5, recip a6, recip a7)
+    fromRational n = (fromRational n, fromRational n, fromRational n, fromRational n, fromRational n, fromRational n, fromRational n)
+
+instance Num (Sig2, Sig2, Sig2, Sig2, Sig2, Sig2, Sig2, Sig2) where
+    (a1, a2, a3, a4, a5, a6, a7, a8) + (b1, b2, b3, b4, b5, b6, b7, b8) = (a1 + b1, a2 + b2, a3 + b3, a4 + b4, a5 + b5, a6 + b6, a7 + b7, a8 + b8)
+    (a1, a2, a3, a4, a5, a6, a7, a8) * (b1, b2, b3, b4, b5, b6, b7, b8) = (a1 * b1, a2 * b2, a3 * b3, a4 * b4, a5 * b5, a6 * b6, a7 * b7, a8 * b8)
+    negate (a1, a2, a3, a4, a5, a6, a7, a8) = (negate a1, negate a2, negate a3, negate a4, negate a5, negate a6, negate a7, negate a8)
+
+    fromInteger n = (fromInteger n, fromInteger n, fromInteger n, fromInteger n, fromInteger n, fromInteger n, fromInteger n, fromInteger n)
+    signum (a1, a2, a3, a4, a5, a6, a7, a8) = (signum a1, signum a2, signum a3, signum a4, signum a5, signum a6, signum a7, signum a8)
+    abs (a1, a2, a3, a4, a5, a6, a7, a8) = (abs a1, abs a2, abs a3, abs a4, abs a5, abs a6, abs a7, abs a8)
+
+instance Fractional (Sig2, Sig2, Sig2, Sig2, Sig2, Sig2, Sig2, Sig2) where
+    recip (a1, a2, a3, a4, a5, a6, a7, a8) = (recip a1, recip a2, recip a3, recip a4, recip a5, recip a6, recip a7, recip a8)
+    fromRational n = (fromRational n, fromRational n, fromRational n, fromRational n, fromRational n, fromRational n, fromRational n, fromRational n)
+

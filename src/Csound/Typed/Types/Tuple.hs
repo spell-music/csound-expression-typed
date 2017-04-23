@@ -1,15 +1,15 @@
 {-# OPTIONS_GHC -fno-warn-orphans #-}
-{-# Language 
+{-# Language
         TypeFamilies,
         FlexibleContexts,
         FlexibleInstances #-}
 module Csound.Typed.Types.Tuple(
     -- ** Tuple
-    Tuple(..), TupleMethods, makeTupleMethods, 
+    Tuple(..), TupleMethods, makeTupleMethods,
     fromTuple, toTuple, tupleArity, tupleRates, defTuple, mapTuple,
-    
+
     -- ** Outs
-    Sigs, outArity, 
+    Sigs, outArity,
 
     -- *** Multiple outs
     multiOuts,
@@ -52,7 +52,7 @@ data TupleMethods a = TupleMethods
     , tupleRates_ :: a -> [Rate]
     , defTuple_   :: a }
 
-fromTuple :: Tuple a => a -> GE [E] 
+fromTuple :: Tuple a => a -> GE [E]
 fromTuple = fromTuple_ tupleMethods
 
 toTuple :: Tuple a => GE [E] -> a
@@ -72,9 +72,9 @@ mapTuple f a = toTuple (fmap (fmap f) $ fromTuple a)
 
 -- | Defines instance of type class 'Tuple' for a new type in terms of an already defined one.
 makeTupleMethods :: (Tuple a) => (a -> b) -> (b -> a) -> TupleMethods b
-makeTupleMethods to from = TupleMethods 
+makeTupleMethods to from = TupleMethods
     { fromTuple_  = fromTuple . from
-    , toTuple_    = to . toTuple 
+    , toTuple_    = to . toTuple
     , tupleArity_ = const $ tupleArity $ proxy to
     , tupleRates_ = tupleRates . from
     , defTuple_   = to defTuple }
@@ -84,7 +84,7 @@ makeTupleMethods to from = TupleMethods
 -- Tuple instances
 
 primTupleMethods :: (Val a, Default a) => Rate -> TupleMethods a
-primTupleMethods rate = TupleMethods 
+primTupleMethods rate = TupleMethods
         { fromTuple_ = fmap return . toGE
         , toTuple_ = fromGE . fmap head
         , tupleArity_ = const 1
@@ -92,14 +92,14 @@ primTupleMethods rate = TupleMethods
         , defTuple_   = def }
 
 instance Tuple Unit where
-    tupleMethods = TupleMethods 
+    tupleMethods = TupleMethods
         { fromTuple_  = \x -> unUnit x >> (return [])
         , toTuple_    = \es -> Unit $ es >> return ()
         , tupleArity_ = const 0
         , tupleRates_ = const []
         , defTuple_   = Unit $ return () }
 
-instance Tuple Sig   where tupleMethods = primTupleMethods Ar        
+instance Tuple Sig   where tupleMethods = primTupleMethods Ar
 instance Tuple D     where tupleMethods = primTupleMethods Kr
 instance Tuple Tab   where tupleMethods = primTupleMethods Kr
 instance Tuple Str   where tupleMethods = primTupleMethods Sr
@@ -107,16 +107,16 @@ instance Tuple Spec  where tupleMethods = primTupleMethods Fr
 
 instance Tuple TabList where tupleMethods = primTupleMethods Kr
 
-instance (Tuple a, Tuple b) => Tuple (a, b) where    
+instance (Tuple a, Tuple b) => Tuple (a, b) where
     tupleMethods = TupleMethods fromTuple' toTuple' tupleArity' tupleRates' defTuple'
-        where 
+        where
             fromTuple' (a, b) = liftA2 (++) (fromTuple a) (fromTuple b)
             tupleArity' x = let (a, b) = proxy x in tupleArity a + tupleArity b
                 where proxy :: (a, b) -> (a, b)
-                      proxy = const (undefined, undefined)  
+                      proxy = const (undefined, undefined)
             toTuple' xs = (a, b)
                 where a = toTuple $ fmap (take (tupleArity a)) xs
-                      xsb = fmap (drop (tupleArity a)) xs  
+                      xsb = fmap (drop (tupleArity a)) xs
                       b = toTuple $ fmap (take (tupleArity b)) xsb
 
             tupleRates' (a, b) = tupleRates a ++ tupleRates b
@@ -142,7 +142,7 @@ ar4 :: (Sig, Sig, Sig, Sig) -> (Sig, Sig, Sig, Sig)
 ar6 :: (Sig, Sig, Sig, Sig, Sig, Sig) -> (Sig, Sig, Sig, Sig, Sig, Sig)
 ar8 :: (Sig, Sig, Sig, Sig, Sig, Sig, Sig, Sig) -> (Sig, Sig, Sig, Sig, Sig, Sig, Sig, Sig)
 
-ar1 = id;   ar2 = id;   ar4 = id;   ar6 = id;   ar8 = id   
+ar1 = id;   ar2 = id;   ar4 = id;   ar6 = id;   ar8 = id
 
 ---------------------------------------------------------------------------------
 -- out instances
@@ -164,6 +164,8 @@ instance Sigs (Sig2, Sig2, Sig2)
 instance Sigs (Sig2, Sig2, Sig2, Sig2)
 instance Sigs (Sig2, Sig2, Sig2, Sig2, Sig2)
 instance Sigs (Sig2, Sig2, Sig2, Sig2, Sig2, Sig2)
+instance Sigs (Sig2, Sig2, Sig2, Sig2, Sig2, Sig2, Sig2)
+instance Sigs (Sig2, Sig2, Sig2, Sig2, Sig2, Sig2, Sig2, Sig2)
 
 instance Sigs (Sig8, Sig8)
 instance Sigs (Sig8, Sig8, Sig8, Sig8)
@@ -205,10 +207,10 @@ argArity = tupleArity
 toNote :: Arg a => a -> GE [E]
 toNote a = zipWithM phi (tupleRates a) =<< fromTuple a
     where
-        phi rate x = case rate of            
+        phi rate x = case rate of
             Sr -> saveStr $ getStringUnsafe x
             _  -> return x
-            
+
         getStringUnsafe x = case getPrimUnsafe x of
             PrimString y    -> y
             _               -> error "Arg(Str):getStringUnsafe value is not a string"
@@ -229,7 +231,7 @@ fromBoolTuple = toTuple . unBoolTuple
 type instance BooleanOf BoolTuple = BoolSig
 
 instance IfB BoolTuple where
-    ifB mp (BoolTuple mas) (BoolTuple mbs) = BoolTuple $ 
+    ifB mp (BoolTuple mas) (BoolTuple mbs) = BoolTuple $
         liftA3 (\p as bs -> zipWith (ifB p) as bs) (toGE mp) mas mbs
 
 -- | @ifB@ for tuples of csound values.
@@ -257,7 +259,7 @@ fromBoolArg = toTuple . unBoolArg
 type instance BooleanOf BoolArg = BoolD
 
 instance IfB BoolArg where
-    ifB mp (BoolArg mas) (BoolArg mbs) = BoolArg $ 
+    ifB mp (BoolArg mas) (BoolArg mbs) = BoolArg $
         liftA3 (\p as bs -> zipWith (ifB p) as bs) (toGE mp) mas mbs
 
 -- | @ifB@ for constants.
@@ -281,11 +283,11 @@ pureTuple a = res
 
 dirtyTuple :: Tuple a => GE (MultiOut [E]) -> SE a
 dirtyTuple a = res
-    where 
-        res = fmap (toTuple . return) $ SE 
+    where
+        res = fmap (toTuple . return) $ SE
                 $ mapM depT =<< (lift $ fmap ($ (tupleArity $ proxy res)) a)
 
         proxy :: SE a -> a
         proxy = const undefined
-     
+
 
