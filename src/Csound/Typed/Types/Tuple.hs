@@ -9,7 +9,7 @@ module Csound.Typed.Types.Tuple(
     fromTuple, toTuple, tupleArity, tupleRates, defTuple, mapTuple,
 
     -- ** Outs
-    Sigs, outArity,
+    Sigs, outArity, Sig2s,
 
     -- *** Multiple outs
     multiOuts,
@@ -33,6 +33,8 @@ import Control.Monad
 import Control.Monad.Trans.Class
 import Data.Default
 import Data.Boolean
+
+import Data.NumInstances.Tuple
 
 import Csound.Dynamic
 import Csound.Typed.Types.Prim
@@ -148,27 +150,23 @@ ar1 = id;   ar2 = id;   ar4 = id;   ar6 = id;   ar8 = id
 -- out instances
 
 -- | The tuples of signals.
-class (Tuple a, Num a, Fractional a, SigSpace a, BindSig a,  SigSpace2 a, BindSig2 a) => Sigs a where
+class (Tuple a, Num a, Fractional a, SigSpace a, BindSig a) => Sigs a where
+class (Sigs a, SigSpace2 a, BindSig2 a) => Sig2s a where
 
 instance Sigs Sig
-instance Sigs Sig2
-instance Sigs Sig3
-instance Sigs Sig4
-instance Sigs Sig5
-instance Sigs Sig6
-instance Sigs Sig7
-instance Sigs Sig8
+instance (Sigs a1, Sigs a2) => Sigs (a1, a2)
+instance (Sigs a1, Sigs a2, Sigs a3) => Sigs (a1, a2, a3)
+instance (Sigs a1, Sigs a2, Sigs a3, Sigs a4) => Sigs (a1, a2, a3, a4)
+instance (Sigs a1, Sigs a2, Sigs a3, Sigs a4, Sigs a5) => Sigs (a1, a2, a3, a4, a5)
+instance (Sigs a1, Sigs a2, Sigs a3, Sigs a4, Sigs a5, Sigs a6) => Sigs (a1, a2, a3, a4, a5, a6)
+instance (Sigs a1, Sigs a2, Sigs a3, Sigs a4, Sigs a5, Sigs a6, Sigs a7) => Sigs (a1, a2, a3, a4, a5, a6, a7)
+instance (Sigs a1, Sigs a2, Sigs a3, Sigs a4, Sigs a5, Sigs a6, Sigs a7, Sigs a8) => Sigs (a1, a2, a3, a4, a5, a6, a7, a8)
 
-instance Sigs (Sig2, Sig2)
-instance Sigs (Sig2, Sig2, Sig2)
-instance Sigs (Sig2, Sig2, Sig2, Sig2)
-instance Sigs (Sig2, Sig2, Sig2, Sig2, Sig2)
-instance Sigs (Sig2, Sig2, Sig2, Sig2, Sig2, Sig2)
-instance Sigs (Sig2, Sig2, Sig2, Sig2, Sig2, Sig2, Sig2)
-instance Sigs (Sig2, Sig2, Sig2, Sig2, Sig2, Sig2, Sig2, Sig2)
-
-instance Sigs (Sig8, Sig8)
-instance Sigs (Sig8, Sig8, Sig8, Sig8)
+instance Sig2s Sig
+instance Sig2s Sig2
+instance Sig2s Sig4
+instance Sig2s Sig6
+instance Sig2s Sig8
 
 outArity :: Tuple a => SE a -> Int
 outArity = tupleArity . proxy
@@ -289,5 +287,3 @@ dirtyTuple a = res
 
         proxy :: SE a -> a
         proxy = const undefined
-
-

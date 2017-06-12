@@ -17,8 +17,8 @@ module Csound.Typed.GlobalState.Elements(
     -- * Midi
     MidiType(..), Channel, MidiMap, MidiKey(..), saveMidiInstr,
     -- * Global variables
-    Globals(..), newPersistentGlobalVar, newClearableGlobalVar,  
-    newPersistentGloabalArrVar,   
+    Globals(..), newPersistentGlobalVar, newClearableGlobalVar,
+    newPersistentGloabalArrVar,
     renderGlobals,
     -- * Instruments
     Instrs(..), saveInstr, getInstrIds, -- newInstrId, saveInstrById, saveInstr, CacheName, makeCacheName, saveCachedInstr, getInstrIds,
@@ -36,12 +36,12 @@ module Csound.Typed.GlobalState.Elements(
     -- * Udo plugins
     UdoPlugin, addUdoPlugin, getUdoPluginNames,
     tabQueuePlugin, tabQueue2Plugin,
-    zdfPlugin, solinaChorusPlugin, audaciouseqPlugin, adsr140Plugin, 
+    zdfPlugin, solinaChorusPlugin, audaciouseqPlugin, adsr140Plugin,
     diodePlugin, korg35Plugin, zeroDelayConvolutionPlugin,
     pitchShifterDelayPlugin,
     analogDelayPlugin, distortionPlugin, envelopeFolollowerPlugin, flangerPlugin, freqShifterPlugin,
-    loFiPlugin, panTremPlugin, monoTremPlugin, phaserPlugin, pitchShifterPlugin, reversePlugin, 
-    ringModulatorPlugin, stChorusPlugin, stereoPingPongDelayPlugin,    
+    loFiPlugin, panTremPlugin, monoTremPlugin, phaserPlugin, pitchShifterPlugin, reversePlugin,
+    ringModulatorPlugin, stChorusPlugin, stereoPingPongDelayPlugin,
     delay1kPlugin,
 ) where
 
@@ -64,26 +64,26 @@ import Csound.Typed.GlobalState.Opcodes
 
 data IdMap a = IdMap
     { idMapContent :: M.Map a Int
-    , idMapNewId   :: Int 
+    , idMapNewId   :: Int
     } deriving (Eq, Ord)
 
-instance Default (IdMap a) where   
+instance Default (IdMap a) where
     def = IdMap def 1
 
 saveId :: Ord a => a -> State (IdMap a) Int
-saveId a = state $ \s -> 
+saveId a = state $ \s ->
     case M.lookup a (idMapContent s) of
-        Nothing -> 
+        Nothing ->
             let newId = idMapNewId s
                 s1    = s{ idMapContent = M.insert a newId (idMapContent s)
-                         , idMapNewId = succ newId }    
+                         , idMapNewId = succ newId }
             in  (newId, s1)
         Just n  -> (n, s)
 
 newIdMapId :: State (IdMap a) Int
-newIdMapId = state $ \s -> 
+newIdMapId = state $ \s ->
     let newId = idMapNewId s
-        s1 = s { idMapNewId = succ newId } 
+        s1 = s { idMapNewId = succ newId }
     in  (newId, s1)
 
 -- gens
@@ -98,19 +98,19 @@ newTabOfGens = (saveGenId . intTab =<<) . mapM saveGenId
     where intTab ns = Gen (length ns) (IntGenId (-2)) (fmap fromIntegral ns) Nothing
 
 saveGenId :: Ord a => a -> State (IdMap a) Int
-saveGenId a = state $ \s -> 
+saveGenId a = state $ \s ->
     case M.lookup a (idMapContent s) of
-        Nothing -> 
+        Nothing ->
             let newId = nextReadOnlyTableId $ idMapNewId s
                 s1    = s{ idMapContent = M.insert a newId (idMapContent s)
-                         , idMapNewId = nextReadOnlyTableId newId }    
+                         , idMapNewId = nextReadOnlyTableId newId }
             in  (newId, s1)
         Just n  -> (n, s)
 
 newGenId :: State GenMap Int
-newGenId = state $ \s -> 
+newGenId = state $ \s ->
     let newId = idMapNewId s
-        s1 = s { idMapNewId = nextReadOnlyTableId newId } 
+        s1 = s { idMapNewId = nextReadOnlyTableId newId }
     in  (newId, s1)
 
 -- writeable gens
@@ -121,24 +121,24 @@ newWriteGen :: Gen -> State WriteGenMap E
 newWriteGen = fmap int . saveWriteGenId
 
 newWriteTab :: Int -> State WriteGenMap E
-newWriteTab = newWriteGen . fromSize 
+newWriteTab = newWriteGen . fromSize
     where fromSize n = Gen n (IntGenId 2) (replicate n 0) Nothing
 
 saveWriteGenId :: Gen -> State WriteGenMap Int
 saveWriteGenId a = state $ \s -> case s of
     []         -> (initId, [(initId, a)])
-    (i,_):_    ->   let newId = nextWriteTableId i 
+    (i,_):_    ->   let newId = nextWriteTableId i
                     in (newId, (newId, a) : s)
-    where 
+    where
         initId = tableWriteStep
 
 tableWriteStep :: Int
 tableWriteStep = 10
 
 nextReadOnlyTableId :: Int -> Int
-nextReadOnlyTableId x 
+nextReadOnlyTableId x
     | y `mod` tableWriteStep == 0 = y + 1
-    | otherwise                   = y  
+    | otherwise                   = y
     where y = x + 1
 
 nextWriteTableId :: Int -> Int
@@ -158,14 +158,14 @@ nextGlobalGenCounter = state $ \s -> (s, s + 1)
 
 -- sf
 
-data SfFluid = SfFluid 
+data SfFluid = SfFluid
     { sfId   :: Int
     , sfVars :: [Var] }
 
 data SfSpec = SfSpec
     { sfName    :: String
     , sfBank    :: Int
-    , sfProgram :: Int 
+    , sfProgram :: Int
     } deriving (Eq, Ord, Show)
 
 type SfMap = IdMap SfSpec
@@ -183,14 +183,14 @@ sfInstrName :: Int -> String
 sfInstrName n = "i_Sf_instr_" ++ show n
 
 renderSf :: Monad m => SfSpec -> Int -> DepT m ()
-renderSf (SfSpec name bank prog) n = verbatim $ 
+renderSf (SfSpec name bank prog) n = verbatim $
     engineStr ++ "\n" ++
     loadStr   ++ "\n" ++
     selectProgStr ++ "\n"
-    where 
+    where
         engineStr = engineName ++ " fluidEngine"
         loadStr   = insName ++ " fluidLoad \"" ++ name ++ "\", " ++  engineName ++ ", 1"
-        selectProgStr = "fluidProgramSelect " ++ engineName ++ ", 1, " ++ insName 
+        selectProgStr = "fluidProgramSelect " ++ engineName ++ ", 1, " ++ insName
             ++ ", " ++ show bank ++ ", " ++ show prog
 
         engineName = sfEngineName n
@@ -211,7 +211,7 @@ bandLimitedIdToExpr x = case x of
 
 bandLimitedVar userId = Var GlobalVar Ir ("BandLim" ++ show userId)
 
-data BandLimitedMap = BandLimitedMap 
+data BandLimitedMap = BandLimitedMap
     { simpleBandLimitedMap :: M.Map BandLimited BandLimitedId
     , vcoInitMap     :: GenMap
     } deriving (Eq, Ord)
@@ -229,27 +229,27 @@ saveBandLimited x = case x of
     UserGen gen     -> userGen gen
     where
         simpleWave writeId readId = state $ \blMap ->
-            if (M.member x (simpleBandLimitedMap blMap)) 
+            if (M.member x (simpleBandLimitedMap blMap))
                 then (SimpleBandLimitedWave readId, blMap)
                 else (SimpleBandLimitedWave readId, blMap { simpleBandLimitedMap = M.insert x (SimpleBandLimitedWave writeId) (simpleBandLimitedMap blMap) })
 
-        userGen gen = state $ \blMap -> 
+        userGen gen = state $ \blMap ->
             let genMap = vcoInitMap blMap
                 (newId, genMap1) = runState (saveId gen) genMap
-                blMap1 = blMap { vcoInitMap = genMap1 }                    
+                blMap1 = blMap { vcoInitMap = genMap1 }
             in  (UserBandLimitedWave newId, blMap1)
 
 
 renderBandLimited :: Monad m => GenMap -> BandLimitedMap -> DepT m ()
-renderBandLimited genMap blMap = 
-    if isEmptyBlMap blMap 
+renderBandLimited genMap blMap =
+    if isEmptyBlMap blMap
         then return ()
         else render (idMapNewId genMap) (M.toList $ idMapContent $ vcoInitMap blMap) (M.toList $ simpleBandLimitedMap blMap)
-    where 
+    where
         isEmptyBlMap m = (M.null $ simpleBandLimitedMap m) && (M.null $ idMapContent $ vcoInitMap m)
 
         render lastGenId gens vcos = do
-            writeVar freeVcoVar $ int (lastGenId + length gens + 100)            
+            writeVar freeVcoVar $ int (lastGenId + length gens + 100)
             mapM_ (renderGen lastGenId) gens
             mapM_ renderVco vcos
 
@@ -257,12 +257,12 @@ renderBandLimited genMap blMap =
         renderGen lastGenId (gen, genId) = do
             renderFtgen lastGenId (gen, genId)
             renderVcoGen genId
-            renderVcoVarAssignment genId            
+            renderVcoVarAssignment genId
 
         freeVcoVar = Var GlobalVar Ir "free_vco"
-        ftVar n = Var GlobalVar Ir $ "vco_table_" ++ show n     
+        ftVar n = Var GlobalVar Ir $ "vco_table_" ++ show n
 
-        renderFtgen lastGenId (g, n) = writeVar (ftVar n) $ ftgen (int $ lastGenId + n) g       
+        renderFtgen lastGenId (g, n) = writeVar (ftVar n) $ ftgen (int $ lastGenId + n) g
 
         renderVcoGen ftId  = do
             ft   <- readVar (ftVar ftId)
@@ -278,16 +278,16 @@ renderBandLimited genMap blMap =
                 writeVar freeVcoVar $ vco2init [int waveId, free]
             UserBandLimitedWave   _      -> return ()
 
-       
+
 {-
             renderFirstVco n (head vcos)
-            mapM_ renderTailVco (tail vcos)        
+            mapM_ renderTailVco (tail vcos)
 
         getUserGens as = phi =<< as
             where phi (x, gId) = case x of
                         UserGen g   -> [(g, gId)]
                         _           -> []
-       
+
         renderGen (g, n) = toDummy $ ftgen (int n) g
 
         renderFirstVco n x = renderVco (int n) x
@@ -300,7 +300,7 @@ renderBandLimited genMap blMap =
         vcoVar = dummyVar
         toVcoVar = toDummy
 
-        dummyVar = Var LocalVar Ir "ft" 
+        dummyVar = Var LocalVar Ir "ft"
 
         toDummy = writeVar dummyVar
 -}
@@ -318,7 +318,7 @@ readHardSyncBandLimited msmoothShape mphase n slaveCps masterCps = smoothWave * 
             Nothing    -> 1
             Just shape -> readShape shape phasorMaster masterCps
 
-        readShape shapeId phasor freq = tableikt phasor (vco2ft freq (bandLimitedIdToExpr shapeId))            
+        readShape shapeId phasor freq = tableikt phasor (vco2ft freq (bandLimitedIdToExpr shapeId))
 
 ----------------------------------------------------------
 -- Midi
@@ -342,11 +342,11 @@ data Globals = Globals
     { globalsNewId  :: Int
     , globalsVars   :: [AllocVar] }
 
-data AllocVar = AllocVar 
-        { allocVarType     :: GlobalVarType 
+data AllocVar = AllocVar
+        { allocVarType     :: GlobalVarType
         , allocVar         :: Var
         , allocVarInit     :: E }
-    | AllocArrVar 
+    | AllocArrVar
         { allocArrVar :: Var
         , allocArrVarSizes :: [E] }
 
@@ -359,8 +359,8 @@ instance Default Globals where
 
 newGlobalVar :: GlobalVarType -> Rate -> E -> State Globals Var
 newGlobalVar ty rate initVal = state $ \s ->
-    let newId = globalsNewId s        
-        var   = Var GlobalVar rate ('g' : show newId) 
+    let newId = globalsNewId s
+        var   = Var GlobalVar rate ('g' : show newId)
         s1    = s { globalsNewId = succ newId
                   , globalsVars  = AllocVar ty var initVal : globalsVars s }
     in  (var, s1)
@@ -374,8 +374,8 @@ newClearableGlobalVar = newGlobalVar ClearableGlobalVar
 newPersistentGloabalArrVar :: Rate -> [E] -> State Globals Var
 newPersistentGloabalArrVar rate sizes = state $ \s ->
     let newId = globalsNewId s
-        var   = Var GlobalVar rate ('g' : show newId) 
-        s1    = s { globalsNewId = succ newId 
+        var   = Var GlobalVar rate ('g' : show newId)
+        s1    = s { globalsNewId = succ newId
                   , globalsVars  = AllocArrVar var sizes : globalsVars s }
     in (var, s1)
 
@@ -388,7 +388,7 @@ renderGlobals a = (initAll, clear)
         gs = globalsVars a
 
         initAlloc x = case x of
-            AllocVar _  var init  -> initVar var init 
+            AllocVar _  var init  -> initVar var init
             AllocArrVar var sizes -> initArr var sizes
 
         clearAlloc x = case x of
@@ -419,11 +419,11 @@ getInstrIds = fmap fst . instrsContent
 
 
 saveInstr :: InstrBody -> State Instrs InstrId
-saveInstr body = state $ \s -> 
+saveInstr body = state $ \s ->
     let h = hash body
     in  case IM.lookup h $ instrsCache s of
             Just  n -> (n, s)
-            Nothing -> 
+            Nothing ->
                 let newId = instrsNewId s
                     s1    = s { instrsCache   = IM.insert h (intInstrId newId) $ instrsCache s
                               , instrsNewId   = succ newId
@@ -431,11 +431,11 @@ saveInstr body = state $ \s ->
                 in  (intInstrId newId, s1)
 
 {-
-saveCachedInstr :: InstrBody -> State Instrs InstrId 
-saveCachedInstr name body = state $ \s -> 
+saveCachedInstr :: InstrBody -> State Instrs InstrId
+saveCachedInstr name body = state $ \s ->
     case IM.lookup name $ instrsCache s of
         Just n  -> (n, s)
-        Nothing -> 
+        Nothing ->
             let newId   = instrsNewId s
                 s1      = s { instrsCache   = IM.insert name (intInstrId newId) $ instrsCache s
                             , instrsNewId   = succ newId
@@ -445,11 +445,11 @@ saveCachedInstr name body = state $ \s ->
 newInstrId :: State Instrs InstrId
 newInstrId = state $ \s ->
     let newId   = instrsNewId s
-        s1      = s { instrsNewId = succ newId }    
+        s1      = s { instrsNewId = succ newId }
     in  (intInstrId newId, s1)
 
 saveInstrById :: InstrId -> InstrBody -> State Instrs ()
-saveInstrById instrId body = state $ \s -> 
+saveInstrById instrId body = state $ \s ->
     let s1 = s { instrsContent = (instrId, body) : instrsContent s }
     in  ((), s1)
 
@@ -477,20 +477,10 @@ saveNamedInstr name body = state $ \(NamedInstrs xs) -> ((), NamedInstrs $ (name
 getIn :: Monad m => Int -> DepT m [E]
 getIn arity
     | arity == 0    = return []
-    | otherwise     = ($ arity ) $ mdepT $ mopcs name (replicate arity Ar, []) []
-    where
-        name
-            | arity == 1 = "in"
-            | arity == 2 = "ins"
-            | arity == 4 = "inq"
-            | arity == 6 = "inh"
-            | arity == 8 = "ino"
-            | arity == 16 = "inx"
-            | arity == 32 = "in32"
-            | otherwise = "ins"
+    | otherwise     = ($ arity ) $ mdepT $ mopcs "inch" (replicate arity Ar, replicate arity Kr) (fmap int [1 .. arity])
 
 sendOut :: Monad m => Int -> [E] -> DepT m ()
-sendOut arity sigs 
+sendOut arity sigs
     | arity == 0    = return ()
     | otherwise     = do
         vars <- newLocalVars (replicate arity Ar) (return $ replicate arity 0)
@@ -498,7 +488,7 @@ sendOut arity sigs
         vals <- mapM readVar vars
         depT_ $ opcsNoInlineArgs name [(Xr, replicate arity Ar)] vals
     where
-        name            
+        name
             | arity == 1 = "out"
             | arity == 2 = "outs"
             | arity == 4 = "outq"
@@ -537,7 +527,7 @@ getOscPortVar port = state $ \st@(OscListenPorts m, globals) -> case IM.lookup p
         Just a  -> (a, st)
         Nothing -> onNothing port m globals
     where
-        onNothing port m globals = (var, (OscListenPorts m1, newGlobals)) 
+        onNothing port m globals = (var, (OscListenPorts m1, newGlobals))
             where
                 (var, newGlobals) = runState (allocOscPortVar port) globals
                 m1 = IM.insert port var m
@@ -551,17 +541,17 @@ allocOscPortVar oscPort = newGlobalVar PersistentGlobalVar Ir $ oscInit (fromInt
 
 type MacrosInits = M.Map String MacrosInit
 
-data MacrosInit 
+data MacrosInit
     = MacrosInitDouble { macrosInitName :: String, macrosInitValueDouble :: Double }
     | MacrosInitString { macrosInitName :: String, macrosInitValueString :: String }
     | MacrosInitInt    { macrosInitName :: String, macrosInitValueInt    :: Int  }
     deriving (Show, Eq, Ord)
 
 initMacros :: MacrosInit -> State MacrosInits ()
-initMacros macrosInit = modify $ \xs -> M.insert (macrosInitName macrosInit)  macrosInit xs 
+initMacros macrosInit = modify $ \xs -> M.insert (macrosInitName macrosInit)  macrosInit xs
 
 --------------------------------------------------------
--- Udo plugins 
+-- Udo plugins
 
 newtype UdoPlugin  = UdoPlugin { unUdoPlugin :: String }
 

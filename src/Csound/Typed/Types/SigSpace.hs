@@ -105,65 +105,29 @@ cfds = genCfds 0 cfd
 instance SigSpace Sig   where  mapSig = id
 instance BindSig  Sig   where  bindSig = id
 
-instance SigSpace (Sig, Sig) where  mapSig  f (a1, a2) = (f a1, f a2)
-instance BindSig  (Sig, Sig) where  bindSig f (a1, a2) = (,) <$> f a1 <*> f a2
+instance (SigSpace a1, SigSpace a2) => SigSpace (a1, a2) where  mapSig  f (a1, a2) = (mapSig f a1, mapSig f a2)
+instance (BindSig a1, BindSig a2) => BindSig  (a1, a2) where  bindSig f (a1, a2) = (,) <$> bindSig f a1 <*> bindSig f a2
 
-instance SigSpace (Sig, Sig, Sig) where mapSig  f (a1, a2, a3) = (f a1, f a2, f a3)
-instance BindSig  (Sig, Sig, Sig) where bindSig f (a1, a2, a3) = (,,) <$> f a1 <*> f a2 <*> f a3
+instance (SigSpace a1, SigSpace a2, SigSpace a3) => SigSpace (a1, a2, a3) where mapSig  f (a1, a2, a3) = (mapSig f a1, mapSig f a2, mapSig f a3)
+instance (BindSig a1, BindSig a2, BindSig a3) => BindSig  (a1, a2, a3) where bindSig f (a1, a2, a3) = (,,) <$> bindSig f a1 <*> bindSig f a2 <*> bindSig f a3
 
-instance SigSpace (Sig, Sig, Sig, Sig) where mapSig  f (a1, a2, a3, a4) = (f a1, f a2, f a3, f a4)
-instance BindSig  (Sig, Sig, Sig, Sig) where bindSig f (a1, a2, a3, a4) = (,,,) <$> f a1 <*> f a2 <*> f a3 <*> f a4
+instance (SigSpace a1, SigSpace a2, SigSpace a3, SigSpace a4) => SigSpace (a1, a2, a3, a4) where mapSig  f (a1, a2, a3, a4) = (mapSig f a1, mapSig f a2, mapSig f a3, mapSig f a4)
+instance (BindSig a1, BindSig a2, BindSig a3, BindSig a4) => BindSig  (a1, a2, a3, a4) where bindSig f (a1, a2, a3, a4) = (,,,) <$> bindSig f a1 <*> bindSig f a2 <*> bindSig f a3 <*> bindSig f a4
 
-instance SigSpace (Sig, Sig, Sig, Sig, Sig) where mapSig  f (a1, a2, a3, a4, a5) = (f a1, f a2, f a3, f a4, f a5)
-instance BindSig  (Sig, Sig, Sig, Sig, Sig) where bindSig f (a1, a2, a3, a4, a5) = (,,,,) <$> f a1 <*> f a2 <*> f a3 <*> f a4 <*> f a5
+instance (SigSpace a1, SigSpace a2, SigSpace a3, SigSpace a4, SigSpace a5) => SigSpace (a1, a2, a3, a4, a5) where mapSig  f (a1, a2, a3, a4, a5) = (mapSig f a1, mapSig f a2, mapSig f a3, mapSig f a4, mapSig f a5)
+instance (BindSig a1, BindSig a2, BindSig a3, BindSig a4, BindSig a5) => BindSig  (a1, a2, a3, a4, a5) where bindSig f (a1, a2, a3, a4, a5) = (,,,,) <$> bindSig f a1 <*> bindSig f a2 <*> bindSig f a3 <*> bindSig f a4 <*> bindSig f a5
 
-instance SigSpace (Sig, Sig, Sig, Sig, Sig, Sig) where mapSig  f (a1, a2, a3, a4, a5, a6) = (f a1, f a2, f a3, f a4, f a5, f a6)
-instance BindSig  (Sig, Sig, Sig, Sig, Sig, Sig) where bindSig f (a1, a2, a3, a4, a5, a6) = (,,,,,) <$> f a1 <*> f a2 <*> f a3 <*> f a4 <*> f a5 <*> f a6
+instance (SigSpace a1, SigSpace a2, SigSpace a3, SigSpace a4, SigSpace a5, SigSpace a6) => SigSpace (a1, a2, a3, a4, a5, a6) where mapSig  f (a1, a2, a3, a4, a5, a6) = (mapSig f a1, mapSig f a2, mapSig f a3, mapSig f a4, mapSig f a5, mapSig f a6)
+instance (BindSig a1, BindSig a2, BindSig a3, BindSig a4, BindSig a5, BindSig a6) => BindSig  (a1, a2, a3, a4, a5, a6) where bindSig f (a1, a2, a3, a4, a5, a6) = (,,,,,) <$> bindSig f a1 <*> bindSig f a2 <*> bindSig f a3 <*> bindSig f a4 <*> bindSig f a5 <*> bindSig f a6
 
-instance SigSpace (Sig, Sig, Sig, Sig, Sig, Sig, Sig) where mapSig  f (a1, a2, a3, a4, a5, a6, a7) = (f a1, f a2, f a3, f a4, f a5, f a6, f a7)
-instance BindSig  (Sig, Sig, Sig, Sig, Sig, Sig, Sig) where bindSig f (a1, a2, a3, a4, a5, a6, a7) = (,,,,,,) <$> f a1 <*> f a2 <*> f a3 <*> f a4 <*> f a5 <*> f a6 <*> f a7
+instance (SigSpace a1, SigSpace a2, SigSpace a3, SigSpace a4, SigSpace a5, SigSpace a6, SigSpace a7) => SigSpace (a1, a2, a3, a4, a5, a6, a7) where mapSig  f (a1, a2, a3, a4, a5, a6, a7) = (mapSig f a1, mapSig f a2, mapSig f a3, mapSig f a4, mapSig f a5, mapSig f a6, mapSig f a7)
+instance (BindSig a1, BindSig a2, BindSig a3, BindSig a4, BindSig a5, BindSig a6, BindSig a7) => BindSig  (a1, a2, a3, a4, a5, a6, a7) where bindSig f (a1, a2, a3, a4, a5, a6, a7) = (,,,,,,) <$> bindSig f a1 <*> bindSig f a2 <*> bindSig f a3 <*> bindSig f a4 <*> bindSig f a5 <*> bindSig f a6 <*> bindSig f a7
 
-instance SigSpace (Sig, Sig, Sig, Sig, Sig, Sig, Sig, Sig) where mapSig  f (a1, a2, a3, a4, a5, a6, a7, a8) = (f a1, f a2, f a3, f a4, f a5, f a6, f a7, f a8)
-instance BindSig  (Sig, Sig, Sig, Sig, Sig, Sig, Sig, Sig) where bindSig f (a1, a2, a3, a4, a5, a6, a7, a8) = (,,,,,,,) <$> f a1 <*> f a2 <*> f a3 <*> f a4 <*> f a5 <*> f a6 <*> f a7 <*> f a8
+instance (SigSpace a1, SigSpace a2, SigSpace a3, SigSpace a4, SigSpace a5, SigSpace a6, SigSpace a7, SigSpace a8) => SigSpace (a1, a2, a3, a4, a5, a6, a7, a8) where mapSig  f (a1, a2, a3, a4, a5, a6, a7, a8) = (mapSig f a1, mapSig f a2, mapSig f a3, mapSig f a4, mapSig f a5, mapSig f a6, mapSig f a7, mapSig f a8)
+instance (BindSig a1, BindSig a2, BindSig a3, BindSig a4, BindSig a5, BindSig a6, BindSig a7, BindSig a8) => BindSig  (a1, a2, a3, a4, a5, a6, a7, a8) where bindSig f (a1, a2, a3, a4, a5, a6, a7, a8) = (,,,,,,,) <$> bindSig f a1 <*> bindSig f a2 <*> bindSig f a3 <*> bindSig f a4 <*> bindSig f a5 <*> bindSig f a6 <*> bindSig f a7 <*> bindSig f a8
 
-instance SigSpace (Sig2, Sig2) where  mapSig  f (a1, a2) = (mapSig f a1, mapSig f a2)
-instance BindSig  (Sig2, Sig2) where  bindSig f (a1, a2) = (,) <$> bindSig f a1 <*> bindSig f a2
-
-instance SigSpace (Sig2, Sig2, Sig2) where  mapSig  f (a1, a2, a3) = (mapSig f a1, mapSig f a2, mapSig f a3)
-instance BindSig  (Sig2, Sig2, Sig2) where  bindSig f (a1, a2, a3) = (,,) <$> bindSig f a1 <*> bindSig f a2 <*> bindSig f a3
-
-instance SigSpace (Sig2, Sig2, Sig2, Sig2) where  mapSig  f (a1, a2, a3, a4) = (mapSig f a1, mapSig f a2, mapSig f a3, mapSig f a4)
-instance BindSig  (Sig2, Sig2, Sig2, Sig2) where  bindSig f (a1, a2, a3, a4) = (,,,) <$> bindSig f a1 <*> bindSig f a2 <*> bindSig f a3 <*> bindSig f a4
-
-instance SigSpace (Sig2, Sig2, Sig2, Sig2, Sig2) where  mapSig  f (a1, a2, a3, a4, a5) = (mapSig f a1, mapSig f a2, mapSig f a3, mapSig f a4, mapSig f a5)
-instance BindSig  (Sig2, Sig2, Sig2, Sig2, Sig2) where  bindSig f (a1, a2, a3, a4, a5) = (,,,,) <$> bindSig f a1 <*> bindSig f a2 <*> bindSig f a3 <*> bindSig f a4 <*> bindSig f a5
-
-instance SigSpace (Sig2, Sig2, Sig2, Sig2, Sig2, Sig2) where  mapSig  f (a1, a2, a3, a4, a5, a6) = (mapSig f a1, mapSig f a2, mapSig f a3, mapSig f a4, mapSig f a5, mapSig f a6)
-instance BindSig  (Sig2, Sig2, Sig2, Sig2, Sig2, Sig2) where  bindSig f (a1, a2, a3, a4, a5, a6) = (,,,,,) <$> bindSig f a1 <*> bindSig f a2 <*> bindSig f a3 <*> bindSig f a4 <*> bindSig f a5  <*> bindSig f a6
-
-instance SigSpace (Sig2, Sig2, Sig2, Sig2, Sig2, Sig2, Sig2) where  mapSig  f (a1, a2, a3, a4, a5, a6, a7) = (mapSig f a1, mapSig f a2, mapSig f a3, mapSig f a4, mapSig f a5, mapSig f a6, mapSig f a7)
-instance BindSig  (Sig2, Sig2, Sig2, Sig2, Sig2, Sig2, Sig2) where  bindSig f (a1, a2, a3, a4, a5, a6, a7) = (,,,,,,) <$> bindSig f a1 <*> bindSig f a2 <*> bindSig f a3 <*> bindSig f a4 <*> bindSig f a5  <*> bindSig f a6 <*> bindSig f a7
-
-instance SigSpace (Sig2, Sig2, Sig2, Sig2, Sig2, Sig2, Sig2, Sig2) where  mapSig  f (a1, a2, a3, a4, a5, a6, a7, a8) = (mapSig f a1, mapSig f a2, mapSig f a3, mapSig f a4, mapSig f a5, mapSig f a6, mapSig f a7, mapSig f a8)
-instance BindSig  (Sig2, Sig2, Sig2, Sig2, Sig2, Sig2, Sig2, Sig2) where  bindSig f (a1, a2, a3, a4, a5, a6, a7, a8) = (,,,,,,,) <$> bindSig f a1 <*> bindSig f a2 <*> bindSig f a3 <*> bindSig f a4 <*> bindSig f a5  <*> bindSig f a6 <*> bindSig f a7 <*> bindSig f a8
-
-instance SigSpace (Sig8, Sig8) where  mapSig  f (a1, a2) = (mapSig f a1, mapSig f a2)
-instance BindSig  (Sig8, Sig8) where  bindSig f (a1, a2) = (,) <$> bindSig f a1 <*> bindSig f a2
-
-instance SigSpace (Sig8, Sig8, Sig8, Sig8) where  mapSig  f (a1, a2, a3, a4) = (mapSig f a1, mapSig f a2, mapSig f a3, mapSig f a4)
-instance BindSig  (Sig8, Sig8, Sig8, Sig8) where  bindSig f (a1, a2, a3, a4) = (,,,) <$> bindSig f a1 <*> bindSig f a2 <*> bindSig f a3 <*> bindSig f a4
-
-instance SigSpace (SE Sig) where  mapSig  f = fmap (mapSig f)
-instance BindSig  (SE Sig) where  bindSig f = fmap (bindSig f)
-
-instance SigSpace (SE (Sig, Sig)) where mapSig  f = fmap (mapSig f)
-instance BindSig  (SE (Sig, Sig)) where bindSig f = fmap (bindSig f)
-
-instance SigSpace (SE (Sig, Sig, Sig)) where mapSig  f = fmap (mapSig f)
-instance BindSig  (SE (Sig, Sig, Sig)) where bindSig f = fmap (bindSig f)
-
-instance SigSpace (SE (Sig, Sig, Sig, Sig)) where mapSig  f = fmap (mapSig f)
-instance BindSig  (SE (Sig, Sig, Sig, Sig)) where bindSig f = fmap (bindSig f)
+instance SigSpace a => SigSpace (SE a) where  mapSig  f = fmap (mapSig f)
+instance BindSig  a => BindSig  (SE a) where  bindSig f = fmap (bindSig f)
 
 ----------------------------------------------------------------------------------------------------------
 
