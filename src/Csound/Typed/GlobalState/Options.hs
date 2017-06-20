@@ -1,8 +1,8 @@
 module Csound.Typed.GlobalState.Options (
     Options(..),
-    defGain, defSampleRate, defBlockSize, defTabFi, defScaleUI,    
+    defGain, defSampleRate, defBlockSize, defTabFi, defScaleUI,
     -- * Table fidelity
-    TabFi(..), fineFi, coarseFi, 
+    TabFi(..), fineFi, coarseFi,
     -- ** Gen identifiers
     -- | Low level Csound integer identifiers for tables. These names can be used in the function 'Csound.Base.fineFi'
     -- *** Integer identifiers
@@ -12,7 +12,7 @@ module Csound.Typed.GlobalState.Options (
     idTabHarmonics, idMixOnTab, idMixTabs,
     idNormTab, idPolynomFuns, idLinTab, idRandDists, idReadNumFile, idReadNumTab,
     idExpsBreakPoints, idLinsBreakPoints, idReadTrajectoryFile, idMixSines1, idMixSines2,
-    idRandHist, idRandPairs, idRandRanges, idPvocex, idTuning, idMultichannel,    
+    idRandHist, idRandPairs, idRandRanges, idPvocex, idTuning, idMultichannel,
     -- *** String identifiers
     idPadsynth, idTanh, idExp, idSone, idFarey, idWave,
     -- * Jacko
@@ -30,23 +30,23 @@ import Csound.Dynamic hiding (csdFlags)
 
 -- | Csound options. The default values are
 --
--- > flags      = def     -- the only flag set by default is "no-displays" 
+-- > flags      = def     -- the only flag set by default is "no-displays"
 -- >                      -- to supress the display of the tables
 -- > sampleRate = 44100
 -- > blockSize  = 64
 -- > gain       = 0.5
 -- > tabFi      = fineFi 13 [(idLins, 11), (idExps, 11), (idConsts, 9), (idSplines, 11), (idStartEnds, 12)] }
 -- > scaleUI    = (1, 1)
-data Options = Options 
+data Options = Options
     { csdFlags          :: Flags                    -- ^ Csound command line flags
     , csdSampleRate     :: Maybe Int                -- ^ The sample rate
     , csdBlockSize      :: Maybe Int                -- ^ The number of audio samples in one control step
     , csdGain           :: Maybe Double             -- ^ A gain of the final output
-    , csdTabFi          :: Maybe TabFi              -- ^ Default fidelity of the arrays   
-    , csdScaleUI        :: Maybe (Double, Double)   -- ^ Scale factors for UI-window 
+    , csdTabFi          :: Maybe TabFi              -- ^ Default fidelity of the arrays
+    , csdScaleUI        :: Maybe (Double, Double)   -- ^ Scale factors for UI-window
     , csdJacko          :: Maybe Jacko
-    }
-   
+    } deriving (Eq, Show, Read)
+
 instance Default Options where
     def = Options def def def def def def def
 
@@ -58,7 +58,7 @@ instance Monoid Options where
         , csdBlockSize      = csdBlockSize a <|> csdBlockSize b
         , csdGain           = csdGain a <|> csdGain b
         , csdTabFi          = csdTabFi a <|> csdTabFi b
-        , csdScaleUI        = csdScaleUI a <|> csdScaleUI b 
+        , csdScaleUI        = csdScaleUI a <|> csdScaleUI b
         , csdJacko          = csdJacko a <|> csdJacko b }
 
 defScaleUI :: Options -> (Double, Double)
@@ -75,35 +75,36 @@ defBlockSize = maybe 64 id . csdBlockSize
 
 defTabFi :: Options -> TabFi
 defTabFi = maybe def id . csdTabFi
-    
+
 -- | Table size fidelity (how many points in the table by default).
 data TabFi = TabFi
     { tabFiBase   :: Int
     , tabFiGens   :: IM.IntMap Int
-    , tabNamedFiGens :: M.Map String Int }
+    , tabNamedFiGens :: M.Map String Int
+    } deriving (Eq, Show, Read)
 
 instance Default TabFi where
-    def = fineFi 13 
-                [(idLins, 11), (idExps, 11), (idConsts, 9), (idSplines, 11), (idStartEnds, 12), (idExpsBreakPoints, 11), (idLinsBreakPoints, 11), (idRandDists, 6)] 
+    def = fineFi 13
+                [(idLins, 11), (idExps, 11), (idConsts, 9), (idSplines, 11), (idStartEnds, 12), (idExpsBreakPoints, 11), (idLinsBreakPoints, 11), (idRandDists, 6)]
                 [(idPadsynth, 18), (idSone, 14), (idTanh, 13), (idExp, 13)]
-        
 
--- | Sets different table size for different GEN-routines. 
+
+-- | Sets different table size for different GEN-routines.
 --
--- > fineFi n ps 
+-- > fineFi n ps
 --
--- where 
--- 
+-- where
+--
 -- * @n@ is the default value for table size (size is a @n@ power of 2) for all gen routines that are not listed in the next argument @ps@.
 --
--- * @ps@ is a list of pairs @(genRoutineId, tableSizeDegreeOf2)@ that sets the given table size for a 
+-- * @ps@ is a list of pairs @(genRoutineId, tableSizeDegreeOf2)@ that sets the given table size for a
 --   given GEN-routine.
 --
 -- with this function we can set lower table sizes for tables that are usually used in the envelopes.
 fineFi :: Int -> [(Int, Int)] -> [(String, Int)] -> TabFi
 fineFi n xs ys = TabFi n (IM.fromList xs) (M.fromList ys)
 
--- | Sets the same table size for all tables. 
+-- | Sets the same table size for all tables.
 --
 -- > coarseFi n
 --
@@ -134,7 +135,7 @@ idLins = 7
 idCubes = 6
 idExps = 5
 idStartEnds = 16
-idSplines = 8 
+idSplines = 8
 idPolys = 3
 idChebs1 = 13
 idChebs2 = 14
@@ -191,7 +192,7 @@ type JackoConnect = (String, String)
 -- But the Jacko opcodes provide more options.
 --
 -- see the Csound docs for details: <http://csound.github.io/docs/manual/JackoOpcodes.html>
-data Jacko = Jacko 
+data Jacko = Jacko
     { jackoClient       :: String
     , jackoServer       :: String
     , jackoAudioIns     :: [JackoConnect]
@@ -199,10 +200,11 @@ data Jacko = Jacko
     , jackoMidiIns      :: [JackoConnect]
     , jackoMidiOuts     :: [JackoConnect]
     , jackoFreewheel    :: Bool
-    , jackoInfo         :: Bool }
+    , jackoInfo         :: Bool
+    } deriving (Eq, Show, Read)
 
 instance Default Jacko where
-    def = Jacko 
+    def = Jacko
         { jackoClient       = "csound-exp"
         , jackoServer       = "default"
         , jackoAudioIns     = []
@@ -210,7 +212,7 @@ instance Default Jacko where
         , jackoMidiIns      = []
         , jackoMidiOuts     = []
         , jackoFreewheel    = False
-        , jackoInfo         = False }    
+        , jackoInfo         = False }
 
 renderJacko :: Jacko -> String
 renderJacko spec = unlines $ filter ( /= "")
@@ -222,7 +224,7 @@ renderJacko spec = unlines $ filter ( /= "")
     , renderConnections "JackoMidiInConnect" $ jackoMidiIns spec
     , renderConnections "JackoMidiOutConnect" $ jackoMidiOuts spec
     , "JackoOn" ]
-    where 
+    where
         renderConnections name links = unlines $ fmap (renderLink name) links
 
         renderLink name (a, b) = name ++ " " ++ (str a) ++ ", " ++  (str b)

@@ -5,15 +5,15 @@ module Csound.Typed.GlobalState.GE(
     -- * Globals
     onGlobals,
     -- * Midi
-    MidiAssign(..), Msg(..), renderMidiAssign, saveMidi, saveToMidiInstr, 
+    MidiAssign(..), Msg(..), renderMidiAssign, saveMidi, saveToMidiInstr,
     MidiCtrl(..), saveMidiCtrl, renderMidiCtrl,
     -- * Instruments
     saveAlwaysOnInstr, onInstr, saveUserInstr0, getSysExpr,
     -- * Named instruments
     saveNamedInstr,
     -- * Total duration
-    TotalDur(..), pureGetTotalDurForF0, getTotalDurForTerminator, 
-    setDurationForce, setDuration, setDurationToInfinite,    
+    TotalDur(..), pureGetTotalDurForF0, getTotalDurForTerminator,
+    setDurationForce, setDuration, setDurationToInfinite,
     -- * Notes
     addNote,
     -- * GEN routines
@@ -29,7 +29,7 @@ module Csound.Typed.GlobalState.GE(
     -- * Cache
     GetCache, SetCache, withCache,
     -- * Guis
-    newGuiHandle, saveGuiRoot, saveDefKeybdPanel, appendToGui, 
+    newGuiHandle, saveGuiRoot, saveDefKeybdPanel, appendToGui,
     newGuiVar, getPanels, guiHandleToVar,
     guiInstrExp,
     listenKeyEvt, Key(..), KeyEvt(..), Guis(..),
@@ -43,7 +43,7 @@ module Csound.Typed.GlobalState.GE(
     -- * Hrtf pan
     simpleHrtfmove, simpleHrtfstat,
     -- * Udo plugins
-    addUdoPlugin, renderUdoPlugins    
+    addUdoPlugin, renderUdoPlugins
 ) where
 
 import Paths_csound_expression_typed
@@ -60,7 +60,7 @@ import Control.Monad.Trans.Class
 import Control.Monad.Trans.State.Strict
 import Control.Monad.Trans.Reader
 
-import Csound.Dynamic hiding (readMacrosDouble, readMacrosString, readMacrosInt) 
+import Csound.Dynamic hiding (readMacrosDouble, readMacrosString, readMacrosInt)
 import qualified Csound.Dynamic as D(readMacrosDouble, readMacrosString, readMacrosInt)
 
 import Csound.Typed.GlobalState.Options
@@ -102,11 +102,11 @@ instance Monad GE where
 
 instance MonadIO GE where
     liftIO = GE . liftIO . liftIO
-    
+
 data History = History
     { genMap            :: GenMap
     , writeGenMap       :: WriteGenMap
-    , globalGenCounter  :: Int    
+    , globalGenCounter  :: Int
     , stringMap         :: StringMap
     , sfMap             :: SfMap
     , midiMap           :: MidiMap GE
@@ -144,7 +144,7 @@ renderMidiAssign (MidiAssign ty chn instrId) = case ty of
 
 renderMidiCtrl :: Monad m => MidiCtrl -> DepT m ()
 renderMidiCtrl (MidiCtrl chno ctrlno val) = initc7 chno ctrlno val
-    where 
+    where
         initc7 :: Monad m => E -> E -> E -> DepT m ()
         initc7 a b c = depT_ $ opcs "initc7" [(Xr, [Ir, Ir, Ir])] [a, b, c]
 
@@ -154,17 +154,17 @@ getTotalDurForTerminator :: GE E
 getTotalDurForTerminator = fmap (getTotalDurForTerminator' . totalDur) getHistory
 
 pureGetTotalDurForF0 :: Maybe TotalDur -> Double
-pureGetTotalDurForF0 = toDouble . maybe InfiniteDur id  
+pureGetTotalDurForF0 = toDouble . maybe InfiniteDur id
     where
-        toDouble x = case x of            
+        toDouble x = case x of
             _           -> infiniteDur
- 
+
 getTotalDurForTerminator' :: Maybe TotalDur -> E
 getTotalDurForTerminator' = toExpr . maybe InfiniteDur id
     where
-        toExpr x = case x of            
+        toExpr x = case x of
             InfiniteDur -> infiniteDur
-            ExpDur e    -> e            
+            ExpDur e    -> e
 
 setDurationToInfinite :: GE ()
 setDurationToInfinite = setTotalDur InfiniteDur
@@ -173,7 +173,7 @@ setDuration :: E -> GE ()
 setDuration = setTotalDur . ExpDur
 
 setDurationForce :: E -> GE ()
-setDurationForce = setTotalDur . ExpDur 
+setDurationForce = setTotalDur . ExpDur
 
 saveStr :: String -> GE E
 saveStr = fmap prim . onStringMap . newString
@@ -202,15 +202,15 @@ onSfMap :: State SfMap a -> GE a
 onSfMap = onHistory sfMap (\val h -> h{ sfMap = val })
 
 saveSf :: SfSpec -> GE Int
-saveSf = onSfMap . newSf 
+saveSf = onSfMap . newSf
 
 sfTable :: History -> [(SfSpec, Int)]
 sfTable = M.toList . idMapContent . sfMap
 
 saveBandLimitedWave :: BandLimited -> GE BandLimitedId
 saveBandLimitedWave = onBandLimitedMap . saveBandLimited
-    where onBandLimitedMap = onHistory 
-                (\a -> (bandLimitedMap a)) 
+    where onBandLimitedMap = onHistory
+                (\a -> (bandLimitedMap a))
                 (\(blm) h -> h { bandLimitedMap = blm})
 
 setTotalDur :: TotalDur -> GE ()
@@ -237,7 +237,7 @@ getSysExpr :: InstrId -> GE (Dep ())
 getSysExpr terminatorInstrId = do
     e1 <- withHistory $ clearGlobals . globals
     dt <- getTotalDurForTerminator
-    let e2 = event_i $ Event (primInstrId terminatorInstrId) dt 0.01 [] 
+    let e2 = event_i $ Event (primInstrId terminatorInstrId) dt 0.01 []
     return $ e1 >> e2
     where clearGlobals = snd . renderGlobals
 
@@ -283,9 +283,9 @@ modifyWithHistory f = GE $ lift $ state f
 -- update fields
 
 onHistory :: (History -> a) -> (a -> History -> History) -> State a b -> GE b
-onHistory getter setter st = GE $ ReaderT $ \_ -> StateT $ \history -> 
+onHistory getter setter st = GE $ ReaderT $ \_ -> StateT $ \history ->
     let (res, s1) = runState st (getter history)
-    in  return (res, setter s1 history) 
+    in  return (res, setter s1 history)
 
 type UpdField a b = State a b -> GE b
 
@@ -314,11 +314,11 @@ fromCache f key = withHistory $ f key . cache
 
 type SetCache a b = a -> b -> Cache GE -> Cache GE
 
-toCache :: SetCache a b -> a -> b -> GE () 
+toCache :: SetCache a b -> a -> b -> GE ()
 toCache f key val = modifyHistory $ \h -> h { cache = f key val (cache h) }
 
 withCache :: TotalDur -> GetCache key val -> SetCache key val -> key -> GE val -> GE val
-withCache dur lookupResult saveResult key getResult = do    
+withCache dur lookupResult saveResult key getResult = do
     ma <- fromCache lookupResult key
     res <- case ma of
         Just a      -> return a
@@ -335,19 +335,19 @@ withCache dur lookupResult saveResult key getResult = do
 data Guis = Guis
     { guiStateNewId     :: Int
     , guiStateInstr     :: DepT GE ()
-    , guiStateToDraw    :: [GuiNode] 
+    , guiStateToDraw    :: [GuiNode]
     , guiStateRoots     :: [Panel]
     , guiKeyEvents      :: KeyCodeMap }
 
--- it maps integer key codes to global variables 
+-- it maps integer key codes to global variables
 -- that acts like sensors.
 type KeyCodeMap = IM.IntMap Var
 
-instance Default Guis where 
+instance Default Guis where
     def = Guis 0 (return ()) [] [] def
 
-newGuiHandle :: GE GuiHandle 
-newGuiHandle = modifyWithHistory $ \h -> 
+newGuiHandle :: GE GuiHandle
+newGuiHandle = modifyWithHistory $ \h ->
     let (n, g') = bumpGuiStateId $ guis h
     in  (GuiHandle n, h{ guis = g' })
 
@@ -366,12 +366,12 @@ appendToGui gui act = modifyGuis $ \st -> st
     , guiStateInstr  = guiStateInstr st >> act }
 
 saveGuiRoot :: Panel -> GE ()
-saveGuiRoot g = modifyGuis $ \st -> 
+saveGuiRoot g = modifyGuis $ \st ->
     st { guiStateRoots = g : guiStateRoots st }
 
 saveDefKeybdPanel :: GE ()
 saveDefKeybdPanel = saveGuiRoot $ Single (Win "" Nothing g) isKeybd
-    where 
+    where
         g = defText "keyboard listener"
         isKeybd = True
 
@@ -379,12 +379,12 @@ bumpGuiStateId :: Guis -> (Int, Guis)
 bumpGuiStateId s = (guiStateNewId s, s{ guiStateNewId = succ $ guiStateNewId s })
 
 getPanels :: History -> [Panel]
-getPanels h = fmap (mapGuiOnPanel (restoreTree m)) $ guiStateRoots $ guis h 
+getPanels h = fmap (mapGuiOnPanel (restoreTree m)) $ guiStateRoots $ guis h
     where m = guiMap $ guiStateToDraw $ guis h
 
 -- have to be executed after all instruments
 guiInstrExp :: GE (DepT GE ())
-guiInstrExp = withHistory (guiStateInstr . guis) 
+guiInstrExp = withHistory (guiStateInstr . guis)
 
 
 -- key codes
@@ -394,16 +394,16 @@ data KeyEvt = Press Key | Release Key
     deriving (Show, Eq)
 
 -- | Keys.
-data Key 
+data Key
     = CharKey Char
     | F1 | F2 | F3 | F4 | F5 | F6 | F7 | F8 | F9 | F10 | F11 | F12 | Scroll
-    | CapsLook | LeftShift | RightShift | LeftCtrl | RightCtrl | Enter | LeftAlt | RightAlt | LeftWinKey | RightWinKey 
-    | Backspace | ArrowUp | ArrowLeft | ArrowRight | ArrowDown 
+    | CapsLook | LeftShift | RightShift | LeftCtrl | RightCtrl | Enter | LeftAlt | RightAlt | LeftWinKey | RightWinKey
+    | Backspace | ArrowUp | ArrowLeft | ArrowRight | ArrowDown
     | Insert | Home | PgUp | Delete | End | PgDown
-    | NumLock | NumDiv | NumMul | NumSub | NumHome | NumArrowUp 
-    | NumPgUp | NumArrowLeft | NumSpace | NumArrowRight | NumEnd 
-    | NumArrowDown | NumPgDown | NumIns | NumDel | NumEnter | NumPlus 
-    | Num7 | Num8 | Num9 | Num4 | Num5 | Num6 | Num1 | Num2 | Num3 | Num0 | NumDot 
+    | NumLock | NumDiv | NumMul | NumSub | NumHome | NumArrowUp
+    | NumPgUp | NumArrowLeft | NumSpace | NumArrowRight | NumEnd
+    | NumArrowDown | NumPgDown | NumIns | NumDel | NumEnter | NumPlus
+    | Num7 | Num8 | Num9 | Num4 | Num5 | Num6 | Num1 | Num2 | Num3 | Num0 | NumDot
     deriving (Show, Eq)
 
 keyToCode :: Key -> Int
@@ -411,7 +411,7 @@ keyToCode x = case x of
     CharKey a -> fromEnum a
     F1 -> 446
     F2 -> 447
-    F3 -> 448 
+    F3 -> 448
     F4 -> 449
     F5 -> 450
     F6 -> 451
@@ -422,7 +422,7 @@ keyToCode x = case x of
     F11 -> 457
     F12 -> 458
     Scroll-> 276
-    CapsLook -> 485 
+    CapsLook -> 485
     LeftShift -> 481
     RightShift -> 482
     LeftCtrl -> 483
@@ -432,7 +432,7 @@ keyToCode x = case x of
     RightAlt -> 490
     LeftWinKey -> 491
     RightWinKey -> 492
-    Backspace -> 264 
+    Backspace -> 264
     ArrowUp -> 338
     ArrowLeft -> 337
     ArrowRight -> 339
@@ -491,7 +491,7 @@ listenKeyEvt evt = do
         Nothing  -> do
             var <- onGlobals $ newClearableGlobalVar Kr 0
             hist2 <- getHistory
-            let newKeyMap = IM.insert code var keyMap 
+            let newKeyMap = IM.insert code var keyMap
                 newG      = g { guiKeyEvents = newKeyMap }
                 hist3     = hist2 { guis = newG }
             putHistory hist3
@@ -507,7 +507,7 @@ keyEventInstrBody keyMap = execDepT $ do
         isChange = changed keys ==* 1
     when1 Kr isChange $ do
         whens Kr (fmap (uncurry $ listenEvt keys) events) doNothing
-    where 
+    where
         doNothing = return ()
 
         listenEvt keySig keyCode var = (keySig ==* int keyCode, writeVar var 1)
@@ -520,7 +520,7 @@ keyEventInstrBody keyMap = execDepT $ do
 getKeyEventListener :: GE (Maybe Instr)
 getKeyEventListener = do
     h <- getHistory
-    if (IM.null $ guiKeyEvents $ guis h) 
+    if (IM.null $ guiKeyEvents $ guis h)
         then return Nothing
         else do
             saveAlwaysOnInstr keyEventInstrId
@@ -539,7 +539,7 @@ getOscPortHandle port = onOscPorts (fmap inlineVar $ getOscPortVar port)
 -- cabbage
 
 cabbage :: Cabbage.Cab -> GE ()
-cabbage cab = modifyHistory $ \h -> h { cabbageGui = Just $ Cabbage.runCab cab } 
+cabbage cab = modifyHistory $ \h -> h { cabbageGui = Just $ Cabbage.runCab cab }
 
 -----------------------------------------------
 -- head pan
@@ -580,7 +580,7 @@ readMacrosBy :: (String ->  E) -> (String -> a -> MacrosInit) -> String -> a -> 
 readMacrosBy reader allocator name initValue = do
     onMacrosInits $ initMacros $ allocator name initValue
     return $ reader name
-    where onMacrosInits = onHistory macrosInits (\val h -> h { macrosInits = val }) 
+    where onMacrosInits = onHistory macrosInits (\val h -> h { macrosInits = val })
 
 -----------------------------------------------
 -- udo plugins
@@ -589,7 +589,7 @@ addUdoPlugin :: UdoPlugin -> GE ()
 addUdoPlugin p = onUdo (E.addUdoPlugin p)
     where onUdo = onHistory udoPlugins (\val h -> h{ udoPlugins = val })
 
-renderUdoPlugins :: History -> IO String 
+renderUdoPlugins :: History -> IO String
 renderUdoPlugins h = fmap concat $ mapM getUdoPluginBody $ getUdoPluginNames $ udoPlugins h
 
 getUdoPluginBody :: String -> IO String
