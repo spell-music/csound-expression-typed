@@ -170,8 +170,14 @@ getUserOptions = do
         (Nothing, Nothing) -> Nothing
     where
         getAt getPath = do
-            fileContent <- (readFile . rcFileAt) =<< getPath
-            return $ readMaybe fileContent
+            fileName <- fmap rcFileAt getPath
+            isExist <- doesFileExist fileName
+            if isExist
+                then do
+                    fileContent <- readFile fileName
+                    return $ readMaybe fileContent
+                else do
+                    return Nothing
 
 rcFileAt :: FilePath -> String
 rcFileAt dir = dir </> ".csound-expression-rc"
