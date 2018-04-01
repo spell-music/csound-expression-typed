@@ -42,6 +42,7 @@ module Csound.Typed.GlobalState.Elements(
     analogDelayPlugin, distortionPlugin, envelopeFolollowerPlugin, flangerPlugin, freqShifterPlugin,
     loFiPlugin, panTremPlugin, monoTremPlugin, phaserPlugin, pitchShifterPlugin, reversePlugin,
     ringModulatorPlugin, stChorusPlugin, stereoPingPongDelayPlugin,
+    tapeEchoPlugin,
     delay1kPlugin,
 ) where
 
@@ -592,5 +593,7 @@ reversePlugin = UdoPlugin "MultiFX/Reverse"
 ringModulatorPlugin = UdoPlugin "MultiFX/RingModulator"
 stChorusPlugin = UdoPlugin "MultiFX/StChorus"
 stereoPingPongDelayPlugin = UdoPlugin "MultiFX/StereoPingPongDelay"
+
+tapeEchoPlugin = UdoPlugin "MultiFX/TapeEcho"
 
 delay1kPlugin = UdoPlugin "Utility/Delay1k"

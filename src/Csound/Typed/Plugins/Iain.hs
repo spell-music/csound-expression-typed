@@ -1,6 +1,6 @@
-module Csound.Typed.Plugins.Iain(  
+module Csound.Typed.Plugins.Iain(
     pitchShifterDelay,
-    fxAnalogDelay, fxDistortion, fxEnvelopeFollower, fxFlanger, fxFreqShifter, fxLoFi, 
+    fxAnalogDelay, fxDistortion, fxEnvelopeFollower, fxFlanger, fxFreqShifter, fxLoFi,
     fxPanTrem, fxMonoTrem, fxPhaser, fxPitchShifter, fxReverse, fxRingModulator, fxChorus2, fxPingPong
 ) where
 
@@ -12,7 +12,7 @@ import Csound.Dynamic
 
 import Csound.Typed.Types
 import Csound.Typed.GlobalState
-import qualified Csound.Typed.GlobalState.Elements as E(pitchShifterDelayPlugin, 
+import qualified Csound.Typed.GlobalState.Elements as E(pitchShifterDelayPlugin,
     analogDelayPlugin, distortionPlugin, envelopeFolollowerPlugin, flangerPlugin, freqShifterPlugin,
     loFiPlugin, panTremPlugin, monoTremPlugin, phaserPlugin, pitchShifterPlugin, reversePlugin, ringModulatorPlugin, stChorusPlugin, stereoPingPongDelayPlugin)
 
@@ -33,10 +33,10 @@ pitchShifterDelay imaxdlt (fb1, fb2) kdel ktrans ain = csdPitchShifterDelay ain 
 --; -----------
 --; ain     --  input audio to be pitch shifted
 --; ktrans  --  pitch transposition (in semitones)
---; kdlt    --  delay time employed by the pitch shifter effect (should be within the range ksmps/sr and imaxdlt) 
+--; kdlt    --  delay time employed by the pitch shifter effect (should be within the range ksmps/sr and imaxdlt)
 --; kFB1    --  feedback using method 1 (output from delay taps are fed back directly into their own buffers before enveloping and mixing)
 --; kFB2    --  feedback using method 2 (enveloped and mixed output from both taps is fed back into both buffers)
--- 
+--
 -- opcode  PitchShifterDelay,a,akkkki
 csdPitchShifterDelay :: Sig -> Sig -> Sig -> Sig -> Sig -> D -> Sig
 csdPitchShifterDelay ain ktrans kdlt kFB1 kFB2 imaxdlt = fromGE $ do
@@ -107,7 +107,7 @@ fxEnvelopeFollower ksens kfreq kres ain = csdEnvelopeFollower ain ksens kfreq kr
 -- ; kfreq  --  base frequency of the filter before modulation by the input dynamics (range: 0 to 1)
 -- ; kres   --  resonance of the lowpass filter (suggested range: 0 to 0.99)
 csdEnvelopeFollower :: Sig -> Sig -> Sig -> Sig -> Sig
-csdEnvelopeFollower ain ksens kfreq kres = fromGE $ do 
+csdEnvelopeFollower ain ksens kfreq kres = fromGE $ do
     addUdoPlugin E.envelopeFolollowerPlugin
     f <$> toGE ain <*> toGE ksens <*> toGE kfreq <*> toGE kres
     where f ain ksens kfreq kres = opcs "EnvelopeFollower" [(Ar,[Ar,Kr,Kr,Kr])] [ain, ksens, kfreq, kres]
@@ -162,7 +162,7 @@ fxFreqShifter kmix kfreq kmult kfback adry = fromGE $ do
 -- ; -----------
 -- ; ain    --  input audio to have low fidelity distortion effects applied
 -- ; kbits  --  bit depth reduction (suggested range 0 to 0.6)
--- ; kfold  --  amount of foldover (range 0 to 1)    
+-- ; kfold  --  amount of foldover (range 0 to 1)
 fxLoFi :: Sig -> Sig -> Sig -> Sig
 fxLoFi kbits kfold ain = fromGE $ do
     addUdoPlugin E.loFiPlugin
@@ -219,7 +219,7 @@ fxMonoTrem krate kdepth kwave ain = fromGE $ do
 -- ; krate  --  rate of lfo of the effect (range 0 to 1)
 -- ; kdepth --  depth of lfo of the effect (range 0 to 1)
 -- ; kfreq  --  centre frequency of the phase shifting effect in octaves (suggested range 6 to 11)
--- ; kfback --  feedback and therefore intensity of the effect (range 0 to 1)    
+-- ; kfback --  feedback and therefore intensity of the effect (range 0 to 1)
 fxPhaser :: Sig -> Sig -> Sig -> Sig -> Sig -> Sig
 fxPhaser krate kdepth kfreq kfback ain = fromGE $ do
     addUdoPlugin E.phaserPlugin
@@ -239,7 +239,7 @@ fxPhaser krate kdepth kfreq kfback ain = fromGE $ do
 -- ; kscal  -- pitch ratio
 -- #### ; kpitch --  pitch shifting interval in thousands of a semitone (suggested range -0.012 to 0.012)
 -- #### ; kfine  --  fine control of pitch shifting interval in octaves (range -1/12 to 1/12)
--- ; kfback --  control of the amount of output signal fed back into the input of the effect (suggested range 0 to 1)    
+-- ; kfback --  control of the amount of output signal fed back into the input of the effect (suggested range 0 to 1)
 fxPitchShifter :: D -> Sig -> Sig -> Sig -> Sig -> Sig
 fxPitchShifter ifftsize kmix kscal kfback ain = fromGE $ do
     addUdoPlugin E.pitchShifterPlugin
@@ -256,7 +256,7 @@ fxPitchShifter ifftsize kmix kscal kfback ain = fromGE $ do
 -- ; Performance
 -- ; -----------
 -- ; ain    --  input audio to be reversed
--- ; ktime  --  time duration of each chunk (suggested range: 0.3 to 2)--     
+-- ; ktime  --  time duration of each chunk (suggested range: 0.3 to 2)--
 fxReverse :: Sig -> Sig -> Sig
 fxReverse ktime ain = fromGE $ do
     addUdoPlugin E.reversePlugin
@@ -297,8 +297,8 @@ fxRingModulator kmix kfreq kenv ain = fromGE $ do
 fxChorus2 :: Sig -> Sig -> Sig -> Sig2 -> Sig2
 fxChorus2 krate kdepth kwidth (ainL, ainR) = toTuple $ do
     addUdoPlugin E.stChorusPlugin
-    f <$> toGE ainL <*> toGE ainR <*> toGE krate <*> toGE kdepth <*> toGE kwidth 
-    where f ainL ainR krate kdepth kwidth = ($ 2) $ mopcs "StChorus" ([Ar,Ar], [Ar,Ar,Kr,Kr,Kr]) [ainL, ainR, krate, kdepth, kwidth] 
+    f <$> toGE ainL <*> toGE ainR <*> toGE krate <*> toGE kdepth <*> toGE kwidth
+    where f ainL ainR krate kdepth kwidth = ($ 2) $ mopcs "StChorus" ([Ar,Ar], [Ar,Ar,Kr,Kr,Kr]) [ainL, ainR, krate, kdepth, kwidth]
 
 -- aInL, aInR, kdelayTime, kFeedback, kMix, iMaxDelayTime xin
 

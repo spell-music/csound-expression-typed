@@ -1,7 +1,7 @@
 module Csound.Typed.Plugins(
     adsr140,
     audaciousEq,
-    
+
     -- Solina chorus
     solinaChorus, testSolinaChorus,
 
@@ -12,10 +12,10 @@ module Csound.Typed.Plugins(
     zdf2, zlp, zbp, zhp, zdf2_notch, zbr,
 
     -- Ladder filter
-    zladder, 
+    zladder,
 
     -- Four poles filters
-    zdf4, zlp4, zbp4, zhp4, 
+    zdf4, zlp4, zbp4, zhp4,
 
     -- Eq-filters
     peakEq, highShelf, lowShelf,
@@ -33,8 +33,11 @@ module Csound.Typed.Plugins(
     pitchShifterDelay,
 
     -- Iain's fxs
-    fxAnalogDelay, fxDistortion, fxEnvelopeFollower, fxFlanger, fxFreqShifter, fxLoFi, 
+    fxAnalogDelay, fxDistortion, fxEnvelopeFollower, fxFlanger, fxFreqShifter, fxLoFi,
     fxPanTrem, fxMonoTrem, fxPhaser, fxPitchShifter, fxReverse, fxRingModulator, fxChorus2, fxPingPong,
+
+    -- * Tape echo
+    tapeRead, tapeWrite,
 
     -- utilities
     delay1k
@@ -49,4 +52,5 @@ import Csound.Typed.Plugins.Korg35
 import Csound.Typed.Plugins.SolinaChorus
 import Csound.Typed.Plugins.ZeroDelayConvolution
 import Csound.Typed.Plugins.Iain
+import Csound.Typed.Plugins.TapeEcho
 import Csound.Typed.Plugins.Utilities

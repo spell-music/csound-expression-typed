@@ -49,8 +49,8 @@ Data-Files :
     data/opcodes/MultiFX/RingModulator.udo
     data/opcodes/MultiFX/StChorus.udo
     data/opcodes/MultiFX/StereoPingPongDelay.udo
+    data/opcodes/MultiFX/TapeEcho.udo
     data/opcodes/Utility/Delay1k.udo
-
 
 Homepage:        https://github.com/anton-k/csound-expression-typed
 Bug-Reports:     https://github.com/anton-k/csound-expression-typed/issues
@@ -126,6 +126,7 @@ Library
     Csound.Typed.Misc
 
     Csound.Typed.Plugins.TabQueue
+    Csound.Typed.Plugins.TapeEcho
     Csound.Typed.Plugins.Zdf
     Csound.Typed.Plugins.Diode
     Csound.Typed.Plugins.Korg35
