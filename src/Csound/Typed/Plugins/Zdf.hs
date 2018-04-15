@@ -1,5 +1,5 @@
 -- Zero delay filters (implemented in Csound by Steven Yi)
-module Csound.Typed.Plugins.Zdf( 
+module Csound.Typed.Plugins.Zdf(
     -- One pole filters
     zdf1, zlp1, zhp1, zap1,
 
@@ -7,13 +7,13 @@ module Csound.Typed.Plugins.Zdf(
     zdf2, zlp, zbp, zhp, zdf2_notch, zbr,
 
     -- Ladder filter
-    zladder, 
+    zladder,
 
     -- Four poles filters
-    zdf4, zlp4, zbp4, zhp4, 
+    zdf4, zlp4, zbp4, zhp4,
 
     -- Eq-filters
-    peakEq, highShelf, lowShelf   
+    peakEq, highShelf, lowShelf
 ) where
 
 import Data.Boolean
@@ -74,22 +74,22 @@ zbr cfq q asig = notch
 -- ladder
 
 zladder :: Sig -> Sig -> Sig -> Sig
-zladder cfq q asig = zdf_ladder asig cfq q 
+zladder cfq q asig = zdf_ladder asig cfq q
 
 -- zdf_4pole
 
 zdf4 ::  Sig -> Sig -> Sig -> (Sig, Sig, Sig, Sig, Sig, Sig)
 zdf4 cfq q asig = zdf_4pole asig cfq q
 
-zlp4 ::  Sig -> Sig -> Sig -> Sig 
+zlp4 ::  Sig -> Sig -> Sig -> Sig
 zlp4 cfq q asig = lows
     where (_, _, _, lows, _, _) = zdf4 cfq q asig
 
-zbp4 ::  Sig -> Sig -> Sig -> Sig 
+zbp4 ::  Sig -> Sig -> Sig -> Sig
 zbp4 cfq q asig = mids
     where (_, _, _, _, mids, _) = zdf4 cfq q asig
 
-zhp4 ::  Sig -> Sig -> Sig -> Sig  
+zhp4 ::  Sig -> Sig -> Sig -> Sig
 zhp4 cfq q asig = highs
     where (_, _, _, _, _, highs) = zdf4 cfq q asig
 
@@ -103,7 +103,7 @@ highShelf kcf kres ain = zdf_high_shelf_eq ain kcf kres
 
 -- zdf_low_shelf_eq
 lowShelf :: Sig -> Sig -> Sig -> Sig
-lowShelf kcf kres ain = zdf_low_shelf_eq ain kcf kres 
+lowShelf kcf kres ain = zdf_low_shelf_eq ain kcf kres
 
 -------------------------------------------------------------------------------
 -- Steven implementation
