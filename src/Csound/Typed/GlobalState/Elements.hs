@@ -19,7 +19,7 @@ module Csound.Typed.GlobalState.Elements(
     -- * Global variables
     Globals(..), newPersistentGlobalVar, newClearableGlobalVar,
     newPersistentGloabalArrVar,
-    renderGlobals,
+    renderGlobals, bpmVarName, bpmVar,
     -- * Instruments
     Instrs(..), saveInstr, getInstrIds, -- newInstrId, saveInstrById, saveInstr, CacheName, makeCacheName, saveCachedInstr, getInstrIds,
     -- * Named instruments
@@ -351,12 +351,17 @@ data AllocVar = AllocVar
         { allocArrVar :: Var
         , allocArrVarSizes :: [E] }
 
-
 data GlobalVarType = PersistentGlobalVar | ClearableGlobalVar
     deriving (Eq)
 
 instance Default Globals where
-    def = Globals def def
+    def = Globals 0 [AllocVar PersistentGlobalVar bpmVar 110]
+
+bpmVar :: Var
+bpmVar = Var GlobalVar Kr bpmVarName
+
+bpmVarName :: String
+bpmVarName = "gBpmVar"
 
 newGlobalVar :: GlobalVarType -> Rate -> E -> State Globals Var
 newGlobalVar ty rate initVal = state $ \s ->

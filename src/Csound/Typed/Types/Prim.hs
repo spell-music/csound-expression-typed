@@ -17,6 +17,7 @@ module Csound.Typed.Types.Prim(
 
     -- ** constants
     idur, getSampleRate, getControlRate, getBlockSize, getZeroDbfs,
+    getBpm, setBpm,
 
     -- ** converters
     ar, kr, ir, sig,
@@ -316,6 +317,14 @@ getBlockSize = fromE $ readOnlyVar (VarVerbatim Ir "ksmps")
 
 getZeroDbfs :: D
 getZeroDbfs = fromE $ readOnlyVar (VarVerbatim Ir "0dbfs")
+
+-- | Gets the global BPM value.
+getBpm :: Sig
+getBpm = fromE $ readOnlyVar bpmVar
+
+-- | Sets the global BPM value.
+setBpm :: Sig -> SE ()
+setBpm x = fromDep_ $ hideGEinDep $ fmap (writeVar bpmVar) (toGE x)
 
 -------------------------------------------------------------------------------
 -- converters

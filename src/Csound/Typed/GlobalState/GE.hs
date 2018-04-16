@@ -3,7 +3,7 @@ module Csound.Typed.GlobalState.GE(
     GE, Dep, History(..), withOptions, withHistory, getOptions, evalGE, execGE,
     getHistory, putHistory,
     -- * Globals
-    onGlobals,
+    onGlobals, bpmVar,
     -- * Midi
     MidiAssign(..), Msg(..), renderMidiAssign, saveMidi, saveToMidiInstr,
     MidiCtrl(..), saveMidiCtrl, renderMidiCtrl,

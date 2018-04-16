@@ -1,10 +1,10 @@
 -- | Converts to low-level instruments
 module Csound.Typed.Control.Instr(
-    Arity(..), InsExp, EffExp, 
-    funArity, constArity, 
-    insExp, effExp, masterExp, midiExp, unitExp, 
+    Arity(..), InsExp, EffExp,
+    funArity, constArity,
+    insExp, effExp, masterExp, midiExp, unitExp,
     apInstr, apInstr0
-) where    
+) where
 
 import Data.Default
 import Csound.Dynamic(InstrId(..))
@@ -24,12 +24,12 @@ funArity instr = Arity (tupleArity a) (tupleArity b)
 
 constArity :: (Tuple a) => SE a -> Arity
 constArity a = Arity 0 (outArity a)
-   
-insExp :: (Arg a, Tuple b) => (a -> SE b) -> InsExp 
+
+insExp :: (Arg a, Tuple b) => (a -> SE b) -> InsExp
 insExp instr = execGEinSE $ fmap fromTuple $ instr toArg
 
 effExp :: (Tuple a, Tuple b) => (a -> SE b) -> EffExp
-effExp instr = execGEinSE . fmap fromTuple . instr . toTuple . return 
+effExp instr = execGEinSE . fmap fromTuple . instr . toTuple . return
 
 masterExp :: (Tuple a) => SE a -> InsExp
 masterExp = execGEinSE . fmap fromTuple
@@ -42,7 +42,7 @@ unitExp = execGEinSE . fmap unUnit
 
 apInstr :: (Arg a, Sigs b) => GE InstrId -> a -> b
 apInstr instrIdGE args = res
-    where 
+    where
         res = toTuple $ do
             instrId <- instrIdGE
             argList <- fromTuple args
