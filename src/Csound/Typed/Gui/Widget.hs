@@ -7,7 +7,7 @@ module Csound.Typed.Gui.Widget(
     -- * Types
     Input(..), Output(..), Inner(..),
     noInput, noOutput, noInner,
-    Widget, widget, Source(..), source, Sink(..), sink, Display(..), display, SinkSource(..), sinkSource, sourceSlice, sinkSlice,
+    Widget, widget, Source, source, Sink, sink, Display, display, SinkSource, sinkSource, sourceSlice, sinkSlice,
     mapSource, mapGuiSource, mhor, mver, msca,
 
     -- * Widgets
@@ -124,29 +124,27 @@ noInner = return ()
 type Widget a b = SE (Gui, Output a, Input b, Inner)
 
 -- | A consumer of the values.
-newtype Sink   a = Sink { unSink :: SE (Gui, Output a) }
+type Sink   a = SE (Gui, Output a)
 
 -- | A producer of the values.
-newtype Source a = Source { unSource :: SE (Gui, Input a) }
-    deriving (Functor)
+type Source a = SE (Gui, Input a)
 
-newtype SinkSource a = SinkSource { unSinkSource :: SE (Gui, Output a, Input a) }
+type SinkSource a = SE (Gui, Output a, Input a)
 
 -- | A static element. We can only look at it.
-newtype Display  = Display { unDisplay :: SE Gui }
-
+type Display  = SE Gui
 
 -- | A handy function for transforming the value of producers.
 mapSource :: (a -> b) -> Source a -> Source b
-mapSource = fmap
+mapSource f x = fmap (second f) x
 
 -- | A handy function for transforming the GUIs of producers.
 mapGuiSource :: (Gui -> Gui) -> Source a -> Source a
-mapGuiSource f (Source x) = Source $ fmap (\(gui, ins) -> (f gui, ins)) x
+mapGuiSource f x = fmap (\(gui, ins) -> (f gui, ins)) x
 
 mGroup :: Monoid a => ([Gui] -> Gui) -> [Source a] -> Source a
-mGroup guiGroup as = Source $ do
-    (gs, fs) <- fmap unzip $ sequence $ fmap unSource as
+mGroup guiGroup as = do
+    (gs, fs) <- fmap unzip $ sequence as
     return (guiGroup gs, mconcat fs)
 
 -- | Horizontal grouping of widgets that can produce monoidal values.
@@ -173,27 +171,27 @@ widget x = go =<< x
 
 -- | A producer constructor.
 source :: SE (Gui, Input a) -> Source a
-source x = Source $ fmap select $ widget $ fmap append x
+source x = fmap select $ widget $ fmap append x
     where
         select (g, _, i, _) = (g, i)
         append (g, i) = (g, noOutput, i, noInner)
 
 -- | A consumer constructor.
 sink :: SE (Gui, Output a) -> Sink a
-sink x = Sink $ fmap select $ widget $ fmap append x
+sink x = fmap select $ widget $ fmap append x
     where
         select (g, o, _, _) = (g, o)
         append (g, o) = (g, o, noInput, noInner)
 
 sinkSource :: SE (Gui, Output a, Input a) -> SinkSource a
-sinkSource x = SinkSource $ fmap select $ widget $ fmap append x
+sinkSource x = fmap select $ widget $ fmap append x
     where
         select (g, o, i, _) = (g, o, i)
         append (g, o, i) = (g, o, i, noInner)
 
 -- | A display constructor.
 display :: SE Gui -> Display
-display x = Display $ fmap select $ widget $ fmap append x
+display x = fmap select $ widget $ fmap append x
     where
         select (g, _, _, _) = g
         append g = (g, noOutput, noInput, noInner)
@@ -206,11 +204,11 @@ setTitle :: String -> Gui -> SE Gui
 setTitle name g
     | null name = return g
     | otherwise = do
-        gTitle <- unDisplay $ box name
+        gTitle <- box name
         return $ ver [sca 0.01 gTitle, g]
 
 setSourceTitle :: String -> Source a -> Source a
-setSourceTitle name (Source ma) = source $ do
+setSourceTitle name ma = source $ do
     (gui, val) <- ma
     newGui <- setTitle name gui
     return (newGui, val)
@@ -218,20 +216,20 @@ setSourceTitle name (Source ma) = source $ do
 setLabelSource :: String -> Source a -> Source a
 setLabelSource a
     | null a    = id
-    | otherwise = Source . fmap (first $ setLabel a) . unSource
+    | otherwise = fmap (first $ setLabel a)
 
 setLabelSink :: String -> Sink a -> Sink a
 setLabelSink a
     | null a    = id
-    | otherwise = Sink . fmap (first $ setLabel a) . unSink
+    | otherwise = fmap (first $ setLabel a)
 
 setLabelSnkSource :: String -> SinkSource a -> SinkSource a
 setLabelSnkSource a
     | null a    = id
-    | otherwise = SinkSource . fmap (\(x, y, z) -> (setLabel a x, y, z)) . unSinkSource
+    | otherwise = fmap (\(x, y, z) -> (setLabel a x, y, z))
 
 singleOut :: Maybe Double -> Elem -> Source Sig
-singleOut v0 el = Source $ geToSe $ do
+singleOut v0 el = geToSe $ do
     (var, handle) <- newGuiVar
     let handleVar = guiHandleToVar handle
         inits = maybe [] (return . InitMe handleVar) v0
@@ -240,7 +238,7 @@ singleOut v0 el = Source $ geToSe $ do
     return (fromGuiHandle handle, readSig var)
 
 singleIn :: (GuiHandle -> Output Sig) -> Maybe Double -> Elem -> Sink Sig
-singleIn outs v0 el = Sink $ geToSe $ do
+singleIn outs v0 el = geToSe $ do
     (var, handle) <- newGuiVar
     let handleVar = guiHandleToVar handle
         inits = maybe [] (return . InitMe handleVar) v0
@@ -249,7 +247,7 @@ singleIn outs v0 el = Sink $ geToSe $ do
     return (fromGuiHandle handle, outs handle)
 
 singleInOut :: (GuiHandle -> Output Sig) -> Maybe Double -> Elem -> SinkSource Sig
-singleInOut outs v0 el = SinkSource $ geToSe $ do
+singleInOut outs v0 el = geToSe $ do
     (var, handle) <- newGuiVar
     let handleVar = guiHandleToVar handle
         inits = maybe [] (return . InitMe handleVar) v0
@@ -279,7 +277,7 @@ count diap step1 mValStep2 v0 = mapSource snaps $ countSig diap step1 mValStep2 
 --
 -- doc: <http://www.csounds.com/manual/html/FLjoy.html>
 joy :: ValSpan -> ValSpan -> (Double, Double) -> Source (Sig, Sig)
-joy sp1 sp2 (x, y) = Source $ geToSe $ do
+joy sp1 sp2 (x, y) = geToSe $ do
     (var1, handle1) <- newGuiVar
     (var2, handle2) <- newGuiVar
     let handleVar1 = guiHandleToVar handle1
@@ -318,7 +316,7 @@ slider name sp v0 = setLabelSource name $ singleOut (Just v0) $ Slider sp
 -- of init values.
 sliderBank :: String -> [Double] -> Source [Sig]
 sliderBank name ds = source $ do
-    (gs, vs) <- fmap unzip $ zipWithM (\n d -> unSource $ slider (show n) uspan d) [(1::Int) ..] ds
+    (gs, vs) <- fmap unzip $ zipWithM (\n d -> slider (show n) uspan d) [(1::Int) ..] ds
     gui <- setTitle name  $ hor gs
     return (gui, vs)
 
@@ -341,7 +339,7 @@ numeric name diap step v0 = setLabelSource name $ singleOut (Just v0) $ Text dia
 box :: String -> Display
 box label
     | length label < lim = rawBox label
-    | otherwise          = Display $ fmap (padding 0 . ver) $ mapM (unDisplay . rawBox) $ parts lim label
+    | otherwise          = fmap (padding 0 . ver) $ mapM rawBox $ parts lim label
     where
         parts n xs
             | length xs < n = [xs]
@@ -350,7 +348,7 @@ box label
         lim = 255
 
 rawBox :: String -> Display
-rawBox label = Display $ geToSe $ do
+rawBox label = geToSe $ do
     (_, handle) <- newGuiVar
     let gui = fromElem [guiHandleToVar handle] [] (Box label)
     appendToGui (GuiNode gui handle) (unSE noInner)
@@ -367,7 +365,7 @@ button name = setLabelSource name $ source $ do
     flagChanged <- geToSe $ onGlobals $ C.newPersistentGlobalVar Kr 0
     instrId <- geToSe $ saveInstr $ instr flag
     geToSe $ (saveAlwaysOnInstr =<< ) $ saveInstr $ instrCh flag flagChanged
-    (g, _) <- unSource $ singleOut Nothing (Button instrId)
+    (g, _) <- singleOut Nothing (Button instrId)
     val <- fmap fromGE $ fromDep $ readVar flagChanged
     return (g, sigToEvt val)
     where
@@ -451,7 +449,7 @@ setToggleSig name initVal = setLabelSnkSource name $ singleInOut setVal (initTog
 
 setToggle :: String -> Bool -> SinkSource (Evt D)
 setToggle name initVal = sinkSource $ do
-    (g, outs, ins) <- unSinkSource $ setToggleSig name initVal
+    (g, outs, ins) <- setToggleSig name initVal
     let evtOuts a = outs =<< stepper 0 (fmap sig a)
     return (g, evtOuts, snaps ins)
 
@@ -505,8 +503,8 @@ flPrintk2 val handle = SE $ (depT_ =<<) $ lift $ f <$> toGE val <*> toGE handle
 -----------------------------------------------------
 
 sourceSlice :: SinkSource a -> Source a
-sourceSlice = Source . (fmap (\(gui, _, a) -> (gui, a))) . unSinkSource
+sourceSlice = fmap (\(gui, _, a) -> (gui, a))
 
 sinkSlice :: SinkSource a -> Sink a
-sinkSlice = Sink . (fmap (\(gui, a, _) -> (gui, a))) . unSinkSource
+sinkSlice = fmap (\(gui, a, _) -> (gui, a))
 
