@@ -331,19 +331,27 @@ setBpm x = fromDep_ $ hideGEinDep $ fmap (writeVar bpmVar) (toGE x)
 
 -- | Sets a rate of the signal to audio rate.
 ar :: Sig -> Sig
-ar = on1 $ setRate Ar
+ar x = case x of
+    PrimSig a -> PrimSig a
+    Sig exp   -> Sig $ fmap (setRate Ar) exp
 
 -- | Sets a rate of the signal to control rate.
 kr :: Sig -> Sig
-kr = on1 $ setRate Kr
+kr x = case x of
+    PrimSig a -> PrimSig a
+    Sig exp   -> Sig $ fmap (setRate Kr) exp
 
 -- | Converts a signal to the number (initial value of the signal).
 ir :: Sig -> D
-ir = on1 $ setRate Ir
+ir x = case x of
+    PrimSig a -> PrimD a
+    Sig a -> D $ fmap (setRate Ir) a
 
 -- | Makes a constant signal from the number.
 sig :: D -> Sig
-sig = on1 $ setRate Kr
+sig x = case x of
+    PrimD a -> PrimSig a
+    D exp   -> Sig $ fmap (setRate Kr) exp
 
 -------------------------------------------------------------------------------
 -- single wrapper

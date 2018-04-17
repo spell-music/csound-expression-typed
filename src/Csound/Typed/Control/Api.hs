@@ -24,7 +24,7 @@ import Csound.Typed.Plugins.TabQueue
 -- | Creates an instrument that can be triggered by name with Csound API.
 -- The arguments are determined from the structure of the input for the instrument.
 --
--- With Csound API we can send messages 
+-- With Csound API we can send messages
 --
 -- > i "name" time duration arg1 arg2 arg3
 trigByName_ :: Arg a => String -> (a -> SE ()) -> SE ()
@@ -34,14 +34,14 @@ trigByName_ name instr = geToSe $ saveNamedInstr name =<< (execSE $ instr toArg)
 -- The arguments are determined from the structure of the input for the instrument.
 -- If we have a tuple of arguments: @(D, D, Tab)@
 -- The would be rendered to instrument arguments that strts from @p4@.
--- @p1@ is the name of teh instrument, @p2@ is the start time of the note, 
+-- @p1@ is the name of teh instrument, @p2@ is the start time of the note,
 -- @p3@ is the duration of the note. Then @p4@ and @p5@ are going to be doubles and @p6@
 -- is an integer that denotes a functional table.
 trigByName  :: (Arg a, Sigs b) => String -> (a -> SE b) -> SE b
 trigByName name instr = do
     ref <- newClearableGlobalRef 0
     trigByName_ name (go ref)
-    readRef ref    
+    readRef ref
     where go ref x = mixRef ref =<< instr x
 
 
@@ -57,7 +57,7 @@ trigByNameMidi_ name instr = do
             pchExpr      <- toGE pch
             let instrIdExpr = D.instrIdE instrId + pchExpr / 1000
             noteFlagExpr <- toGE noteFlag
-            args <- fromTuple (pch, vol, other)            
+            args <- fromTuple (pch, vol, other)
             return $ do
                     D.when1 D.Ir (noteFlagExpr ==* 1) $ do
                         eventi (Event instrIdExpr 0 (-1) args)
@@ -79,7 +79,7 @@ trigByNameMidi_ name instr = do
 --
 -- The instrument takes a triplet of @(pitchKey, volumeKey, auxilliaryTuple)@.
 -- The order does matter. Please don't pass the @volumeKey@ as the first argument.
--- The instrument expects the pitch key to be a first argument. 
+-- The instrument expects the pitch key to be a first argument.
 
 -- Under the hood
 -- it creates held notes that are indexed by pitch. If you know the Csound it creates
@@ -95,10 +95,10 @@ trigByNameMidi  :: (Arg a, Sigs b) => String -> ((D, D, a) -> SE b) -> SE b
 trigByNameMidi name instr = do
     ref <- newClearableGlobalRef 0
     trigByNameMidi_ name (go ref)
-    readRef ref    
+    readRef ref
     where go ref x = mixRef ref =<< instr x
 
-namedMonoMsg ::String -> SE MonoArg
+namedMonoMsg :: String -> SE MonoArg
 namedMonoMsg name = do
     refPch <- newGlobalRef 0
     refVol <- newGlobalRef 0
@@ -116,18 +116,18 @@ namedMonoMsg name = do
     let kgate = ifB onFlag 1 0
         kamp = downsamp' volKey
         kcps = downsamp' pchKey
-        trig = changed [kamp, kcps] 
+        trig = changed [kamp, kcps]
     return $ MonoArg kamp kcps kgate trig
-    where        
-        onNote = tabQueue2_append        
+    where
+        onNote = tabQueue2_append
         offNote tab (pch, vol) = tabQueue2_delete tab pch
 
 trigByNameMidiCbk :: String -> ((D, D) -> SE ())  -> ((D, D) -> SE ()) -> SE ()
-trigByNameMidiCbk name noteOn noteOff = 
+trigByNameMidiCbk name noteOn noteOff =
     trigByName_ name go
     where
         go :: (D, D, D) -> SE ()
-        go (noteFlag, pch, vol) = do            
+        go (noteFlag, pch, vol) = do
             whenD1 (noteFlag ==* 1) $ noteOn (pch, vol)
             whenD1 (noteFlag ==* 0) $ noteOff (pch, vol)
             SE turnoff
@@ -140,10 +140,10 @@ port' a b = fromGE $ do
 
 downsamp' :: Sig -> Sig
 downsamp' a = fromGE $ do
-    a' <- toGE a    
+    a' <- toGE a
     return $ downsamp a'
 
--- | 
+-- |
 -- Fast table opcodes.
 --
 -- Fast table opcodes. Faster than
@@ -163,7 +163,7 @@ tabw b1 b2 b3 = SE $ (depT_ =<<) $ lift $ f <$> unSig b1 <*> unSig b2 <*> unTab 
     where f a1 a2 a3 = opcs "tabw" [(Xr,[Kr,Kr,Ir,Ir])] [a1,a2,a3]
 
 
--- | 
+-- |
 -- Fast table opcodes.
 --
 -- Fast table opcodes. Faster than

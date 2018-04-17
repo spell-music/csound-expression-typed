@@ -31,7 +31,7 @@ import Csound.Typed.Control.Ref
 import Csound.Typed.Constants(infiniteDur)
 import Csound.Typed.InnerOpcodes
 
-renderEvts :: Evt (Sco a) -> Evt [(D, D, a)]
+renderEvts :: Evt (Sco a) -> Evt [(Sig, Sig, a)]
 renderEvts = fmap (fmap unEvt . T.render)
     where unEvt e = (T.eventStart e, T.eventDur e, T.eventContent e)
 
@@ -55,7 +55,7 @@ schedBy instr evts args = flip apInstr args $ do
 -------------------------------------------------
 -- triggereing the events
 
-saveEvtInstr :: Arg a => Int -> C.InstrId -> Evt [(D, D, a)] -> GE C.InstrId
+saveEvtInstr :: Arg a => Int -> C.InstrId -> Evt [(Sig, Sig, a)] -> GE C.InstrId
 saveEvtInstr arity instrId evts = saveInstr $ do
     aliveCountRef <- newRef (10 :: D)
     evtMixInstr aliveCountRef
@@ -68,14 +68,14 @@ saveEvtInstr arity instrId evts = saveInstr $ do
             aliveCount <- readRef aliveCountRef
             fromDep_ $ hideGEinDep $ liftA2 masterUpdateChnAlive chnId $ toGE aliveCount
 
-        go :: Arg a => Ref D -> GE C.ChnRef -> Evt [(D, D, a)] -> SE ()
+        go :: Arg a => Ref D -> GE C.ChnRef -> Evt [(Sig, Sig, a)] -> SE ()
         go aliveCountRef mchnId events =
             runEvt events $ \es -> do
                 writeRef aliveCountRef $ int $ 2 * length es
                 chnId <- geToSe mchnId
                 fromDep_ $ mapM_ (event chnId) es
 
-        event :: Arg a => C.ChnRef -> (D, D, a) -> Dep ()
+        event :: Arg a => C.ChnRef -> (Sig, Sig, a) -> Dep ()
         event chnId (start, dur, args) = hideGEinDep $ fmap C.event $
             C.Event (primInstrId instrId) <$> toGE start <*> toGE dur <*> (fmap (++ [C.chnRefId chnId]) $ toNote args)
 
@@ -252,7 +252,7 @@ autoOff dt sigs = fmap toTuple $ fromDep $ hideGEinDep $ phi =<< fromTuple sigs
             return $ C.autoOff dtE x
 
 
-saveEvtInstr_ :: Arg a => C.InstrId -> Evt [(D, D, a)] -> Dep ()
+saveEvtInstr_ :: Arg a => C.InstrId -> Evt [(Sig, Sig, a)] -> Dep ()
 saveEvtInstr_ instrId evts = unSE $ runEvt evts $ \es -> fromDep_ $ mapM_ event es
     where event (start, dur, args) = hideGEinDep $ fmap C.event $ C.Event (primInstrId instrId) <$> toGE start <*> toGE dur <*> toNote args
 
@@ -289,7 +289,7 @@ monoSched evts = evtPort instr evts read
             I.writePort p (amp, cps, 0)
             return $ MonoArg amp cps (ifB (gate `equalsTo` 0) 0 1) (changed [amp, cps, gate])
 
-runSco :: Arg a => Evt (Sco a) -> ((D,D,a) -> SE ()) -> SE ()
+runSco :: Arg a => Evt (Sco a) -> ((Sig,Sig,a) -> SE ()) -> SE ()
 runSco evts f = runEvt (renderEvts evts) $ mapM_ f
 
 -- | Plays the note until next note comes or something happens on the second event stream.

@@ -8,17 +8,12 @@ module Csound.Typed.Control.Mix(
 
 import Data.Boolean
 
-import Control.Applicative
 import Control.Monad.IO.Class
-import Control.Monad.Trans.Class
-import Control.Monad
-import Data.Traversable
 import System.Mem.StableName
 
 import Temporal.Media
 
 import Csound.Dynamic hiding (Instr, Sco, str)
-import qualified Csound.Typed.GlobalState.Elements as C
 
 import Csound.Typed.Types
 import Csound.Typed.Types.MixSco
@@ -29,7 +24,7 @@ import Csound.Typed.InnerOpcodes
 toCsdEventList :: Sco a -> CsdEventList a
 toCsdEventList = id
 
-singleCsdEvent :: (D, D, a) -> Sco a
+singleCsdEvent :: (Sig, Sig, a) -> Sco a
 singleCsdEvent (start, duration, content) = del start $ str duration $ temp content
 
 -- | Special type that represents a scores of sound signals.
@@ -37,7 +32,7 @@ singleCsdEvent (start, duration, content) = del start $ str duration $ temp cont
 -- in the value of this type.
 newtype Mix a = Mix { unMix :: GE M }
 
-type Sco a = Track D a
+type Sco a = Track Sig a
 
 wrapSco :: Sco a -> (CsdEventList a -> GE M) -> Sco (Mix b)
 wrapSco notes getContent = singleCsdEvent (0, csdEventListDur evts, Mix $ getContent evts)
