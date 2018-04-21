@@ -19,6 +19,10 @@ module Csound.Typed.Gui.Types (
     PropCtx(..), setPropCtx, getLabel
 ) where
 
+#if __GLASGOW_HASKELL__ < 710
+import Data.Monoid
+#endif
+
 import Control.Applicative(Alternative(..))
 import Data.Default
 import Data.Colour

@@ -1,4 +1,4 @@
-{-# Language FlexibleContexts, ScopedTypeVariables #-}
+{-# Language FlexibleContexts, ScopedTypeVariables, CPP #-}
 module Csound.Typed.Control.Mix(
     Mix,
     sco, eff, mix, mixBy, monoSco,
@@ -20,6 +20,10 @@ import Csound.Typed.Types.MixSco
 import Csound.Typed.GlobalState hiding (notes)
 import Csound.Typed.Control.Instr
 import Csound.Typed.InnerOpcodes
+
+#if __GLASGOW_HASKELL__ < 710
+import Data.Traversable
+#endif
 
 toCsdEventList :: Sco a -> CsdEventList a
 toCsdEventList = id

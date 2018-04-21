@@ -64,7 +64,7 @@ Library
   Ghc-Options:    -Wall
   Build-Depends:
         base >= 4, base < 5, ghc-prim, containers, transformers >= 0.3, Boolean >= 0.1.0, colour >= 2.0, data-default, deepseq, NumInstances, filepath, directory,
-        wl-pprint, csound-expression-dynamic >= 0.3.2, temporal-media >= 0.6.2, hashable
+        wl-pprint >= 1.2.1, csound-expression-dynamic >= 0.3.2, temporal-media >= 0.6.2, hashable
   Hs-Source-Dirs:      src/
   Exposed-Modules:
     Csound.Typed
