@@ -1,4 +1,4 @@
-{-# Language TypeFamilies, FlexibleContexts #-}
+{-# Language TypeFamilies, FlexibleContexts, CPP #-}
 module Csound.Typed.Types.Evt(
     Evt(..), Bam, sync,
     boolToEvt, evtToBool, sigToEvt, stepper,
@@ -28,9 +28,25 @@ type Bam a = a -> SE ()
 instance Functor Evt where
     fmap f a = Evt $ \bam -> runEvt a (bam . f)
 
+instance Default (Evt a) where
+    def = Evt $ const $ return ()
+
+#if MIN_VERSION_base(4,11,0)
+instance Semigroup (Evt a) where
+    (<>) = mappendEvt
+
 instance Monoid (Evt a) where
-    mempty = Evt $ const $ return ()
-    mappend a b = Evt $ \bam -> runEvt a bam >> runEvt b bam
+    mempty  = def
+
+#else
+
+instance Monoid (Evt a) where
+    mempty  = def
+    mappend = mappendEvt
+
+#endif
+
+mappendEvt a b = Evt $ \bam -> runEvt a bam >> runEvt b bam
 
 -- | Converts booleans to events.
 boolToEvt :: BoolSig -> Evt Unit

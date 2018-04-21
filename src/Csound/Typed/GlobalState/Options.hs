@@ -1,3 +1,4 @@
+{-# Language CPP #-}
 module Csound.Typed.GlobalState.Options (
     Options(..),
     defGain, defSampleRate, defBlockSize, defTabFi, defScaleUI,
@@ -50,16 +51,30 @@ data Options = Options
 instance Default Options where
     def = Options def def def def def def def
 
+#if MIN_VERSION_base(4,11,0)
+instance Semigroup Options where
+    (<>) = mappendOptions
+
 instance Monoid Options where
-    mempty = def
-    mappend a b = Options
-        { csdFlags          = mappend (csdFlags a) (csdFlags b)
-        , csdSampleRate     = csdSampleRate a <|> csdSampleRate b
-        , csdBlockSize      = csdBlockSize a <|> csdBlockSize b
-        , csdGain           = csdGain a <|> csdGain b
-        , csdTabFi          = csdTabFi a <|> csdTabFi b
-        , csdScaleUI        = csdScaleUI a <|> csdScaleUI b
-        , csdJacko          = csdJacko a <|> csdJacko b }
+    mempty  = def
+
+#else
+
+instance Monoid Options where
+    mempty  = def
+    mappend = mappendOptions
+
+#endif
+
+mappendOptions :: Options -> Options -> Options
+mappendOptions a b = Options
+    { csdFlags          = mappend (csdFlags a) (csdFlags b)
+    , csdSampleRate     = csdSampleRate a <|> csdSampleRate b
+    , csdBlockSize      = csdBlockSize a <|> csdBlockSize b
+    , csdGain           = csdGain a <|> csdGain b
+    , csdTabFi          = csdTabFi a <|> csdTabFi b
+    , csdScaleUI        = csdScaleUI a <|> csdScaleUI b
+    , csdJacko          = csdJacko a <|> csdJacko b }
 
 defScaleUI :: Options -> (Double, Double)
 defScaleUI = maybe (1, 1) id . csdScaleUI

@@ -1,4 +1,4 @@
-{-# Language TypeFamilies, FlexibleInstances, FlexibleContexts, ScopedTypeVariables, Rank2Types #-}
+{-# Language TypeFamilies, FlexibleInstances, FlexibleContexts, ScopedTypeVariables, Rank2Types, CPP #-}
 module Csound.Typed.Types.Prim(
     Sig(..), unSig, D(..), unD, Tab(..), unTab, Str(..), Spec(..), Wspec(..), renderTab,
     BoolSig(..), unBoolSig, BoolD(..), unBoolD, Unit(..), unit, Val(..), hideGE, SigOrD,
@@ -140,9 +140,23 @@ newtype Unit = Unit { unUnit :: GE () }
 unit :: Unit
 unit = Unit $ return ()
 
+#if MIN_VERSION_base(4,11,0)
+instance Semigroup Unit where
+    (<>) = mappendUnit
+
 instance Monoid Unit where
-    mempty = Unit (return ())
-    mappend a b = Unit $ (unUnit a) >> (unUnit b)
+    mempty  = def
+
+#else
+
+instance Monoid Unit where
+    mempty  = def
+    mappend = mappendUnit
+
+#endif
+
+mappendUnit :: Unit -> Unit -> Unit
+mappendUnit a b = Unit $ (unUnit a) >> (unUnit b)
 
 instance Default Unit where
     def = unit
@@ -452,8 +466,36 @@ instance Default TabList where def = fromE 0
 -------------------------------------------------------------------------------
 -- monoid
 
-instance Monoid Sig     where { mempty = on0 mempty     ; mappend = on2 mappend }
-instance Monoid D       where { mempty = on0 mempty     ; mappend = on2 mappend }
+#if MIN_VERSION_base(4,11,0)
+instance Semigroup Sig where
+    (<>) = on2 mappend
+
+instance Monoid Sig where
+    mempty = on0 mempty
+
+#else
+
+instance Monoid Sig where
+    mempty  = on0 mempty
+    mappend = on2 mappend
+
+#endif
+
+
+#if MIN_VERSION_base(4,11,0)
+instance Semigroup D where
+    (<>) = on2 mappend
+
+instance Monoid D where
+    mempty = on0 mempty
+
+#else
+
+instance Monoid D where
+    mempty  = on0 mempty
+    mappend = on2 mappend
+
+#endif
 
 -------------------------------------------------------------------------------
 -- numeric
