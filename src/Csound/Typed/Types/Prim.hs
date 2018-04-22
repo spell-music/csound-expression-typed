@@ -51,6 +51,7 @@ import Control.Monad.Trans.Reader
 
 import Data.Default
 import Data.Boolean
+import Data.String
 
 import Csound.Dynamic hiding (double, int, str, when1, whens, ifBegin, ifEnd, elseBegin, untilBegin, untilEnd, untilDo, whileBegin, whileEnd, whileDo)
 import qualified Csound.Dynamic as D(double, int, str, ifBegin, ifEnd, elseBegin, untilBegin, untilEnd, whileBegin, whileEnd)
@@ -312,6 +313,9 @@ int =  PrimD . fromIntegral
 -- | Constructs a string.
 text :: String -> Str
 text = fromE . D.str
+
+instance IsString Str where
+    fromString = text
 
 -------------------------------------------------------------------------------
 -- constants

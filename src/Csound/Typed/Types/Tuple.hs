@@ -2,7 +2,8 @@
 {-# Language
         TypeFamilies,
         FlexibleContexts,
-        FlexibleInstances #-}
+        FlexibleInstances,
+        CPP #-}
 module Csound.Typed.Types.Tuple(
     -- ** Tuple
     Tuple(..), TupleMethods, makeTupleMethods,
@@ -154,6 +155,8 @@ class (Tuple a, Num a, Fractional a, SigSpace a, BindSig a) => Sigs a where
 class (Sigs a, SigSpace2 a, BindSig2 a) => Sig2s a where
 
 instance Sigs Sig
+
+#if __GLASGOW_HASKELL__ >= 710
 instance (Sigs a1, Sigs a2) => Sigs (a1, a2)
 instance (Sigs a1, Sigs a2, Sigs a3) => Sigs (a1, a2, a3)
 instance (Sigs a1, Sigs a2, Sigs a3, Sigs a4) => Sigs (a1, a2, a3, a4)
@@ -161,6 +164,15 @@ instance (Sigs a1, Sigs a2, Sigs a3, Sigs a4, Sigs a5) => Sigs (a1, a2, a3, a4, 
 instance (Sigs a1, Sigs a2, Sigs a3, Sigs a4, Sigs a5, Sigs a6) => Sigs (a1, a2, a3, a4, a5, a6)
 instance (Sigs a1, Sigs a2, Sigs a3, Sigs a4, Sigs a5, Sigs a6, Sigs a7) => Sigs (a1, a2, a3, a4, a5, a6, a7)
 instance (Sigs a1, Sigs a2, Sigs a3, Sigs a4, Sigs a5, Sigs a6, Sigs a7, Sigs a8) => Sigs (a1, a2, a3, a4, a5, a6, a7, a8)
+#else
+instance Sigs (Sig, Sig)
+instance Sigs (Sig, Sig, Sig)
+instance Sigs (Sig, Sig, Sig, Sig)
+instance Sigs (Sig, Sig, Sig, Sig, Sig)
+instance Sigs (Sig, Sig, Sig, Sig, Sig, Sig)
+instance Sigs (Sig, Sig, Sig, Sig, Sig, Sig, Sig)
+instance Sigs (Sig, Sig, Sig, Sig, Sig, Sig, Sig, Sig)
+#endif
 
 instance Sig2s Sig
 instance Sig2s Sig2
