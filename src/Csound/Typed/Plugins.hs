@@ -37,7 +37,7 @@ module Csound.Typed.Plugins(
     fxPanTrem, fxMonoTrem, fxPhaser, fxPitchShifter, fxReverse, fxRingModulator, fxChorus2, fxPingPong,
 
     -- * Tape echo
-    tapeRead, tapeWrite,
+    tapeRead, tapeWrite, tapeEcho,
 
     -- utilities
     delay1k

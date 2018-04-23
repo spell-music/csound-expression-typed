@@ -1,6 +1,7 @@
 module Csound.Typed.Plugins.TapeEcho(
     tapeRead
   , tapeWrite
+  , tapeEcho
 ) where
 
 import Control.Monad.Trans.Class
@@ -12,9 +13,9 @@ import Csound.Typed.Types
 import Csound.Typed.GlobalState
 import qualified Csound.Typed.GlobalState.Elements as E(tapeEchoPlugin)
 
---  Function to read from tape.
+-- | Function to read from tape.
 --
---  tapeRead aIn, kDelay, kRandomSpread
+--  > tapeRead aIn, kDelay, kRandomSpread
 --
 -- The function is used in the same manner as deltapi
 --  first init the delay buffer and the use tapeRead.
@@ -31,9 +32,9 @@ tapeRead ain kdel kRandomSpread = fmap (Sig . return) $ SE $ (depT =<<) $ lift $
   where f ain kdel krand = opcs "tapeRead" [(Ar, [Ar, Kr, Kr])] [ain, kdel, krand]
 
 
--- function to write to tape
+-- | Function to write to tape
 --
--- tapeWrite aIn, aOut, kFbGain
+-- > tapeWrite aIn, aOut, kFbGain
 --
 -- It should be though of as delayw for magnetic tape.
 --
@@ -45,8 +46,19 @@ tapeWrite ain aout kFeedback = SE $ (depT_ =<<) $ lift $ do
   f <$> toGE ain <*> toGE aout <*> toGE kFeedback
   where f ain aout kfb = opcs "tapeWrite" [(Xr, [Ar, Ar, Kr])] [ain, aout, kfb]
 
-{-
-addUdoPlugin E.pitchShifterDelayPlugin
-    f <$> toGE ain <*> toGE ktrans <*> toGE kdlt <*> toGE kFB1 <*> toGE kFB2 <*> toGE imaxdlt
-    where f ain ktrans kdlt kFB1 kFB2 imaxdlt = opcs "PitchShifterDelay" [(Ar, [Ar, Kr, Kr, Kr, Kr, Ir])] [ain, ktrans, kdlt, kFB1, kFB2, imaxdlt]
--}
+-- | Generic multi-tap echo opcode.
+--
+-- > tapeEcho iSize kDelay kEchoGain kFbGain kTone kRandomSpread aIn
+--
+-- * iSize - how many units of echo
+-- * kDelay - delay time
+-- * kEchoGain - gain of the echoes
+-- * kFbGain - feedback
+-- * kTone - low pass filter frequency
+-- * kRandomSpread - quality of the tape [0, Inf], the higher the worser the quality of the tape.
+-- * aIn - input signal
+tapeEcho :: D -> Sig -> Sig -> Sig -> Sig -> Sig -> Sig -> Sig
+tapeEcho iSize kDelay kEchoGain kFbGain kTone kRandomSpread aIn = fromGE $ do
+  addUdoPlugin E.tapeEchoPlugin
+  f <$> toGE aIn <*> toGE kDelay <*> toGE kEchoGain <*> toGE kFbGain <*> toGE kTone <*> toGE kRandomSpread <*> toGE iSize
+  where f aIn kDelay kEchoGain kFbGain kTone kRandomSpread iSize = opcs "TapeEchoN" [(Ar, [Ar, Kr, Kr, Kr, Kr, Kr, Ir])] [aIn, kDelay, kEchoGain, kFbGain, kTone, kRandomSpread, iSize]

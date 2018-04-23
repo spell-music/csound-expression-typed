@@ -87,3 +87,27 @@ opcode tapeWrite, 0, aak
   aProc bandpassCheby1 aOut * kFbGain, 95, 3000, iOrder, iRippleDb
   delayw aIn + aProc * kFbGain
 endop
+
+opcode tapeReadBatch, a, akkii
+  aIn, kDelay, kRandomSpread, iSize, iStart xin
+
+  if iStart <= iSize then
+    acall tapeReadBatch aIn, kDelay, kRandomSpread, iSize, iStart + 1
+  else
+    acall = 0
+  endif
+
+  iScale = iStart
+  aEcho tapeRead aIn, kDelay * iScale, kRandomSpread
+  xout acall + aEcho / iScale
+endop
+
+opcode TapeEchoN, a, akkkkki
+  aIn, kDelay, kEchoGain, kFbGain, kTone, kRandomSpread, iSize xin
+  aDummy delayr (16 * iSize)
+  aEcho tapeReadBatch aIn, kDelay, kRandomSpread, iSize, 1
+  aOut = aIn + kEchoGain * aEcho
+  tapeWrite aIn, aOut, kFbGain
+  xout aOut
+endop
+
