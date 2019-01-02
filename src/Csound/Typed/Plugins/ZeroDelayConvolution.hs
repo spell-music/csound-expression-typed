@@ -1,4 +1,4 @@
-module Csound.Typed.Plugins.ZeroDelayConvolution(  
+module Csound.Typed.Plugins.ZeroDelayConvolution(
 	 ZConvSpec(..), zconv, zconv'
 ) where
 
@@ -33,7 +33,7 @@ zconv :: Tab -> Sig -> Sig
 zconv = zconv' def
 
 -- | zero delay convolution.
--- 
+--
 -- > zconv' (ZConvSpec ipart irat inp) ifn ain
 --
 -- Original UDO code by Victor Lazzarini.

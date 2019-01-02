@@ -35,6 +35,8 @@ Data-Files :
     data/opcodes/korg35.udo
     data/opcodes/zero-delay-convolution.udo
     data/opcodes/PitchShifterDelay.udo
+    data/opcodes/LiveRow.udo
+    data/opcodes/LiveRows.udo
     data/opcodes/MultiFX/AnalogDelay.udo
     data/opcodes/MultiFX/Distortion.udo
     data/opcodes/MultiFX/EnvelopeFollower.udo
@@ -137,6 +139,7 @@ Library
     Csound.Typed.Plugins.SolinaChorus
     Csound.Typed.Plugins.ZeroDelayConvolution
     Csound.Typed.Plugins.Iain
+    Csound.Typed.Plugins.LiveRow
     Csound.Typed.Plugins.Utilities
 
     Paths_csound_expression_typed

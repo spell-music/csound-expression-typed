@@ -39,6 +39,9 @@ module Csound.Typed.Plugins(
     -- * Tape echo
     tapeRead, tapeWrite, tapeEcho,
 
+    -- * Live row
+    liveRow, liveRows,
+
     -- utilities
     delay1k
 
@@ -52,5 +55,6 @@ import Csound.Typed.Plugins.Korg35
 import Csound.Typed.Plugins.SolinaChorus
 import Csound.Typed.Plugins.ZeroDelayConvolution
 import Csound.Typed.Plugins.Iain
+import Csound.Typed.Plugins.LiveRow
 import Csound.Typed.Plugins.TapeEcho
 import Csound.Typed.Plugins.Utilities

@@ -44,6 +44,7 @@ module Csound.Typed.GlobalState.Elements(
     ringModulatorPlugin, stChorusPlugin, stereoPingPongDelayPlugin,
     tapeEchoPlugin,
     delay1kPlugin,
+    liveRowPlugin, liveRowsPlugin
 ) where
 
 import Data.List
@@ -96,7 +97,14 @@ newGen = saveGenId
 
 newTabOfGens :: [Gen] -> State GenMap Int
 newTabOfGens = (saveGenId . intTab =<<) . mapM saveGenId
-    where intTab ns = Gen (length ns) (IntGenId (-2)) (fmap fromIntegral ns) Nothing
+    where intTab ns = Gen (nextPowOfTwo $ length ns) (IntGenId (-2)) (fmap fromIntegral ns) Nothing
+
+nextPowOfTwo :: Int -> Int
+nextPowOfTwo n
+    | frac == 0 = n
+    | otherwise = 2 ^ (integ + 1)
+    where
+        (integ, frac) = properFraction $ logBase 2 (fromIntegral n)
 
 saveGenId :: Ord a => a -> State (IdMap a) Int
 saveGenId a = state $ \s ->
@@ -602,3 +610,6 @@ stereoPingPongDelayPlugin = UdoPlugin "MultiFX/StereoPingPongDelay"
 tapeEchoPlugin = UdoPlugin "MultiFX/TapeEcho"
 
 delay1kPlugin = UdoPlugin "Utility/Delay1k"
+
+liveRowPlugin = UdoPlugin "LiveRow"    -- live like trigger, mono
+liveRowsPlugin = UdoPlugin "LiveRows"  --                    stereo
