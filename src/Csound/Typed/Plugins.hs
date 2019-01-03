@@ -42,6 +42,9 @@ module Csound.Typed.Plugins(
     -- * Live row
     liveRow, liveRows,
 
+    -- * Ambi row
+    ambiRow, ambiRowMp3,
+
     -- utilities
     delay1k
 
@@ -55,6 +58,7 @@ import Csound.Typed.Plugins.Korg35
 import Csound.Typed.Plugins.SolinaChorus
 import Csound.Typed.Plugins.ZeroDelayConvolution
 import Csound.Typed.Plugins.Iain
+import Csound.Typed.Plugins.AmbiRow
 import Csound.Typed.Plugins.LiveRow
 import Csound.Typed.Plugins.TapeEcho
 import Csound.Typed.Plugins.Utilities

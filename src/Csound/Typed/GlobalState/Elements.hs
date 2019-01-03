@@ -44,7 +44,8 @@ module Csound.Typed.GlobalState.Elements(
     ringModulatorPlugin, stChorusPlugin, stereoPingPongDelayPlugin,
     tapeEchoPlugin,
     delay1kPlugin,
-    liveRowPlugin, liveRowsPlugin
+    liveRowPlugin, liveRowsPlugin,
+    ambiRowPlugin, ambiRowMp3Plugin
 ) where
 
 import Data.List
@@ -613,3 +614,7 @@ delay1kPlugin = UdoPlugin "Utility/Delay1k"
 
 liveRowPlugin = UdoPlugin "LiveRow"    -- live like trigger, mono
 liveRowsPlugin = UdoPlugin "LiveRows"  --                    stereo
+
+ambiRowPlugin = UdoPlugin "AmbiRow"        -- ambi trigger, wav
+ambiRowMp3Plugin = UdoPlugin "AmbiRowMp3"  --               mp3
+
